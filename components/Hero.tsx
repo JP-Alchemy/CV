@@ -72,10 +72,10 @@ export default function Hero() {
 
           {/* Tagline — the headline */}
           <h1
-            className="font-serif text-5xl sm:text-6xl lg:text-7xl text-[#f0f0f5] leading-[1.05] tracking-tightest max-w-3xl mb-6"
+            className="font-serif text-4xl sm:text-6xl lg:text-7xl text-[#f0f0f5] leading-[1.05] tracking-tightest max-w-3xl mb-6"
             style={{ transitionDelay: '200ms' }}
           >
-            Securing the&nbsp;infrastructure of{' '}
+            Securing the infrastructure of{' '}
             <em className="not-italic text-accent">tomorrow&rsquo;s</em>{' '}
             energy&nbsp;systems.
           </h1>
