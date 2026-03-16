@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-display: 'DM Serif Display';
+    --font-body: 'DM Sans';
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: #0e0e16;
+    color: #f0f0f5;
+    font-family: var(--font-body), system-ui, sans-serif;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0e0e16;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(78, 205, 196, 0.3);
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(78, 205, 196, 0.55);
+  }
+
+  /* Text selection */
+  ::selection {
+    background: rgba(78, 205, 196, 0.25);
+    color: #f0f0f5;
+  }
+}
+
+@layer utilities {
+  .text-secondary {
+    color: #9b9bb8;
+  }
+
+  .text-muted {
+    color: #6a6a85;
+  }
+
+  /* Fade-up animation utility — applied when in-view */
+  .animate-on-scroll {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .animate-on-scroll.in-view {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Staggered children */
+  .stagger-children > *:nth-child(1) { transition-delay: 0ms; }
+  .stagger-children > *:nth-child(2) { transition-delay: 100ms; }
+  .stagger-children > *:nth-child(3) { transition-delay: 200ms; }
+  .stagger-children > *:nth-child(4) { transition-delay: 300ms; }
+
+  .accent-underline {
+    position: relative;
+    display: inline;
+  }
+
+  .accent-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: #4ecdc4;
+  }
+}
+
+/* ── Print styles (CV page) ───────────────────────────────────────────────── */
+@media print {
+  .cv-no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+    font-size: 11pt;
+  }
+
+  /* Reset dark backgrounds */
+  .bg-bg,
+  .bg-bg-surface,
+  .bg-bg-elevated,
+  [class*='bg-bg'] {
+    background: #ffffff !important;
+  }
+
+  /* Text adjustments */
+  .text-\[\#f0f0f5\] { color: #111111 !important; }
+  .text-\[\#9b9bb8\] { color: #444444 !important; }
+  .text-\[\#6a6a85\] { color: #666666 !important; }
+
+  /* Remove shadows, transitions, glows */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Ensure all content is visible — no lazy-hidden sections */
+  .animate-on-scroll {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Page breaks */
+  h2, h3 { page-break-after: avoid; }
+  .timeline-item { page-break-inside: avoid; }
+
+  /* Accent color stays teal for print — readable on white */
+  .text-accent { color: #1a9e96 !important; }
+  .border-accent { border-color: #1a9e96 !important; }
+}
