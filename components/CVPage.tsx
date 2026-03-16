@@ -2,10 +2,10 @@
 
 import Link from 'next/link'
 import { useInView } from '@/hooks/useInView'
+import Contact from '@/components/Contact'
 import {
   ArrowLeft,
   Printer,
-  Mail,
   Linkedin,
   MapPin,
   ExternalLink,
@@ -398,17 +398,6 @@ export default function CVPage() {
             {/* Contact block */}
             <div className="flex flex-col gap-3 md:items-end shrink-0">
               <a
-                href="mailto:me@jpbothma.com"
-                className="flex items-center gap-2.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded"
-              >
-                <span className="font-sans text-sm text-[#9b9bb8] group-hover:text-[#f0f0f5] transition-colors">
-                  me@jpbothma.com
-                </span>
-                <div className="w-7 h-7 rounded bg-bg-elevated border border-border-subtle flex items-center justify-center text-[#6a6a85] group-hover:text-accent group-hover:border-accent/30 transition-colors">
-                  <Mail size={13} />
-                </div>
-              </a>
-              <a
                 href="https://www.linkedin.com/in/jp-bothma"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -529,7 +518,7 @@ export default function CVPage() {
                 Open to consulting engagements, fractional CTO roles, and OT security projects across the EU and globally.
               </p>
               <a
-                href="mailto:me@jpbothma.com"
+                href="#contact"
                 className="inline-flex items-center gap-1.5 mt-3 text-xs font-sans font-medium text-accent hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent rounded"
               >
                 Get in touch
@@ -575,10 +564,13 @@ export default function CVPage() {
           </div>
         </section>
 
+        {/* ── Contact ─────────────────────────────────────────────────────── */}
+        <Contact />
+
         {/* ── Footer ──────────────────────────────────────────────────────── */}
         <div className="mt-16 pt-8 border-t border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <p className="font-sans text-xs text-[#6a6a85]">
-            JP Bothma · Amsterdam, Netherlands · me@jpbothma.com
+            JP Bothma · Amsterdam, Netherlands
           </p>
           <Link
             href="/"

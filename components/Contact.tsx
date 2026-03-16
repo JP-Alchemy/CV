@@ -2,11 +2,10 @@
 
 import { useState, useRef } from 'react'
 import { useInView } from '@/hooks/useInView'
-import { Send, CheckCircle, AlertCircle, Linkedin, Mail } from 'lucide-react'
+import { Send, CheckCircle, AlertCircle, Linkedin } from 'lucide-react'
 
 // ── Personalise ───────────────────────────────────────────────────────────────
 const FORMSPREE_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT ?? 'YOUR_FORMSPREE_ID'
-const CONTACT_EMAIL = 'me@jpbothma.com'
 const LINKEDIN_URL = 'https://www.linkedin.com/in/jp-bothma/'
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -17,6 +16,7 @@ const ENQUIRY_TYPES = [
   { value: 'consulting', label: 'Consulting engagement' },
   { value: 'product', label: 'Product / design partnership' },
   { value: 'fractional', label: 'Fractional CTO' },
+  { value: 'employee', label: 'Full-time employment' },
   { value: 'training', label: 'Security training / red team' },
   { value: 'curious', label: 'Just curious' },
 ]
@@ -108,19 +108,6 @@ export default function Contact() {
 
             {/* Meta */}
             <div className="space-y-5">
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
-                className="flex items-center gap-3 group w-fit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded"
-                aria-label={`Email ${CONTACT_EMAIL}`}
-              >
-                <div className="w-8 h-8 rounded bg-bg-elevated border border-border-subtle flex items-center justify-center text-[#6a6a85] group-hover:border-accent/30 group-hover:text-accent transition-colors">
-                  <Mail size={14} />
-                </div>
-                <span className="font-sans text-sm text-[#9b9bb8] group-hover:text-[#f0f0f5] transition-colors">
-                  {CONTACT_EMAIL}
-                </span>
-              </a>
-
               <a
                 href={LINKEDIN_URL}
                 target="_blank"

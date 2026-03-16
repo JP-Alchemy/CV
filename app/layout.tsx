@@ -127,7 +127,6 @@ const jsonLd = [
     description:
       'Independent technology consultant specialising in OT/ICS cybersecurity, GreenTech engineering, and fractional CTO services. Based in Amsterdam, serving EU and global clients.',
     url: SITE_URL,
-    email: 'me@jpbothma.com',
     image: `${SITE_URL}/favicon.png`,
     sameAs: [
       'https://www.linkedin.com/in/jp-bothma',
@@ -177,7 +176,6 @@ const jsonLd = [
       'OT/ICS security assessments and penetration testing, fractional CTO services, GreenTech & IoT engineering, and security red team training for energy infrastructure and technology companies across the EU.',
     url: SITE_URL,
     telephone: null,
-    email: 'me@jpbothma.com',
     founder: { '@id': `${SITE_URL}/#person` },
     areaServed: [
       { '@type': 'Country', name: 'Netherlands' },
