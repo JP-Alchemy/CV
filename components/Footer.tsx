@@ -2,7 +2,7 @@ import { Github, Linkedin } from 'lucide-react'
 
 // ── Personalise ───────────────────────────────────────────────────────────────
 const NAME = 'JP Bothma'
-const KVK_NUMBER = 'KVK 12345678'
+const KVK_NUMBER = ''
 const LINKEDIN_URL = 'https://www.linkedin.com/in/jp-bothma'
 const GITHUB_URL = 'https://github.com/JP-Alchemy'
 // ─────────────────────────────────────────────────────────────────────────────
