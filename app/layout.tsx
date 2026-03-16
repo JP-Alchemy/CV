@@ -108,7 +108,7 @@ export const metadata: Metadata = {
   },
   // Verification — add your tokens once the site is live
   // verification: {
-  //   google: 'your-google-search-console-token',
+  //   google: 'your-google-search-console-token-here',
   //   yandex: 'your-yandex-token',
   // },
 }
