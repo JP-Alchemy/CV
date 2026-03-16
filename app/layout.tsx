@@ -107,10 +107,10 @@ export const metadata: Metadata = {
     },
   },
   // Verification — add your tokens once the site is live
-  // verification: {
-  //   google: 'your-google-search-console-token-here',
-  //   yandex: 'your-yandex-token',
-  // },
+  verification: {
+    google: 'gV7fZJspVr47lEmPlS5RqDFiHe2BN9ViEN6m61_QGaM',
+    //   yandex: 'your-yandex-token',
+  },
 }
 
 // ── JSON-LD Structured Data ───────────────────────────────────────────────────
