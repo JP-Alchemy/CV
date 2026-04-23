@@ -389,7 +389,7 @@ export default function CVPage() {
               </p>
               <div className="flex items-center gap-1.5 mt-2 text-[#6a6a85] font-sans text-sm">
                 <MapPin size={13} />
-                <span>Amsterdam, Netherlands</span>
+                <span>Leiden, Netherlands</span>
                 <span className="text-[#6a6a85]/40 mx-1">·</span>
                 <span>Open to EU &amp; global engagements</span>
               </div>
@@ -570,7 +570,7 @@ export default function CVPage() {
         {/* ── Footer ──────────────────────────────────────────────────────── */}
         <div className="mt-16 pt-8 border-t border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <p className="font-sans text-xs text-[#6a6a85]">
-            JP Bothma · Amsterdam, Netherlands
+            JP Bothma · Leiden, Netherlands
           </p>
           <Link
             href="/"

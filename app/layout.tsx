@@ -162,7 +162,7 @@ const jsonLd = [
     nationality: 'South African',
     workLocation: {
       '@type': 'Place',
-      name: 'Amsterdam, Netherlands',
+      name: 'Leiden, Netherlands',
     },
   },
 
