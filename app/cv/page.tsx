@@ -49,7 +49,7 @@ const cvJsonLd = {
     hasOccupation: [
       {
         '@type': 'Role',
-        roleName: 'Lead Sustainability Developer',
+        roleName: 'Tech Lead of Sustainability',
         startDate: '2024-03',
         worksFor: { '@type': 'Organization', name: 'Interfood Group', address: { '@type': 'PostalAddress', addressLocality: 'Eindhoven', addressCountry: 'NL' } },
       },

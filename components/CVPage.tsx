@@ -46,7 +46,7 @@ const EXPERIENCE: ExperienceItem[] = [
   {
     id: 'interfood',
     company: 'Interfood Group',
-    role: 'Lead Sustainability Developer',
+    role: 'Tech Lead of Sustainability',
     scope: 'Global',
     period: 'Mar 2024 – Present',
     location: 'Eindhoven, Netherlands',
