@@ -36,10 +36,10 @@ interface SkillGroup {
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 const STATS = [
-  { value: '8+', label: 'Years experience' },
-  { value: '10+', label: 'Companies & ventures' },
-  { value: '3', label: 'Continents' },
-  { value: 'Cum Laude', label: 'BSc Computer Science' },
+  { value: '10+', label: 'Years experience' },
+  { value: '3+', label: 'Companies & ventures' },
+  { value: '5', label: 'Continents' },
+  { value: 'Cum Laude', label: 'BSc Computer Science & Psychology' },
 ]
 
 const EXPERIENCE: ExperienceItem[] = [
