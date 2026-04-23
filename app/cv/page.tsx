@@ -4,11 +4,11 @@ import CVPage from '@/components/CVPage'
 const SITE_URL = 'https://jpbothma.com'
 
 // Sharp, keyword-rich title — will appear as:
-// "JP Bothma CV — Tech Lead | OT Security | GreenTech | Amsterdam"
+// "JP Bothma CV — Creative Technologist | Interactive & 3D | Sustainability | Leiden"
 export const metadata: Metadata = {
-  title: 'CV — Tech Lead | OT/ICS Security | GreenTech | 8+ Years',
+  title: 'CV — Creative Technologist | Interactive & 3D | Data-Viz | Sustainability',
   description:
-    'Full career history of JP Bothma: Tech Lead, CTO, OT/ICS Security, GreenTech IoT, FinTech, AR/VR. BSc Computer Science Cum Laude. Amsterdam-based, globally available.',
+    'Full career history of JP Bothma: creative technologist working across interactive experiences, 3D & XR, data visualisation, sustainability engineering, and tech leadership. BSc Computer Science Cum Laude. Leiden-based, globally available.',
   alternates: {
     canonical: `${SITE_URL}/cv`,
   },
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     url: `${SITE_URL}/cv`,
     title: 'JP Bothma — Full CV & Career History',
     description:
-      'Tech Lead with 8+ years across OT/ICS security, GreenTech, FinTech, AR/VR, and full-stack engineering. BSc Computer Science Cum Laude. Based in Amsterdam.',
+      'Creative technologist with 10+ years across interactive 3D, data visualisation, sustainability engineering, full-stack, and tech leadership. BSc Computer Science Cum Laude. Based in Leiden.',
     images: [{ url: '/cv-og-image.png', width: 1200, height: 630, alt: 'JP Bothma — CV' }],
   },
 }

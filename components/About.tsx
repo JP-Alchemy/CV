@@ -4,41 +4,46 @@ import { useInView } from '@/hooks/useInView'
 
 const SKILLS = [
   {
-    label: 'Software',
-    sub: 'Full-stack · AI integration · Architecture',
+    label: 'Interactive & 3D',
+    sub: 'WebGL · React-Three-Fiber · Unity · Unreal',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
-        <path d="M8 3H5a2 2 0 00-2 2v14a2 2 0 002 2h3M16 3h3a2 2 0 012 2v14a2 2 0 01-2 2h-3M9 12h6M9 8h3M9 16h3" strokeLinecap="round" />
+        <path d="M12 2L3 7l9 5 9-5-9-5z" strokeLinejoin="round" />
+        <path d="M3 12l9 5 9-5M3 17l9 5 9-5" strokeLinejoin="round" />
       </svg>
     ),
   },
   {
-    label: 'Hardware',
-    sub: 'Embedded · IoT · Sensor networks',
+    label: 'Data Visualisation',
+    sub: 'Making complex systems legible',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
-        <rect x="4" y="7" width="16" height="10" rx="1" />
-        <path d="M8 7V5M12 7V5M16 7V5M8 17v2M12 17v2M16 17v2M4 12H2M22 12h-2" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Security',
-    sub: 'OT/ICS · Penetration testing · NIS2',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
-        <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M3 3v18h18" strokeLinecap="round" />
+        <path d="M7 15l4-5 3 3 5-7" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="7" cy="15" r="1" fill="currentColor" />
+        <circle cx="11" cy="10" r="1" fill="currentColor" />
+        <circle cx="14" cy="13" r="1" fill="currentColor" />
+        <circle cx="19" cy="6" r="1" fill="currentColor" />
       </svg>
     ),
   },
   {
     label: 'Sustainability',
-    sub: 'GreenTech · Circular economy · Energy transition',
+    sub: 'Circular systems · Digital product passports · Measured impact',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
         <path d="M12 2a10 10 0 100 20A10 10 0 0012 2z" />
         <path d="M2 12h20M12 2c-2.5 3-4 6.5-4 10s1.5 7 4 10M12 2c2.5 3 4 6.5 4 10s-1.5 7-4 10" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Human-Centred Craft',
+    sub: 'Full-stack · UX · thoughtful architecture',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
+        <circle cx="12" cy="8" r="3.5" />
+        <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -74,26 +79,27 @@ export default function About() {
               id="about-heading"
               className="font-serif text-4xl lg:text-5xl text-[#f0f0f5] leading-[1.1] tracking-tight mb-6"
             >
-              Where OT security meets the energy transition.
+              Where creativity meets impact.
             </h2>
 
             <div className="space-y-4 text-[#9b9bb8] font-sans text-base leading-relaxed">
               <p>
-                I am a South African tech lead based in Amsterdam, working at the rare intersection of
-                operational technology security, energy transition infrastructure, and full-stack engineering.
+                I am a South African creative technologist based in Leiden &mdash; working where
+                interactive experiences, data visualisation, and sustainability-minded engineering
+                meet.
               </p>
               <p>
-                My work spans both sides: hardening the digital backbone of wind farms, solar installations,
-                and industrial control systems for European operators — and helping African organisations
-                access EU-grade technical leadership without the overhead.
+                I am less interested in building the newest thing and more interested in building the
+                right thing. Creativity is a tool; craft is a discipline; impact is the point.
               </p>
               <p>
-                I travel regularly between the Netherlands and South Africa and work with clients across
-                both continents. The dual perspective is not incidental — it&rsquo;s the edge.
+                Much of my work is making complex systems &mdash; dairy supply chains, energy data,
+                product lifecycles, industrial infrastructure &mdash; legible and felt, so the people
+                inside them can make better decisions.
               </p>
               <p className="text-[#f0f0f5] border-l-2 border-accent pl-4 py-0.5 italic font-light">
-                &ldquo;My goal is straightforward: apply serious technical depth to problems that actually
-                matter — the energy grid, industrial infrastructure, and the communities that depend on both.&rdquo;
+                &ldquo;It&rsquo;s not about the best technology. It&rsquo;s about the most thoughtful
+                use of it &mdash; in service of work that actually matters.&rdquo;
               </p>
             </div>
           </div>
@@ -124,10 +130,10 @@ export default function About() {
             {/* Intersection formula */}
             <div className="mt-4 p-4 rounded-lg border border-dashed border-accent/20 bg-accent/[0.04]">
               <p className="text-center font-sans text-xs tracking-wider text-[#6a6a85] uppercase">
-                Software&thinsp;&plus;&thinsp;Hardware&thinsp;&plus;&thinsp;Security&thinsp;&plus;&thinsp;Sustainability
+                Creativity&thinsp;&plus;&thinsp;Craft&thinsp;&plus;&thinsp;Sustainability
               </p>
               <p className="text-center font-serif text-base text-accent mt-1">
-                = a rare combination.
+                = quiet, considered impact.
               </p>
             </div>
           </div>

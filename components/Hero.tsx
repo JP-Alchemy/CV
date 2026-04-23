@@ -59,7 +59,7 @@ export default function Hero() {
             className="text-[#9b9bb8] text-sm font-sans font-medium tracking-[0.15em] uppercase mb-8"
             style={{ transitionDelay: '100ms' }}
           >
-            Amsterdam&nbsp;&middot;&nbsp;South Africa&nbsp;&middot;&nbsp;Available for EU &amp; global engagements
+            Netherlands&nbsp;&middot;&nbsp;South Africa&nbsp;&middot;&nbsp;Quietly available, globally
           </p>
 
           {/* Name */}
@@ -75,9 +75,8 @@ export default function Hero() {
             className="font-serif text-4xl sm:text-6xl lg:text-7xl text-[#f0f0f5] leading-[1.05] tracking-tightest max-w-3xl mb-6"
             style={{ transitionDelay: '200ms' }}
           >
-            Securing the infrastructure of{' '}
-            <em className="not-italic text-accent">tomorrow&rsquo;s</em>{' '}
-            energy&nbsp;systems.
+            Thoughtful technology for work that{' '}
+            <em className="not-italic text-accent">matters</em>.
           </h1>
 
           {/* Sub-tagline */}
@@ -85,8 +84,9 @@ export default function Hero() {
             className="text-[#9b9bb8] font-sans text-lg max-w-xl mb-10 leading-relaxed"
             style={{ transitionDelay: '300ms' }}
           >
-            OT/ICS security &amp; GreenTech consulting at the intersection of
-            operational technology, energy transition, and the SA&thinsp;&#8596;&thinsp;EU corridor.
+            Interactive experiences, data visualisation, and sustainability-minded
+            engineering &mdash; a creative technologist building at the edge of code,
+            craft, and care.
           </p>
 
           {/* CTAs */}

@@ -13,11 +13,12 @@ type FormState = 'idle' | 'submitting' | 'success' | 'error'
 
 const ENQUIRY_TYPES = [
   { value: '', label: 'Type of enquiry…' },
-  { value: 'consulting', label: 'Consulting engagement' },
-  { value: 'product', label: 'Product / design partnership' },
+  { value: 'interactive', label: 'Interactive / 3D project' },
+  { value: 'dataviz', label: 'Data visualisation' },
+  { value: 'sustainability', label: 'Sustainability engineering' },
   { value: 'fractional', label: 'Fractional CTO' },
+  { value: 'product', label: 'Product / design partnership' },
   { value: 'employee', label: 'Full-time employment' },
-  { value: 'training', label: 'Security training / red team' },
   { value: 'curious', label: 'Just curious' },
 ]
 
@@ -99,11 +100,11 @@ export default function Contact() {
               id="contact-heading"
               className="font-serif text-4xl lg:text-5xl text-[#f0f0f5] leading-[1.1] tracking-tight mb-6"
             >
-              Let&rsquo;s build something that matters.
+              Let&rsquo;s make something that matters.
             </h2>
             <p className="text-[#9b9bb8] font-sans text-base leading-relaxed mb-10">
-              Whether you have a specific project in mind, want to explore a retainer, or just want
-              to ask a question — my inbox is genuinely open.
+              A specific project, a slow-burn partnership, or just a thoughtful question &mdash;
+              my inbox is genuinely open. No pitch decks required.
             </p>
 
             {/* Meta */}
@@ -125,7 +126,7 @@ export default function Contact() {
             </div>
 
             <p className="mt-8 text-xs font-sans text-[#6a6a85] leading-relaxed">
-              Based in Amsterdam (CET) &middot; Quick response within 24&thinsp;hrs &middot; Available for EU &amp; global engagements
+              Based in Leiden (CET) &middot; Usually back within a day &middot; Available for EU &amp; global engagements
             </p>
           </div>
 
@@ -268,7 +269,7 @@ export default function Contact() {
                 </button>
 
                 <p className="text-center text-xs font-sans text-[#6a6a85]">
-                  No newsletters. No CRM. Just a real conversation.
+                  No newsletters. No CRM. Just a quiet, real conversation.
                 </p>
               </form>
             )}

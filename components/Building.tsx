@@ -5,27 +5,44 @@ import { ArrowRight } from 'lucide-react'
 
 const PRODUCTS = [
   {
-    id: 'ot-platform',
-    status: 'In development',
-    statusColor: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
-    dotColor: 'bg-amber-400',
-    name: 'OT Security Platform',
-    badge: 'Stealth',
+    id: 'interfarm',
+    status: 'Live',
+    statusColor: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+    dotColor: 'bg-emerald-400',
+    name: 'Interfarm',
+    badge: 'At Interfood',
     description:
-      'Automated security assessment tooling for energy infrastructure operators. Purpose-built for the OT/ICS layer that generic security tools ignore — covering Modbus, DNP3, IEC 61850, and proprietary protocols used in real grid infrastructure.',
-    signals: ['OT/ICS protocol analysis', 'Asset inventory automation', 'NIS2-aligned reporting'],
+      'A sustainability platform used by Interfood customers and their dairy suppliers to plan, fund, and track on-farm interventions that reduce CO\u2082 emissions together. Turning scope-3 from a spreadsheet into a shared conversation.',
+    signals: ['On-farm CO\u2082 reduction', 'Customer \u2194 supplier collaboration', 'Intervention workflow'],
     icon: (
       <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" className="w-full h-full" strokeWidth={1}>
-        {/* Circuit board illustration */}
-        <rect x="8" y="8" width="32" height="32" rx="2" strokeOpacity={0.3} />
-        <rect x="14" y="14" width="8" height="8" rx="1" strokeOpacity={0.6} />
-        <rect x="26" y="14" width="8" height="8" rx="1" strokeOpacity={0.6} />
-        <rect x="14" y="26" width="8" height="8" rx="1" strokeOpacity={0.6} />
-        <rect x="26" y="26" width="8" height="8" rx="1" strokeOpacity={0.6} />
-        <path d="M22 18h4M18 22v4M30 22v4M22 30h4" strokeOpacity={0.5} strokeLinecap="round" />
-        <circle cx="24" cy="24" r="2" fill="currentColor" fillOpacity={0.5} stroke="none" />
-        {/* Pulse ring */}
-        <circle cx="18" cy="18" r="12" strokeOpacity={0.12} strokeDasharray="2 4" />
+        {/* Rolling hills + sun + leaf */}
+        <circle cx="34" cy="14" r="4" strokeOpacity={0.6} />
+        <path d="M4 34c4-4 8-4 12 0s8 4 12 0 8-4 12 0 4 0 4 0" strokeOpacity={0.4} strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M4 40c4-3 8-3 12 0s8 3 12 0 8-3 12 0 4 0 4 0" strokeOpacity={0.25} strokeLinecap="round" strokeLinejoin="round" />
+        {/* Leaf */}
+        <path d="M18 26c0-4 3-7 7-7s7 3 7 7-3 7-7 7-7-3-7-7z" strokeOpacity={0.5} />
+        <path d="M22 30c2-3 4-5 7-6" strokeOpacity={0.6} strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'nezen',
+    status: 'Live',
+    statusColor: 'text-accent bg-accent/10 border-accent/20',
+    dotColor: 'bg-accent',
+    name: 'nezen.io',
+    badge: 'Personal',
+    description:
+      'A daily zen story app \u2014 one koan each morning by email or WhatsApp, with space to reflect and a growing archive. Built as a quiet corner of the internet for slowing down.',
+    signals: ['One koan a day', 'Email & WhatsApp', 'WebGL ink canvas'],
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" className="w-full h-full" strokeWidth={2}>
+        {/* Ensō — a single imperfect brushstroke with a gap at the top */}
+        <path
+          d="M 21 8 A 16 16 0 1 0 32 10"
+          strokeLinecap="round"
+        />
       </svg>
     ),
   },
@@ -37,7 +54,7 @@ const PRODUCTS = [
     name: 'Digital Product Passport Infrastructure',
     badge: null,
     description:
-      'Traceability hardware + software for physical goods in the circular economy. A combined edge-device and backend system for embedding and reading product lifecycle data — aligned with the incoming EU Digital Product Passport regulation.',
+      'Hardware and software for telling the story of a physical thing &mdash; where it came from, what it&rsquo;s made of, where it&rsquo;s going next. Built for the circular economy, aligned with the incoming EU Digital Product Passport.',
     signals: ['ESPR regulation-aligned', 'Hardware + cloud stack', 'SA manufacturing partners'],
     icon: (
       <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" className="w-full h-full" strokeWidth={1}>
@@ -94,13 +111,13 @@ export default function Building() {
             What I&rsquo;m building.
           </h2>
           <p className="text-[#9b9bb8] font-sans text-base max-w-xl leading-relaxed">
-            Beyond client work, I am building tooling for the problems I keep encountering.
-            Both are early — I am looking for design partners, not just customers.
+            The work I&rsquo;m currently putting my time into &mdash; some at Interfood, some on the
+            side. Both are sustainability-shaped, and both are open to thoughtful partners.
           </p>
         </div>
 
         {/* Product cards */}
-        <div className="grid md:grid-cols-2 gap-6 mt-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
           {PRODUCTS.map(({ id, status, statusColor, dotColor, name, badge, description, signals, icon }, i) => (
             <div
               key={id}
@@ -167,10 +184,10 @@ export default function Building() {
         >
           <div className="flex-grow">
             <p className="font-sans font-medium text-[#f0f0f5] text-sm mb-1">
-              Looking for early design partners and pilot customers.
+              Quietly looking for design partners.
             </p>
             <p className="font-sans text-[#6a6a85] text-sm">
-              If you operate energy infrastructure or physical supply chains in the EU, let&rsquo;s talk.
+              If you&rsquo;re working in sustainability, circular economy, or energy infrastructure &mdash; I&rsquo;d love to talk.
             </p>
           </div>
           <button

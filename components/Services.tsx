@@ -5,18 +5,50 @@ import { ArrowRight } from 'lucide-react'
 
 const SERVICES = [
   {
-    id: 'ot-ics',
+    id: 'interactive-3d',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">
-        <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M8.5 12.5l2.5 2.5 4-5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M12 2L3 7l9 5 9-5-9-5z" strokeLinejoin="round" />
+        <path d="M3 12l9 5 9-5M3 17l9 5 9-5" strokeLinejoin="round" />
       </svg>
     ),
-    name: 'OT/ICS Security Assessments',
+    name: 'Interactive Experiences & 3D',
     description:
-      'Penetration testing and security audits for operational technology: wind, solar, industrial control systems. NIS2-ready methodology.',
-    rate: 'From €150 / hr',
-    tag: 'Most requested',
+      'Real-time 3D, WebGL and immersive interfaces that help people feel the thing before they understand it. React-Three-Fiber, Unity, Unreal — web or native.',
+    rate: 'From €130 / hr',
+    tag: 'Favourite work',
+  },
+  {
+    id: 'data-viz',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">
+        <path d="M3 3v18h18" strokeLinecap="round" />
+        <path d="M7 15l4-5 3 3 5-7" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="7" cy="15" r="1.5" fill="currentColor" />
+        <circle cx="11" cy="10" r="1.5" fill="currentColor" />
+        <circle cx="14" cy="13" r="1.5" fill="currentColor" />
+        <circle cx="19" cy="6" r="1.5" fill="currentColor" />
+      </svg>
+    ),
+    name: 'Data Visualisation & Dashboards',
+    description:
+      'Turning complex data into something legible, useful, and quietly beautiful. Operational dashboards, sustainability reporting, and custom visual tooling — built for the people who actually use them.',
+    rate: 'From €120 / hr',
+    tag: null,
+  },
+  {
+    id: 'sustainability',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">
+        <path d="M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+        <path d="M2 12h20M12 2c-2.5 3-4 6.5-4 10s1.5 7 4 10M12 2c2.5 3 4 6.5 4 10s-1.5 7-4 10" strokeLinecap="round" />
+      </svg>
+    ),
+    name: 'Sustainability Engineering',
+    description:
+      'Software for the circular economy: digital product passports, lifecycle data pipelines, and measured-impact tooling. ESPR-aligned, pragmatic, and built to last.',
+    rate: 'From €120 / hr',
+    tag: null,
   },
   {
     id: 'fractional-cto',
@@ -29,38 +61,8 @@ const SERVICES = [
     ),
     name: 'Fractional CTO',
     description:
-      'Part-time technical leadership for scale-ups building in AI, hardware, or regulated industries. Strategy, architecture, and engineering team direction.',
+      'Part-time technical leadership for small teams building something they care about. Strategy, architecture, hiring, and honest counsel — without the overhead of a full-time hire.',
     rate: 'From €130 / hr',
-    tag: null,
-  },
-  {
-    id: 'greentech-iot',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">
-        <path d="M12 2a10 10 0 100 20A10 10 0 0012 2z" />
-        <path d="M2 12h20M12 2c-2.5 3-4 6.5-4 10s1.5 7 4 10M12 2c2.5 3 4 6.5 4 10s-1.5 7-4 10" strokeLinecap="round" />
-        <path d="M8 8h8M8 16h8" strokeLinecap="round" opacity={0.5} />
-      </svg>
-    ),
-    name: 'GreenTech & IoT Consulting',
-    description:
-      'Hardware + software solutions for the energy transition. Smart systems, sensor networks, circular economy infrastructure — from prototype to production.',
-    rate: 'From €110 / hr',
-    tag: null,
-  },
-  {
-    id: 'security-training',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">
-        <rect x="3" y="11" width="18" height="11" rx="2" />
-        <path d="M7 11V7a5 5 0 0110 0v4" strokeLinecap="round" />
-        <circle cx="12" cy="16" r="1" fill="currentColor" />
-      </svg>
-    ),
-    name: 'Security Training & Red Team',
-    description:
-      'Custom red team exercises, developer security training, and incident response preparation for engineering teams in regulated or critical environments.',
-    rate: 'From €120 / hr',
     tag: null,
   },
 ]
@@ -91,10 +93,11 @@ export default function Services() {
               id="services-heading"
               className="font-serif text-4xl lg:text-5xl text-[#f0f0f5] leading-[1.1] tracking-tight max-w-md"
             >
-              What I can do for you.
+              How I can help.
             </h2>
             <p className="text-[#9b9bb8] font-sans text-sm max-w-xs leading-relaxed">
-              Available for project-based engagements, retainers, and long-term partnerships. EU-based, timezone-friendly.
+              Project work, retainers, and long engagements &mdash; for teams who&rsquo;d rather do
+              a few things well than many things loudly.
             </p>
           </div>
         </div>
@@ -147,12 +150,17 @@ export default function Services() {
         </div>
 
         {/* Bottom note */}
-        <p
-          className={`mt-10 text-center text-[#6a6a85] font-sans text-sm animate-on-scroll ${inView ? 'in-view' : ''}`}
+        <div
+          className={`mt-10 text-center animate-on-scroll ${inView ? 'in-view' : ''}`}
           style={{ transitionDelay: '400ms' }}
         >
-          Not sure which fits? Send a message — most engagements start with a short discovery call.
-        </p>
+          <p className="text-[#6a6a85] font-sans text-sm">
+            Not sure which fits? Send a message &mdash; most engagements start with a short, quiet conversation.
+          </p>
+          <p className="mt-3 text-[#6a6a85] font-sans text-xs">
+            Also available on request: OT/ICS security assessments and red-team exercises for energy and industrial clients.
+          </p>
+        </div>
       </div>
     </section>
   )

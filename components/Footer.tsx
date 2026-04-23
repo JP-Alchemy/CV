@@ -26,7 +26,7 @@ export default function Footer() {
           <div>
             <p className="font-sans font-semibold text-sm text-[#f0f0f5] mb-0.5">{NAME}</p>
             <p className="font-sans text-xs text-[#6a6a85]">
-              Built between Amsterdam and Cape Town
+              Made with care, between Leiden and Cape Town
             </p>
           </div>
 

@@ -22,10 +22,10 @@ const SITE_NAME = 'JP Bothma'
 const SITE_URL = 'https://jpbothma.com'
 // ──────────────────────────────────────────────────────────────────────────────
 
-// Crafted for click-through rate: lead with location + specialty + differentiator
-const META_TITLE = 'JP Bothma — OT/ICS Security Consultant & Tech Lead | Amsterdam'
+// Crafted for click-through rate: lead with role + specialty + differentiator
+const META_TITLE = 'JP Bothma — Creative Technologist | Interactive, Data-Viz & Sustainability'
 const META_DESCRIPTION =
-  'OT/ICS security assessments, fractional CTO, and GreenTech consulting by JP Bothma. NIS2-ready. Based in Amsterdam — serving EU and global clients. SA↔EU bridge.'
+  'JP Bothma — creative technologist building interactive experiences, data visualisations, and sustainability-minded software. Based in Leiden — serving EU and global clients. Thoughtful technology for work that matters.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -42,34 +42,37 @@ export const metadata: Metadata = {
   // Broad keyword set covering all services and long-tail searches
   keywords: [
     // Core services
-    'OT security consultant',
-    'ICS security consultant',
-    'operational technology security',
-    'industrial control systems security',
-    'NIS2 compliance consultant',
-    'SCADA security',
-    'OT penetration testing',
-    // Location-specific (high commercial intent)
-    'OT security consultant Amsterdam',
-    'ICS security Netherlands',
-    'cybersecurity consultant Amsterdam',
-    'fractional CTO Amsterdam',
-    'tech lead Netherlands',
-    // GreenTech / IoT
-    'GreenTech consultant',
-    'IoT security consultant',
-    'energy transition technology',
-    'smart grid security',
+    'creative technologist',
+    'interactive developer',
+    '3D web developer',
+    'WebGL developer',
+    'React-Three-Fiber developer',
+    'data visualisation developer',
+    'data visualisation consultant',
+    'information design',
+    'UX engineer',
+    // Sustainability
+    'sustainability engineering',
+    'sustainable software',
     'digital product passport',
     'circular economy technology',
+    'ESPR compliance',
+    'GreenTech consultant',
+    // Leadership
+    'fractional CTO',
+    'fractional CTO Netherlands',
+    'tech lead Netherlands',
+    'software architect Netherlands',
+    // Location
+    'creative technologist Leiden',
+    'creative technologist Netherlands',
+    'interactive developer Amsterdam',
     // Cross-market
     'SA EU tech bridge',
     'South Africa Netherlands technology',
-    // Broader
-    'full stack consultant',
-    'software architect Netherlands',
-    'red team training',
-    'security awareness training',
+    // Also available
+    'OT security consultant',
+    'ICS security assessment',
   ],
   authors: [{ name: SITE_NAME, url: SITE_URL }],
   creator: SITE_NAME,
@@ -123,9 +126,9 @@ const jsonLd = [
     name: 'JP Bothma',
     givenName: 'JP',
     familyName: 'Bothma',
-    jobTitle: 'OT/ICS Security Consultant & Tech Lead',
+    jobTitle: 'Creative Technologist & Tech Lead',
     description:
-      'Independent technology consultant specialising in OT/ICS cybersecurity, GreenTech engineering, and fractional CTO services. Based in Amsterdam, serving EU and global clients.',
+      'Independent creative technologist specialising in interactive experiences, data visualisation, and sustainability-minded software. Based in Leiden, serving EU and global clients. Also available for fractional CTO engagements and OT security assessments.',
     url: SITE_URL,
     image: `${SITE_URL}/favicon.png`,
     sameAs: [
@@ -134,8 +137,8 @@ const jsonLd = [
     ],
     address: {
       '@type': 'PostalAddress',
-      addressLocality: 'Amsterdam',
-      addressRegion: 'Noord-Holland',
+      addressLocality: 'Leiden',
+      addressRegion: 'Zuid-Holland',
       addressCountry: 'NL',
     },
     alumniOf: {
@@ -144,20 +147,24 @@ const jsonLd = [
       description: 'BSc Computer Science, Cum Laude',
     },
     knowsAbout: [
-      'OT Security',
-      'ICS Security',
-      'SCADA Security',
-      'NIS2 Compliance',
-      'Penetration Testing',
-      'GreenTech',
-      'IoT',
-      'Embedded Systems',
-      'Full-Stack Development',
-      'Software Architecture',
-      'AI Integration',
-      'Fractional CTO',
+      'Creative Technology',
+      'Interactive Design',
+      '3D Web Development',
+      'WebGL',
+      'React-Three-Fiber',
+      'Unity',
+      'Unreal Engine',
+      'Data Visualisation',
+      'Information Design',
+      'UX Engineering',
+      'Sustainability Engineering',
       'Digital Product Passport',
       'Circular Economy',
+      'Full-Stack Development',
+      'Software Architecture',
+      'Fractional CTO',
+      'OT Security',
+      'ICS Security',
     ],
     nationality: 'South African',
     workLocation: {
@@ -173,7 +180,7 @@ const jsonLd = [
     '@id': `${SITE_URL}/#business`,
     name: 'JP Bothma Consulting',
     description:
-      'OT/ICS security assessments and penetration testing, fractional CTO services, GreenTech & IoT engineering, and security red team training for energy infrastructure and technology companies across the EU.',
+      'Interactive experiences, data visualisation, and sustainability-minded software by JP Bothma — creative technologist and fractional CTO. Also available for OT/ICS security assessments for energy and industrial clients.',
     url: SITE_URL,
     telephone: null,
     founder: { '@id': `${SITE_URL}/#person` },
@@ -190,24 +197,9 @@ const jsonLd = [
           '@type': 'Offer',
           itemOffered: {
             '@type': 'Service',
-            name: 'OT/ICS Security Assessments',
+            name: 'Interactive Experiences & 3D',
             description:
-              'Penetration testing and security audits for operational technology: wind, solar, and industrial control systems. NIS2-ready methodology.',
-          },
-          priceSpecification: {
-            '@type': 'UnitPriceSpecification',
-            price: '150',
-            priceCurrency: 'EUR',
-            unitText: 'HOUR',
-          },
-        },
-        {
-          '@type': 'Offer',
-          itemOffered: {
-            '@type': 'Service',
-            name: 'Fractional CTO',
-            description:
-              'Part-time technical leadership for scale-ups building in AI, hardware, or regulated industries. Strategy, architecture, and team direction.',
+              'Real-time 3D, WebGL, and immersive interfaces for web and native platforms. React-Three-Fiber, Unity, Unreal. Built to be felt before they are understood.',
           },
           priceSpecification: {
             '@type': 'UnitPriceSpecification',
@@ -220,13 +212,13 @@ const jsonLd = [
           '@type': 'Offer',
           itemOffered: {
             '@type': 'Service',
-            name: 'GreenTech & IoT Consulting',
+            name: 'Data Visualisation & Dashboards',
             description:
-              'Hardware and software solutions for the energy transition. Smart systems, sensor networks, and circular economy infrastructure.',
+              'Operational dashboards, sustainability reporting, and custom visual tooling that turns complex data into something legible and useful.',
           },
           priceSpecification: {
             '@type': 'UnitPriceSpecification',
-            price: '110',
+            price: '120',
             priceCurrency: 'EUR',
             unitText: 'HOUR',
           },
@@ -235,13 +227,43 @@ const jsonLd = [
           '@type': 'Offer',
           itemOffered: {
             '@type': 'Service',
-            name: 'Security Training & Red Team',
+            name: 'Sustainability Engineering',
             description:
-              'Custom red team exercises, developer security training, and incident response preparation for engineering teams.',
+              'Software for the circular economy: digital product passports, lifecycle data pipelines, and measured-impact tooling. ESPR-aligned, built to last.',
           },
           priceSpecification: {
             '@type': 'UnitPriceSpecification',
             price: '120',
+            priceCurrency: 'EUR',
+            unitText: 'HOUR',
+          },
+        },
+        {
+          '@type': 'Offer',
+          itemOffered: {
+            '@type': 'Service',
+            name: 'Fractional CTO',
+            description:
+              'Part-time technical leadership for small teams. Strategy, architecture, hiring, and honest counsel — without the overhead of a full-time hire.',
+          },
+          priceSpecification: {
+            '@type': 'UnitPriceSpecification',
+            price: '130',
+            priceCurrency: 'EUR',
+            unitText: 'HOUR',
+          },
+        },
+        {
+          '@type': 'Offer',
+          itemOffered: {
+            '@type': 'Service',
+            name: 'OT/ICS Security Assessments',
+            description:
+              'Available on request: security assessments for operational technology, wind, solar, and industrial control systems.',
+          },
+          priceSpecification: {
+            '@type': 'UnitPriceSpecification',
+            price: '150',
             priceCurrency: 'EUR',
             unitText: 'HOUR',
           },
@@ -258,7 +280,7 @@ const jsonLd = [
     url: SITE_URL,
     name: SITE_NAME,
     description:
-      'JP Bothma — OT/ICS security consultant and GreenTech tech lead based in Amsterdam. NIS2-ready assessments, fractional CTO, and SA↔EU technical leadership.',
+      'JP Bothma — creative technologist based in Leiden. Interactive experiences, data visualisation, and sustainability-minded software. Thoughtful technology for work that matters.',
     author: { '@id': `${SITE_URL}/#person` },
     inLanguage: 'en',
   },

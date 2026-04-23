@@ -4,15 +4,14 @@ import { useInView } from '@/hooks/useInView'
 
 const TRUST_SIGNALS = [
   {
-    id: 'eu-market',
+    id: 'craft',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M2 12h20M12 2c-2.5 3-4 6.5-4 10s1.5 7 4 10M12 2c2.5 3 4 6.5 4 10s-1.5 7-4 10" strokeLinecap="round" />
+        <path d="M12 2l2.4 5 5.6.8-4 4 1 5.6L12 15l-5 2.4 1-5.6-4-4 5.6-.8L12 2z" strokeLinejoin="round" />
       </svg>
     ),
-    title: 'EU & NL market fluency',
-    body: 'Deep familiarity with Dutch and European regulatory landscapes — NIS2, GDPR, ESPR. Dutch-registered entity.',
+    title: 'Interactive by craft',
+    body: 'A decade of building 3D, real-time and data-dense interfaces — from WebGL to game engines. Interaction design is not an afterthought; it is the work.',
   },
   {
     id: 'full-stack',
@@ -23,8 +22,8 @@ const TRUST_SIGNALS = [
         <path d="M7 10l3 3-3 3M13 13h4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
-    title: 'Hardware to software',
-    body: 'From schematic to cloud dashboard — embedded systems, firmware, backend APIs, and user interfaces. No handoffs needed.',
+    title: 'End-to-end, end-to-care',
+    body: 'Schematic to cloud dashboard — embedded, firmware, backend, and interface. No handoffs, no silos, and no loose ends.',
   },
   {
     id: 'sa-eu-bridge',
@@ -33,26 +32,26 @@ const TRUST_SIGNALS = [
         <path d="M17 8l4 4-4 4M7 8l-4 4 4 4M14 4l-4 16" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
-    title: 'SA ↔ EU cross-market reach',
-    body: 'Active relationships in both markets. Help European companies access African talent, and African companies meet EU standards.',
+    title: 'SA ↔ EU perspective',
+    body: 'Active in both markets. Helping European teams reach African talent, and African teams meet EU standards — quietly, and with care.',
   },
 ]
 
 const PROCESS_STEPS = [
   {
     n: '01',
-    label: 'Discover',
-    body: 'A focused technical scoping session. No lengthy RFPs — just an honest conversation about the problem.',
+    label: 'Listen',
+    body: 'A short, honest conversation about the problem — not the solution. No RFPs, no pitch theatre.',
   },
   {
     n: '02',
-    label: 'Build',
-    body: 'Structured delivery: clear milestones, async-first communication, and proactive risk flagging. No surprises.',
+    label: 'Shape',
+    body: 'Small, sharp milestones. Async-first communication, prototypes over slides, and risks surfaced early.',
   },
   {
     n: '03',
-    label: 'Secure & Scale',
-    body: 'Handoff includes documentation, knowledge transfer, and a clear path to independence or ongoing support.',
+    label: 'Hand over',
+    body: 'Documentation, knowledge transfer, and a clear path to independence — or to an ongoing, lightweight partnership.',
   },
 ]
 

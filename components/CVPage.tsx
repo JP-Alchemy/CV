@@ -385,7 +385,7 @@ export default function CVPage() {
                 JP Bothma
               </h1>
               <p className="font-sans font-medium text-accent text-base md:text-lg tracking-wide">
-                Tech Lead · OT/ICS Security · GreenTech · Full-Stack
+                Creative Technologist · Interactive & 3D · Data Visualisation · Sustainability
               </p>
               <div className="flex items-center gap-1.5 mt-2 text-[#6a6a85] font-sans text-sm">
                 <MapPin size={13} />
@@ -515,7 +515,8 @@ export default function CVPage() {
                 Currently available
               </p>
               <p className="font-sans text-[#6a6a85] text-xs leading-relaxed">
-                Open to consulting engagements, fractional CTO roles, and OT security projects across the EU and globally.
+                Open to interactive &amp; 3D work, data-visualisation projects, sustainability engineering,
+                and fractional CTO roles &mdash; across the EU and globally.
               </p>
               <a
                 href="#contact"
