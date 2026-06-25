@@ -56,12 +56,13 @@ const EXPERIENCE: ExperienceItem[] = [
       'Driving integration of sustainable practices into the global dairy industry through innovative digital solutions — bridging sustainability and technology at scale.',
     highlights: [
       'Lead cross-functional efforts across R&D, Trade and Logistics to solve complex sustainability challenges',
-      'Manage multiple outsourced software development teams, consistently delivering cutting-edge solutions',
-      'Develop scalable, technology-driven solutions addressing sustainability in global food systems',
+      'Designed and shipped Interfarm, a live platform where customers and dairy suppliers plan, fund, and track on-farm CO₂-reduction interventions together',
+      'Building AI agents and orchestrated automation across sustainability operations — hyper-automating the repetitive so teams focus on judgement and care',
+      'Manage multiple outsourced software development teams, consistently delivering thoughtful, durable solutions',
       'Design customer-centric products that drive measurable business value and enhance satisfaction',
       'Cultivate a culture of collaboration, creativity and continuous improvement across all departments',
     ],
-    tech: ['Digital Sustainability', 'Team Leadership', 'Product Development', 'Cross-functional Delivery', 'Global Ops'],
+    tech: ['Interfarm', 'AI Agents', 'Workflow Automation', 'Digital Sustainability', 'Team Leadership', 'Cross-functional Delivery', 'Global Ops'],
   },
   {
     id: 'pwxr',
@@ -220,9 +221,14 @@ const SKILL_GROUPS: SkillGroup[] = [
     skills: ['Algorithmic Trading', 'PineScript', 'MQL4/5', 'Quantitative Finance', 'Payment Platforms', 'DRM / Encryption'],
   },
   {
-    category: 'Security & AI',
+    category: 'AI & Automation',
     color: '#fb923c',
-    skills: ['Cybersecurity', 'OT / ICS Security', 'Media Encryption', 'Anti-piracy', 'AI Integration', 'Penetration Testing'],
+    skills: ['AI Agents', 'LLM Orchestration', 'Workflow Automation', 'Custom Models', 'Hyper-Automation', 'AI Integration'],
+  },
+  {
+    category: 'Security',
+    color: '#94a3b8',
+    skills: ['Cybersecurity', 'OT / ICS Security', 'Media Encryption', 'Anti-piracy', 'Penetration Testing'],
   },
   {
     category: 'Leadership',
@@ -385,7 +391,7 @@ export default function CVPage() {
                 JP Bothma
               </h1>
               <p className="font-sans font-medium text-accent text-base md:text-lg tracking-wide">
-                Creative Technologist · Interactive & 3D · Data Visualisation · Sustainability
+                Creative Technologist · Interactive & 3D · Data Visualisation · AI Orchestration · Sustainability
               </p>
               <div className="flex items-center gap-1.5 mt-2 text-[#6a6a85] font-sans text-sm">
                 <MapPin size={13} />
@@ -515,8 +521,9 @@ export default function CVPage() {
                 Currently available
               </p>
               <p className="font-sans text-[#6a6a85] text-xs leading-relaxed">
-                Open to interactive &amp; 3D work, data-visualisation projects, sustainability engineering,
-                and fractional CTO roles &mdash; across the EU and globally.
+                Open to interactive &amp; 3D work, data-visualisation projects, AI agents and workflow
+                automation, sustainability engineering, and fractional CTO roles &mdash; across the EU
+                and globally.
               </p>
               <a
                 href="#contact"

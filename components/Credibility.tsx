@@ -23,7 +23,7 @@ const TRUST_SIGNALS = [
       </svg>
     ),
     title: 'End-to-end, end-to-care',
-    body: 'Schematic to cloud dashboard — embedded, firmware, backend, and interface. No handoffs, no silos, and no loose ends.',
+    body: 'Schematic to cloud dashboard — embedded, firmware, backend, interface, and increasingly the AI agents quietly running between them. No handoffs, no silos, no loose ends.',
   },
   {
     id: 'sa-eu-bridge',

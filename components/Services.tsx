@@ -51,6 +51,24 @@ const SERVICES = [
     tag: null,
   },
   {
+    id: 'ai-automation',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">
+        <circle cx="12" cy="12" r="3" />
+        <circle cx="5" cy="6" r="1.5" />
+        <circle cx="19" cy="6" r="1.5" />
+        <circle cx="5" cy="18" r="1.5" />
+        <circle cx="19" cy="18" r="1.5" />
+        <path d="M9.5 10.5L6 7M14.5 10.5L18 7M9.5 13.5L6 17M14.5 13.5L18 17" strokeLinecap="round" />
+      </svg>
+    ),
+    name: 'AI Agents & Workflow Automation',
+    description:
+      'Custom models, orchestration agents, and end-to-end automated workflows — quietly taking care of the repetitive so your team is left with the work that needs a human. Hyper-automation, scaled thoughtfully.',
+    rate: 'From €140 / hr',
+    tag: 'Growing fast',
+  },
+  {
     id: 'fractional-cto',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">

@@ -84,9 +84,9 @@ export default function Hero() {
             className="text-[#9b9bb8] font-sans text-lg max-w-xl mb-10 leading-relaxed"
             style={{ transitionDelay: '300ms' }}
           >
-            Interactive experiences, data visualisation, and sustainability-minded
-            engineering &mdash; a creative technologist building at the edge of code,
-            craft, and care.
+            Interactive experiences, AI agents and orchestrated automation, and
+            sustainability-minded engineering &mdash; a creative technologist scaling
+            thoughtful work through code, craft, and care.
           </p>
 
           {/* CTAs */}

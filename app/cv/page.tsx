@@ -6,9 +6,9 @@ const SITE_URL = 'https://jpbothma.com'
 // Sharp, keyword-rich title — will appear as:
 // "JP Bothma CV — Creative Technologist | Interactive & 3D | Sustainability | Leiden"
 export const metadata: Metadata = {
-  title: 'CV — Creative Technologist | Interactive & 3D | Data-Viz | Sustainability',
+  title: 'CV — Creative Technologist | Interactive & 3D | AI Agents | Sustainability',
   description:
-    'Full career history of JP Bothma: creative technologist working across interactive experiences, 3D & XR, data visualisation, sustainability engineering, and tech leadership. BSc Computer Science Cum Laude. Leiden-based, globally available.',
+    'Full career history of JP Bothma: creative technologist working across interactive experiences, 3D & XR, data visualisation, AI agents and workflow automation, sustainability engineering, and tech leadership. BSc Computer Science Cum Laude. Netherlands-based, globally available.',
   alternates: {
     canonical: `${SITE_URL}/cv`,
   },
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     url: `${SITE_URL}/cv`,
     title: 'JP Bothma — Full CV & Career History',
     description:
-      'Creative technologist with 10+ years across interactive 3D, data visualisation, sustainability engineering, full-stack, and tech leadership. BSc Computer Science Cum Laude. Based in Leiden.',
+      'Creative technologist with 10+ years across interactive 3D, data visualisation, AI agents and orchestrated automation, sustainability engineering, full-stack, and tech leadership. BSc Computer Science Cum Laude. Based in the Netherlands.',
     images: [{ url: '/cv-og-image.png', width: 1200, height: 630, alt: 'JP Bothma — CV' }],
   },
 }

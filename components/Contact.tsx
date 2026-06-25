@@ -16,6 +16,7 @@ const ENQUIRY_TYPES = [
   { value: 'interactive', label: 'Interactive / 3D project' },
   { value: 'dataviz', label: 'Data visualisation' },
   { value: 'sustainability', label: 'Sustainability engineering' },
+  { value: 'ai-automation', label: 'AI agents / workflow automation' },
   { value: 'fractional', label: 'Fractional CTO' },
   { value: 'product', label: 'Product / design partnership' },
   { value: 'employee', label: 'Full-time employment' },

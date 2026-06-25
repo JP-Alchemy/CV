@@ -92,15 +92,16 @@ const EXPERIENCE = [
     location: 'Eindhoven, Netherlands',
     industry: 'SustainTech',
     color: '4ECDC4',
-    summary: 'Driving integration of sustainable practices into the global dairy industry through innovative digital solutions — bridging sustainability and technology at scale.',
+    summary: 'Driving integration of sustainable practices into the global dairy industry through thoughtful digital solutions — bridging sustainability, AI orchestration, and human-centred technology at scale.',
     highlights: [
       'Lead cross-functional efforts across R&D, Trade and Logistics to solve complex sustainability challenges',
-      'Manage multiple outsourced software development teams, consistently delivering cutting-edge solutions',
-      'Develop scalable, technology-driven solutions addressing sustainability in global food systems',
+      'Designed and shipped Interfarm, a live platform where customers and dairy suppliers plan, fund, and track on-farm CO₂-reduction interventions together',
+      'Building AI agents and orchestrated automation across sustainability operations — hyper-automating the repetitive so teams focus on judgement and care',
+      'Manage multiple outsourced software development teams, consistently delivering thoughtful, durable solutions',
       'Design customer-centric products that drive measurable business value and enhance satisfaction',
       'Cultivate a culture of collaboration, creativity and continuous improvement across all departments',
     ],
-    tech: ['Digital Sustainability', 'Team Leadership', 'Product Development', 'Cross-functional Delivery', 'Global Ops'],
+    tech: ['Interfarm', 'AI Agents', 'Workflow Automation', 'Digital Sustainability', 'Team Leadership', 'Cross-functional Delivery', 'Global Ops'],
   },
   {
     company: 'PWXR',
@@ -228,7 +229,8 @@ const SKILL_GROUPS = [
   { category: 'Architecture & DevOps', color: '60A5FA', skills: ['Solutions Architecture', 'CI/CD Pipelines', 'Microservices', 'API Design', 'System Design', 'Cloud Deployment'] },
   { category: 'Emerging & XR Tech', color: 'A78BFA', skills: ['Unity3D', 'Unreal Engine', 'AR / VR', 'TensorFlow.js', 'IoT', 'Robotics', 'LiDAR', 'VFX Graphs'] },
   { category: 'FinTech & Trading', color: 'FBBF24', skills: ['Algorithmic Trading', 'PineScript', 'MQL4/5', 'Quantitative Finance', 'Payment Platforms', 'DRM / Encryption'] },
-  { category: 'Security & AI', color: 'FB923C', skills: ['Cybersecurity', 'OT / ICS Security', 'Media Encryption', 'Anti-piracy', 'AI Integration', 'Penetration Testing'] },
+  { category: 'AI & Automation', color: 'FB923C', skills: ['AI Agents', 'LLM Orchestration', 'Workflow Automation', 'Custom Models', 'Hyper-Automation', 'AI Integration'] },
+  { category: 'Security', color: '94A3B8', skills: ['Cybersecurity', 'OT / ICS Security', 'Media Encryption', 'Anti-piracy', 'Penetration Testing'] },
   { category: 'Leadership', color: '94A3B8', skills: ['CTO', 'Tech Lead', 'Remote Team Management', 'Product Strategy', 'Mentorship', 'Startup Advisory'] },
 ];
 
@@ -248,8 +250,8 @@ const hero = [
   new Paragraph({
     spacing: { before: 0, after: 120 },
     children: [new TextRun({
-      text: 'Tech Lead  ·  OT/ICS Security  ·  GreenTech  ·  Full-Stack',
-      color: ACCENT, size: 24, font: 'Calibri', bold: true,
+      text: 'Creative Technologist  ·  Interactive & 3D  ·  Data Visualisation  ·  AI Orchestration  ·  Sustainability',
+      color: ACCENT, size: 22, font: 'Calibri', bold: true,
     })],
   }),
   new Paragraph({
@@ -271,7 +273,7 @@ const hero = [
     indent: { left: 360 },
     border: { left: { style: BorderStyle.SINGLE, size: 12, color: ACCENT, space: 12 } },
     children: [new TextRun({
-      text: '\u201CCourageously pursuing intellectual and creative freedom in technology — committed to solving challenging, meaningful problems that shape the future in sustainable ways.\u201D',
+      text: '“It’s not about the best technology — it’s about the most thoughtful use of it. Creativity in service of impact; automation in service of the people doing the work that matters.”',
       italics: true, color: INK, size: 24, font: 'Georgia',
     })],
   }),
@@ -428,7 +430,7 @@ const availability = [
     shading: { fill: 'F4FCFB', type: ShadingType.CLEAR, color: 'auto' },
     indent: { left: 120, right: 120 },
     children: [new TextRun({
-      text: 'Open to consulting engagements, fractional CTO roles, and OT security projects across the EU and globally.',
+      text: 'Open to interactive & 3D work, data-visualisation projects, AI agents and workflow automation, sustainability engineering, and fractional CTO roles — across the EU and globally.',
       color: MUTED, size: 18, font: 'Calibri',
     })],
   }),

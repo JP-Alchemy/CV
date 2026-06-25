@@ -23,9 +23,9 @@ const SITE_URL = 'https://jpbothma.com'
 // ──────────────────────────────────────────────────────────────────────────────
 
 // Crafted for click-through rate: lead with role + specialty + differentiator
-const META_TITLE = 'JP Bothma — Creative Technologist | Interactive, Data-Viz & Sustainability'
+const META_TITLE = 'JP Bothma — Creative Technologist | Interactive, AI Agents & Sustainability'
 const META_DESCRIPTION =
-  'JP Bothma — creative technologist building interactive experiences, data visualisations, and sustainability-minded software. Based in Leiden — serving EU and global clients. Thoughtful technology for work that matters.'
+  'JP Bothma — creative technologist building interactive experiences, data visualisations, AI agents and orchestrated workflows, and sustainability-minded software. Based in the Netherlands — serving EU and global clients. Thoughtful technology, hyper-automation scaled.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -51,6 +51,16 @@ export const metadata: Metadata = {
     'data visualisation consultant',
     'information design',
     'UX engineer',
+    // AI & automation
+    'AI agents',
+    'AI orchestration',
+    'LLM orchestration',
+    'workflow automation',
+    'hyper-automation',
+    'hyper-automation scaler',
+    'custom AI models',
+    'AI integration consultant',
+    'agentic workflow developer',
     // Sustainability
     'sustainability engineering',
     'sustainable software',
@@ -128,7 +138,7 @@ const jsonLd = [
     familyName: 'Bothma',
     jobTitle: 'Creative Technologist & Tech Lead',
     description:
-      'Independent creative technologist specialising in interactive experiences, data visualisation, and sustainability-minded software. Based in Leiden, serving EU and global clients. Also available for fractional CTO engagements and OT security assessments.',
+      'Independent creative technologist specialising in interactive experiences, data visualisation, AI agents and workflow automation, and sustainability-minded software. Based in the Netherlands, serving EU and global clients. Also available for fractional CTO engagements and OT security assessments.',
     url: SITE_URL,
     image: `${SITE_URL}/favicon.png`,
     sameAs: [
@@ -157,6 +167,12 @@ const jsonLd = [
       'Data Visualisation',
       'Information Design',
       'UX Engineering',
+      'AI Agents',
+      'LLM Orchestration',
+      'Workflow Automation',
+      'Hyper-Automation',
+      'Custom AI Models',
+      'AI Integration',
       'Sustainability Engineering',
       'Digital Product Passport',
       'Circular Economy',
@@ -180,7 +196,7 @@ const jsonLd = [
     '@id': `${SITE_URL}/#business`,
     name: 'JP Bothma Consulting',
     description:
-      'Interactive experiences, data visualisation, and sustainability-minded software by JP Bothma — creative technologist and fractional CTO. Also available for OT/ICS security assessments for energy and industrial clients.',
+      'Interactive experiences, data visualisation, AI agents and workflow automation, and sustainability-minded software by JP Bothma — creative technologist and fractional CTO. Also available for OT/ICS security assessments for energy and industrial clients.',
     url: SITE_URL,
     telephone: null,
     founder: { '@id': `${SITE_URL}/#person` },
@@ -242,6 +258,21 @@ const jsonLd = [
           '@type': 'Offer',
           itemOffered: {
             '@type': 'Service',
+            name: 'AI Agents & Workflow Automation',
+            description:
+              'Custom AI models, orchestration agents, and end-to-end automated workflows — hyper-automation, scaled thoughtfully. Built to remove the repetitive so teams focus on judgement, care, and the creative leap.',
+          },
+          priceSpecification: {
+            '@type': 'UnitPriceSpecification',
+            price: '140',
+            priceCurrency: 'EUR',
+            unitText: 'HOUR',
+          },
+        },
+        {
+          '@type': 'Offer',
+          itemOffered: {
+            '@type': 'Service',
             name: 'Fractional CTO',
             description:
               'Part-time technical leadership for small teams. Strategy, architecture, hiring, and honest counsel — without the overhead of a full-time hire.',
@@ -280,7 +311,7 @@ const jsonLd = [
     url: SITE_URL,
     name: SITE_NAME,
     description:
-      'JP Bothma — creative technologist based in Leiden. Interactive experiences, data visualisation, and sustainability-minded software. Thoughtful technology for work that matters.',
+      'JP Bothma — creative technologist based in the Netherlands. Interactive experiences, data visualisation, AI agents and workflow automation, and sustainability-minded software. Thoughtful technology, hyper-automation scaled, for work that matters.',
     author: { '@id': `${SITE_URL}/#person` },
     inLanguage: 'en',
   },
