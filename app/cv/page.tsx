@@ -6,7 +6,7 @@ const SITE_URL = 'https://jpbothma.com'
 // Sharp, keyword-rich title — will appear as:
 // "JP Bothma CV — Creative Technologist | Interactive & 3D | Sustainability | Leiden"
 export const metadata: Metadata = {
-  title: 'CV — Creative Technologist | Interactive & 3D | AI Agents | Sustainability',
+  title: 'CV — Tech Lead & Creative Technologist | AI Agents | Full-Stack | Sustainability',
   description:
     'Full career history of JP Bothma: creative technologist working across interactive experiences, 3D & XR, data visualisation, AI agents and workflow automation, sustainability engineering, and tech leadership. BSc Computer Science Cum Laude. Netherlands-based, globally available.',
   alternates: {

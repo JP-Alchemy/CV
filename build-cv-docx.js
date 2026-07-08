@@ -1,470 +1,299 @@
-// Build JP Bothma's CV as a .docx in a style inspired by the /cv web page.
+// Build JP Bothma's CV as a recruiter-optimised .docx (A4, ~2 pages).
 // Output: JP_Bothma_CV.docx
 
 const fs = require('fs');
 const path = require('path');
 const {
-  Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-  Header, Footer, AlignmentType, LevelFormat, ExternalHyperlink,
-  TabStopType, TabStopPosition, HeadingLevel, BorderStyle, WidthType,
-  ShadingType, PageNumber,
+  Document, Packer, Paragraph, TextRun,
+  AlignmentType, LevelFormat, ExternalHyperlink,
+  TabStopType, TabStopPosition, HeadingLevel, BorderStyle,
+  PageNumber, Footer,
 } = require(path.join(process.env.HOME, '.nvm/versions/node/v22.19.0/lib/node_modules/docx'));
 
 // ─── Palette (mirrors the web CV) ───────────────────────────────────────────
-const ACCENT = '4ECDC4';       // teal
-const INK = '1A1A2E';          // near-black
-const MUTED = '6A6A85';        // muted grey
-const SUBTLE = 'E5E5EC';       // subtle border
-const BG_SOFT = 'F7F8F9';      // surface
+const ACCENT = '4ECDC4';
+const INK = '1A1A2E';
+const MUTED = '6A6A85';
+const SOFT = '4A4A6A';
+const SUBTLE = 'E5E5EC';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-const thinBorder = { style: BorderStyle.SINGLE, size: 4, color: SUBTLE };
-const accentBar = { style: BorderStyle.SINGLE, size: 16, color: ACCENT };
-const noBorder = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
-
-function hr(color = SUBTLE, size = 4) {
-  return new Paragraph({
-    spacing: { before: 0, after: 120 },
-    border: { bottom: { style: BorderStyle.SINGLE, size, color, space: 1 } },
-    children: [new TextRun({ text: '' })],
+function smallCaps(text, color = ACCENT) {
+  return new TextRun({
+    text: text.toUpperCase(),
+    bold: true, color, size: 15, characterSpacing: 40, font: 'Calibri',
   });
 }
 
 function sectionHeader(title) {
   return new Paragraph({
     heading: HeadingLevel.HEADING_1,
-    spacing: { before: 360, after: 120 },
-    border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: ACCENT, space: 4 } },
-    children: [new TextRun({ text: title, bold: true, color: INK, size: 28, font: 'Georgia' })],
+    spacing: { before: 280, after: 120 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: ACCENT, space: 3 } },
+    children: [new TextRun({ text: title, bold: true, color: INK, size: 26, font: 'Georgia' })],
   });
 }
 
-function smallCaps(text, color = ACCENT) {
-  return new TextRun({
-    text: text.toUpperCase(),
-    bold: true,
-    color,
-    size: 16,
-    characterSpacing: 40,
-    font: 'Calibri',
-  });
-}
-
-function bullet(text, color = INK) {
+function bullet(text) {
   return new Paragraph({
     numbering: { reference: 'bullets', level: 0 },
-    spacing: { before: 40, after: 40 },
-    children: [new TextRun({ text, color, size: 20, font: 'Calibri' })],
+    spacing: { before: 20, after: 20 },
+    children: [new TextRun({ text, color: INK, size: 20, font: 'Calibri' })],
   });
 }
 
-function pill(text, color) {
-  // Word can't render CSS pills; emulate with a narrow table cell.
-  return new TableCell({
-    borders: {
-      top: { style: BorderStyle.SINGLE, size: 4, color },
-      bottom: { style: BorderStyle.SINGLE, size: 4, color },
-      left: { style: BorderStyle.SINGLE, size: 4, color },
-      right: { style: BorderStyle.SINGLE, size: 4, color },
-    },
-    margins: { top: 40, bottom: 40, left: 100, right: 100 },
-    children: [new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text, color, size: 16, font: 'Calibri', bold: true })],
-    })],
+// Role header: bold TITLE — company, dates right-aligned; location/industry line under it
+function roleHeader(role, company, period, meta) {
+  return [
+    new Paragraph({
+      spacing: { before: 200, after: 20 },
+      tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
+      children: [
+        new TextRun({ text: role, bold: true, color: INK, size: 22, font: 'Calibri' }),
+        new TextRun({ text: `  —  ${company}`, color: SOFT, size: 22, font: 'Calibri' }),
+        new TextRun({ text: '\t', font: 'Calibri' }),
+        new TextRun({ text: period, bold: true, color: MUTED, size: 19, font: 'Calibri' }),
+      ],
+    }),
+    new Paragraph({
+      spacing: { before: 0, after: 60 },
+      children: [new TextRun({ text: meta, color: MUTED, size: 17, font: 'Calibri', italics: true })],
+    }),
+  ];
+}
+
+function stackLine(text) {
+  return new Paragraph({
+    spacing: { before: 40, after: 60 },
+    children: [
+      new TextRun({ text: 'Stack:  ', bold: true, color: ACCENT, size: 17, font: 'Calibri' }),
+      new TextRun({ text, color: MUTED, size: 17, font: 'Calibri' }),
+    ],
   });
 }
 
-// ─── Data (mirrors app/cv/page.tsx) ─────────────────────────────────────────
-const STATS = [
-  { value: '10+', label: 'Years experience' },
-  { value: '3+', label: 'Companies & ventures' },
-  { value: '5', label: 'Continents' },
-  { value: 'Cum Laude', label: 'BSc Computer Science & Psychology' },
-];
-
-const EXPERIENCE = [
-  {
-    company: 'Interfood Group',
-    role: 'Tech Lead of Sustainability',
-    scope: 'Global',
-    period: 'Mar 2024 – Present',
-    location: 'Eindhoven, Netherlands',
-    industry: 'SustainTech',
-    color: '4ECDC4',
-    summary: 'Driving integration of sustainable practices into the global dairy industry through thoughtful digital solutions — bridging sustainability, AI orchestration, and human-centred technology at scale.',
-    highlights: [
-      'Lead cross-functional efforts across R&D, Trade and Logistics to solve complex sustainability challenges',
-      'Designed and shipped Interfarm, a live platform where customers and dairy suppliers plan, fund, and track on-farm CO₂-reduction interventions together',
-      'Building AI agents and orchestrated automation across sustainability operations — hyper-automating the repetitive so teams focus on judgement and care',
-      'Manage multiple outsourced software development teams, consistently delivering thoughtful, durable solutions',
-      'Design customer-centric products that drive measurable business value and enhance satisfaction',
-      'Cultivate a culture of collaboration, creativity and continuous improvement across all departments',
-    ],
-    tech: ['Interfarm', 'AI Agents', 'Workflow Automation', 'Digital Sustainability', 'Team Leadership', 'Cross-functional Delivery', 'Global Ops'],
-  },
-  {
-    company: 'PWXR',
-    role: 'Senior Developer & Lead Innovation Specialist',
-    scope: null,
-    period: 'Jan 2023 – Mar 2024',
-    location: 'Rotterdam & The Hague',
-    industry: 'XR / Gaming',
-    color: 'A78BFA',
-    summary: 'Built next-generation full-body gaming technology — pushing the boundaries of immersive, real-time interactive experiences on web and native platforms.',
-    highlights: [
-      'Created full-body tracking mini-game using React-Three-Fiber and TensorFlow.js running entirely in-browser',
-      'Built Event Management Systems and Content Management Systems as part of the product suite',
-      'Native app development with Unity3D (C#) and Unreal Engine (C++) for Windows and VR mobile platforms',
-      'Implemented custom CI/CD pipelines for automated, reliable cross-platform deployments',
-    ],
-    tech: ['React-Three-Fiber', 'TensorFlow.js', 'Unity3D', 'Unreal Engine', 'C#', 'C++', 'CI/CD', 'VR'],
-  },
-  {
-    company: 'Talk360',
-    role: 'Tech Lead — FinTech Payment Platform',
-    scope: null,
-    period: 'Oct 2022 – Jan 2023',
-    location: 'Amsterdam',
-    industry: 'FinTech',
-    color: 'FBBF24',
-    summary: 'Led an internationally distributed remote team building a pioneering payment platform designed to expand access to global communication.',
-    highlights: [
-      'Strategically led a globally distributed remote tech team delivering the Talk360 Payment Platform',
-      'Designed backend API aggregation using Node.js (MarbleJS) for robust, scalable provider integrations',
-      'Built the frontend with Vue.js, crafting intuitive and accessible payment interfaces',
-    ],
-    tech: ['Node.js', 'MarbleJS', 'Vue.js', 'Remote Leadership', 'Payment Systems', 'FinTech'],
-  },
-  {
-    company: 'LIT Trading & WWA Trading',
-    role: 'CTO',
-    scope: 'FinTech Venture — Dubai',
-    period: 'Mar 2021 – Oct 2022',
-    location: 'Dubai, UAE',
-    industry: 'FinTech / Trading',
-    color: 'FBBF24',
-    summary: 'Co-founded and led a FinTech venture building trading education, gamification experiences, and an automated algorithmic hedge fund.',
-    highlights: [
-      'Developed Trading Education and Gamification platform empowering students in financial markets',
-      'Built an Automated Trading Hedge Fund with quantitative and algorithmic trading systems',
-      'Launched Vaultron.io white-labeled online education platform for scalable client deployment',
-      'Mastered full trading technology stacks: PineScript, MQL4/5, C++ and Python',
-      'Integrated intercommunication across diverse data layers from multiple brokers and providers',
-    ],
-    tech: ['PineScript', 'MQL4/5', 'C++', 'Python', 'Algorithmic Trading', 'Quantitative Finance', 'Platform Architecture'],
-  },
-  {
-    company: 'Vaultron.io',
-    role: 'CTO & Founder',
-    scope: 'EduTech / Encryption',
-    period: 'Feb 2021 – Oct 2022',
-    location: 'Dubai, UAE',
-    industry: 'EduTech',
-    color: '60A5FA',
-    summary: 'Created a revolutionary e-learning platform combining AAA Hollywood-grade media encryption with a proprietary anti-piracy layer — a first in EduTech.',
-    highlights: [
-      'Built e-learning platform with Hollywood-grade media encryption plus a proprietary encryption layer',
-      'Developed industry-leading anti-piracy system redefining security standards in online education',
-      'Designed scalable platform architecture serving educational organisations worldwide',
-      'Led hands-on technical team with a solution-driven, innovation-first culture',
-    ],
-    tech: ['Media Encryption', 'DRM', 'Anti-piracy', 'Platform Architecture', 'EduTech', 'SaaS'],
-  },
-  {
-    company: 'Deuterium Studios',
-    role: 'Lead Developer & Co-Founder',
-    scope: null,
-    period: 'Oct 2019 – Apr 2021',
-    location: 'Remote',
-    industry: 'Game Development',
-    color: 'A78BFA',
-    summary: 'Co-founded a game studio building an infinite multi-scaled ARPG MMO with custom voxel technology and advanced procedural world generation.',
-    highlights: [
-      'Built city-building and voxel technology delivering dynamic, infinitely scalable in-game environments',
-      'Implemented infinite world generation using procedural algorithms, blend maps and custom shader editors',
-      'Created special effects with VFX Graphs; designed scalable backend server architecture',
-      'Mentored and developed team members, fostering a culture of ambition and technical excellence',
-    ],
-    tech: ['Unity3D', 'C#', 'VFX Graphs', 'Procedural Generation', 'Network Architecture', 'ARPG / MMO'],
-  },
-  {
-    company: 'Multiple Businesses',
-    role: 'Executive Advisor · Solutions Architect · Developer',
-    scope: null,
-    period: 'Mar 2018 – Feb 2021',
-    location: 'Various',
-    industry: 'Consulting',
-    color: '94A3B8',
-    summary: 'Strategic advisor and hands-on developer across a diverse portfolio of startups — banking, food services, IoT, health, and online retail.',
-    highlights: [
-      'Technology and business process architecture for banking, hedge funds and financial operations',
-      'IoT productionisation and 3D data visualisation for complex industrial use cases',
-      'Product development and production deployment with cybersecurity embedded at the core',
-      'Online retail automation, bot development and algorithmic competitive tooling',
-    ],
-    tech: ['Solutions Architecture', 'IoT', '3D Visualisation', 'Cybersecurity', 'Automation', 'FinTech', 'DevOps'],
-  },
-  {
-    company: 'IoT.nxt',
-    role: 'Full Stack Engineer & Innovation Specialist',
-    scope: null,
-    period: 'Sep 2016 – Mar 2018',
-    location: 'Pretoria, South Africa',
-    industry: 'IoT',
-    color: 'FB923C',
-    summary: "Built the company's core IoT data visualisation platform and led a skunkworks innovation division pioneering AR/VR and robotics applications.",
-    highlights: [
-      "Developed Commander Web — IoT.nxt's primary data visualisation interface — using Angular, C# and .Net Core",
-      'Led innovation division creating AR/VR prototypes with Hololens, HTC Vive, Unity3D, Unreal Engine and LiDAR',
-      "Built immersive 3D representations of live IoT data for Commander's next-generation interface",
-      'Prototyped IoT-enabled robotic arms with self-taught inverse kinematics and facial recognition',
-    ],
-    tech: ['Angular', 'C#', '.Net Core', 'Ubuntu Snaps', 'AR/VR', 'Hololens', 'Unity3D', 'Robotics', 'LiDAR'],
-  },
-];
-
-const SKILL_GROUPS = [
-  { category: 'Software Engineering', color: '4ECDC4', skills: ['Full-Stack Development', 'Angular', 'React', 'Vue.js', 'Node.js', 'C#', 'C++', 'Python', '.Net Core'] },
-  { category: 'Architecture & DevOps', color: '60A5FA', skills: ['Solutions Architecture', 'CI/CD Pipelines', 'Microservices', 'API Design', 'System Design', 'Cloud Deployment'] },
-  { category: 'Emerging & XR Tech', color: 'A78BFA', skills: ['Unity3D', 'Unreal Engine', 'AR / VR', 'TensorFlow.js', 'IoT', 'Robotics', 'LiDAR', 'VFX Graphs'] },
-  { category: 'FinTech & Trading', color: 'FBBF24', skills: ['Algorithmic Trading', 'PineScript', 'MQL4/5', 'Quantitative Finance', 'Payment Platforms', 'DRM / Encryption'] },
-  { category: 'AI & Automation', color: 'FB923C', skills: ['AI Agents', 'LLM Orchestration', 'Workflow Automation', 'Custom Models', 'Hyper-Automation', 'AI Integration'] },
-  { category: 'Security', color: '94A3B8', skills: ['Cybersecurity', 'OT / ICS Security', 'Media Encryption', 'Anti-piracy', 'Penetration Testing'] },
-  { category: 'Leadership', color: '94A3B8', skills: ['CTO', 'Tech Lead', 'Remote Team Management', 'Product Strategy', 'Mentorship', 'Startup Advisory'] },
-];
-
-// ─── Build blocks ───────────────────────────────────────────────────────────
-
-// Hero: eyebrow, name, tagline, location + LinkedIn, quote
-const hero = [
+// ─── Header block ───────────────────────────────────────────────────────────
+const header = [
   new Paragraph({
-    spacing: { before: 0, after: 120 },
+    spacing: { before: 0, after: 80 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: ACCENT, space: 4 } },
     children: [smallCaps('Curriculum Vitae')],
   }),
-  hr(ACCENT, 6),
   new Paragraph({
-    spacing: { before: 240, after: 80 },
-    children: [new TextRun({ text: 'JP Bothma', bold: true, color: INK, size: 72, font: 'Georgia' })],
+    spacing: { before: 200, after: 40 },
+    children: [new TextRun({ text: 'JP Bothma', bold: true, color: INK, size: 60, font: 'Georgia' })],
   }),
   new Paragraph({
-    spacing: { before: 0, after: 120 },
+    spacing: { before: 0, after: 80 },
     children: [new TextRun({
-      text: 'Creative Technologist  ·  Interactive & 3D  ·  Data Visualisation  ·  AI Orchestration  ·  Sustainability',
-      color: ACCENT, size: 22, font: 'Calibri', bold: true,
+      text: 'Tech Lead & Creative Technologist  —  AI Agents · Full-Stack · Interactive 3D · Sustainability',
+      color: ACCENT, size: 21, font: 'Calibri', bold: true,
     })],
   }),
   new Paragraph({
-    spacing: { before: 0, after: 60 },
+    spacing: { before: 0, after: 40 },
     tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
     children: [
-      new TextRun({ text: 'Leiden, Netherlands  ·  Open to EU & global engagements', color: MUTED, size: 20, font: 'Calibri' }),
+      new TextRun({ text: 'Leiden, Netherlands  ·  juan.bothma@gmail.com  ·  ', color: MUTED, size: 19, font: 'Calibri' }),
+      new ExternalHyperlink({
+        link: 'https://jpbothma.com',
+        children: [new TextRun({ text: 'jpbothma.com', color: ACCENT, size: 19, font: 'Calibri', underline: {} })],
+      }),
       new TextRun({ text: '\t', font: 'Calibri' }),
       new ExternalHyperlink({
         link: 'https://www.linkedin.com/in/jp-bothma',
-        children: [new TextRun({ text: 'linkedin.com/in/jp-bothma', color: ACCENT, size: 20, font: 'Calibri', underline: {} })],
+        children: [new TextRun({ text: 'linkedin.com/in/jp-bothma', color: ACCENT, size: 19, font: 'Calibri', underline: {} })],
       }),
     ],
   }),
-  hr(SUBTLE, 4),
-  // Quote / summary
+];
+
+// ─── Profile + keywords ─────────────────────────────────────────────────────
+const profile = [
   new Paragraph({
-    spacing: { before: 240, after: 240 },
-    indent: { left: 360 },
-    border: { left: { style: BorderStyle.SINGLE, size: 12, color: ACCENT, space: 12 } },
-    children: [new TextRun({
-      text: '“It’s not about the best technology — it’s about the most thoughtful use of it. Creativity in service of impact; automation in service of the people doing the work that matters.”',
-      italics: true, color: INK, size: 24, font: 'Georgia',
-    })],
+    spacing: { before: 160, after: 80 },
+    indent: { left: 200 },
+    border: { left: { style: BorderStyle.SINGLE, size: 12, color: ACCENT, space: 10 } },
+    children: [
+      new TextRun({
+        text: 'Hands-on tech lead with 10+ years shipping products across sustainability, AI, FinTech, XR, and IoT. Currently heading sustainability technology at Interfood — where I shipped ',
+        color: INK, size: 21, font: 'Calibri',
+      }),
+      new TextRun({ text: 'Interfarm', bold: true, color: ACCENT, size: 21, font: 'Calibri' }),
+      new TextRun({
+        text: ', a live CO₂-reduction platform for the global dairy chain — while building AI agents that automate entire workflows end-to-end. I own products from first sketch to production: architecture, code, teams, and delivery.',
+        color: INK, size: 21, font: 'Calibri',
+      }),
+    ],
+  }),
+  new Paragraph({
+    spacing: { before: 80, after: 40 },
+    children: [
+      new TextRun({ text: 'Core stack:  ', bold: true, color: INK, size: 19, font: 'Calibri' }),
+      new TextRun({
+        text: 'TypeScript · React · Node.js · Python · C# · Azure · Databricks · Three.js / React-Three-Fiber · LLM Orchestration · CI/CD',
+        color: SOFT, size: 19, font: 'Calibri',
+      }),
+    ],
+  }),
+  new Paragraph({
+    spacing: { before: 40, after: 120 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: SUBTLE, space: 6 } },
+    children: [
+      new TextRun({ text: '10+ ', bold: true, color: ACCENT, size: 20, font: 'Calibri' }),
+      new TextRun({ text: 'years shipping software     ', color: MUTED, size: 18, font: 'Calibri' }),
+      new TextRun({ text: '4× ', bold: true, color: ACCENT, size: 20, font: 'Calibri' }),
+      new TextRun({ text: 'CTO & Tech Lead roles     ', color: MUTED, size: 18, font: 'Calibri' }),
+      new TextRun({ text: '5 ', bold: true, color: ACCENT, size: 20, font: 'Calibri' }),
+      new TextRun({ text: 'continents     ', color: MUTED, size: 18, font: 'Calibri' }),
+      new TextRun({ text: 'Cum Laude ', bold: true, color: ACCENT, size: 20, font: 'Calibri' }),
+      new TextRun({ text: 'BSc Computer Science', color: MUTED, size: 18, font: 'Calibri' }),
+    ],
   }),
 ];
 
-// Stats row — 4-col table
-const statsRow = new Table({
-  width: { size: 9360, type: WidthType.DXA },
-  columnWidths: [2340, 2340, 2340, 2340],
-  rows: [new TableRow({
-    children: STATS.map(s => new TableCell({
-      borders: {
-        top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder,
-      },
-      width: { size: 2340, type: WidthType.DXA },
-      shading: { fill: BG_SOFT, type: ShadingType.CLEAR, color: 'auto' },
-      margins: { top: 140, bottom: 140, left: 120, right: 120 },
-      children: [
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 60 },
-          children: [new TextRun({ text: s.value, bold: true, color: ACCENT, size: 36, font: 'Georgia' })],
-        }),
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: s.label, color: MUTED, size: 16, font: 'Calibri' })],
-        }),
-      ],
-    })),
-  })],
-});
+// ─── Experience ─────────────────────────────────────────────────────────────
+const experience = [
+  sectionHeader('Experience'),
 
-// Experience entry — one per job
-function experienceEntry(job) {
-  const children = [];
+  ...roleHeader('Tech Lead of Sustainability', 'Interfood Group', 'Mar 2024 – Present', 'Eindhoven, NL · Global dairy trading group · SustainTech'),
+  bullet('Shipped Interfarm — a live platform where customers and dairy suppliers plan, fund, and track on-farm CO₂-reduction interventions together'),
+  bullet('Building AI agents and orchestrated workflows that automate sustainability operations end-to-end, from data intake to customer reporting'),
+  bullet('Set technical direction across R&D, Trade, and Logistics; own architecture and delivery across multiple external engineering teams'),
+  bullet('Translate regulatory and customer sustainability requirements into shipped, scalable product'),
+  stackLine('Azure · Databricks · Data platforms · AI agents & LLM orchestration · TypeScript'),
 
-  // Industry tag
-  children.push(new Paragraph({
-    spacing: { before: 240, after: 80 },
-    children: [smallCaps(job.industry, job.color)],
-  }));
+  ...roleHeader('Senior Developer & Lead Innovation Specialist', 'PWXR', 'Jan 2023 – Mar 2024', 'Rotterdam & The Hague, NL · XR / Gaming'),
+  bullet('Built an in-browser full-body-tracking game with React-Three-Fiber and TensorFlow.js — no installs, no wearables, just a webcam'),
+  bullet('Shipped native titles in Unity3D (C#) and Unreal Engine (C++) for Windows and mobile VR'),
+  bullet('Introduced custom CI/CD pipelines for reliable, automated cross-platform releases'),
+  stackLine('React-Three-Fiber · TensorFlow.js · Unity3D · Unreal Engine · C# · C++'),
 
-  // Company + period on one line with tab stop
-  children.push(new Paragraph({
-    spacing: { before: 0, after: 40 },
-    tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
-    children: [
-      new TextRun({ text: job.company, bold: true, color: INK, size: 26, font: 'Georgia' }),
-      new TextRun({ text: '\t', font: 'Calibri' }),
-      new TextRun({ text: job.period, color: MUTED, size: 20, font: 'Calibri' }),
-    ],
-  }));
+  ...roleHeader('Tech Lead — Payment Platform', 'Talk360', 'Oct 2022 – Jan 2023', 'Amsterdam, NL · FinTech'),
+  bullet('Led a globally distributed team delivering the Talk360 payment platform for emerging markets'),
+  bullet('Designed the Node.js (MarbleJS) API-aggregation layer unifying multiple payment providers; built the Vue.js frontend'),
+  stackLine('Node.js · MarbleJS · Vue.js · Payment systems'),
 
-  // Role + location on one line
-  children.push(new Paragraph({
-    spacing: { before: 0, after: 120 },
-    tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
-    children: [
-      new TextRun({ text: job.role + (job.scope ? `  ·  ${job.scope}` : ''), color: ACCENT, size: 20, font: 'Calibri', bold: true }),
-      new TextRun({ text: '\t', font: 'Calibri' }),
-      new TextRun({ text: job.location, color: MUTED, size: 18, font: 'Calibri', italics: true }),
-    ],
-  }));
+  ...roleHeader('CTO & Co-Founder', 'LIT Trading, WWA Trading & Vaultron.io', 'Feb 2021 – Oct 2022', 'Dubai, UAE · FinTech / Trading / EduTech'),
+  bullet('Co-founded and ran the technology side of a trading venture: education products, gamification, and an automated algorithmic hedge fund'),
+  bullet('Built quantitative trading systems in PineScript, MQL4/5, C++ and Python, integrating live data from multiple brokers'),
+  bullet('Founded Vaultron.io — a white-labelled e-learning platform with studio-grade media encryption and a proprietary anti-piracy layer'),
+  stackLine('Python · C++ · PineScript · MQL4/5 · DRM / media encryption · Platform architecture'),
 
-  // Summary (italic, left-bar accent)
-  children.push(new Paragraph({
-    spacing: { before: 0, after: 160 },
-    indent: { left: 240 },
-    border: { left: { style: BorderStyle.SINGLE, size: 10, color: job.color, space: 12 } },
-    children: [new TextRun({ text: job.summary, italics: true, color: '4A4A6A', size: 20, font: 'Calibri' })],
-  }));
+  ...roleHeader('Lead Developer & Co-Founder', 'Deuterium Studios', 'Oct 2019 – Apr 2021', 'Remote · Game Development'),
+  bullet('Built voxel technology and procedural world generation for an infinitely scalable ARPG MMO; designed the backend server architecture'),
+  bullet('Mentored the engineering team from prototype through playable builds'),
+  stackLine('Unity3D · C# · Procedural generation · VFX Graphs · Network architecture'),
 
-  // Highlights bullets
-  job.highlights.forEach(h => children.push(bullet(h)));
+  ...roleHeader('Executive Advisor · Solutions Architect', 'Portfolio of startups', 'Mar 2018 – Feb 2021', 'Various · Banking, IoT, health, retail'),
+  bullet('Architected technology and business processes for banking, hedge-fund, and financial operations'),
+  bullet('Productionised IoT systems and built 3D data visualisation for industrial clients'),
+  stackLine('Solutions architecture · IoT · 3D visualisation · Cybersecurity · DevOps'),
 
-  // Tech pills as a small table row (wraps across columns)
-  const perRow = 6;
-  for (let i = 0; i < job.tech.length; i += perRow) {
-    const slice = job.tech.slice(i, i + perRow);
-    // pad to perRow so the table width stays consistent
-    while (slice.length < perRow) slice.push(null);
-    const cells = slice.map(t => t === null
-      ? new TableCell({
-          borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder },
-          width: { size: 1560, type: WidthType.DXA },
-          children: [new Paragraph({ children: [new TextRun({ text: '', font: 'Calibri' })] })],
-        })
-      : pill(t, job.color));
-    cells.forEach(c => { c.options = c.options || {}; });
-    children.push(new Paragraph({ spacing: { before: 80, after: 0 }, children: [new TextRun('')] }));
-    children.push(new Table({
-      width: { size: 9360, type: WidthType.DXA },
-      columnWidths: [1560, 1560, 1560, 1560, 1560, 1560],
-      rows: [new TableRow({ children: cells })],
-    }));
-  }
-
-  return children;
-}
-
-// Education
-const educationBlock = [
-  new Paragraph({
-    spacing: { before: 120, after: 40 },
-    children: [new TextRun({ text: 'Pearson Institute', bold: true, color: INK, size: 24, font: 'Georgia' })],
-  }),
-  new Paragraph({
-    spacing: { before: 0, after: 40 },
-    children: [new TextRun({ text: "Bachelor\u2019s Degree, Computer Science  ·  Cum Laude", color: ACCENT, size: 20, font: 'Calibri', bold: true })],
-  }),
-  new Paragraph({
-    spacing: { before: 0, after: 240 },
-    children: [new TextRun({ text: '2014 \u2013 2016  ·  South Africa', color: MUTED, size: 18, font: 'Calibri' })],
-  }),
+  ...roleHeader('Full Stack Engineer & Innovation Specialist', 'IoT.nxt', 'Sep 2016 – Mar 2018', 'Pretoria, South Africa · IoT'),
+  bullet("Built Commander Web — the company's primary IoT data-visualisation product — in Angular, C# and .NET Core"),
+  bullet('Led the innovation division: AR/VR prototypes on HoloLens and HTC Vive, LiDAR scanning, and robotics'),
+  stackLine('Angular · C# · .NET Core · AR/VR · LiDAR · Robotics'),
 ];
 
-// Skills — one group per row with the category label + inline skill list
-function skillsBlock() {
-  const blocks = [];
-  SKILL_GROUPS.forEach(g => {
-    blocks.push(new Paragraph({
-      spacing: { before: 160, after: 60 },
-      children: [smallCaps(g.category, g.color)],
-    }));
-    blocks.push(new Paragraph({
-      spacing: { before: 0, after: 0 },
-      children: [new TextRun({ text: g.skills.join('   ·   '), color: INK, size: 20, font: 'Calibri' })],
-    }));
+// ─── Selected projects (all live) ───────────────────────────────────────────
+function project(name, desc, url) {
+  return new Paragraph({
+    spacing: { before: 60, after: 60 },
+    tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
+    children: [
+      new TextRun({ text: name, bold: true, color: INK, size: 20, font: 'Calibri' }),
+      new TextRun({ text: `  —  ${desc}`, color: SOFT, size: 20, font: 'Calibri' }),
+      ...(url ? [
+        new TextRun({ text: '\t', font: 'Calibri' }),
+        new ExternalHyperlink({
+          link: url,
+          children: [new TextRun({ text: url.replace('https://', ''), color: ACCENT, size: 18, font: 'Calibri', underline: {} })],
+        }),
+      ] : []),
+    ],
   });
-  return blocks;
 }
 
-// Availability callout
+const projects = [
+  sectionHeader('Selected Projects — all live'),
+  project('Interfarm', 'sustainability platform for on-farm CO₂-reduction, used by Interfood customers and dairy suppliers', null),
+  project('nezen.io', 'daily zen koans by email & WhatsApp — SvelteKit, PostgreSQL, WebGL ink canvas', 'https://nezen.io'),
+  project('What The Duck', 'physics-driven 3D browser game — React-Three-Fiber, cannon physics, zustand', 'https://wtd.jpbothma.com'),
+  project('Cyberspace Central', 'scroll-driven 3D web experience for a Three.js challenge — R3F, react-spring', 'https://contendo.jpbothma.com'),
+];
+
+// ─── Skills (inline, ATS-friendly) ──────────────────────────────────────────
+function skillLine(category, list) {
+  return new Paragraph({
+    spacing: { before: 40, after: 40 },
+    children: [
+      new TextRun({ text: `${category}:  `, bold: true, color: INK, size: 19, font: 'Calibri' }),
+      new TextRun({ text: list, color: SOFT, size: 19, font: 'Calibri' }),
+    ],
+  });
+}
+
+const skills = [
+  sectionHeader('Skills'),
+  skillLine('AI & Automation', 'AI agents · LLM orchestration · workflow automation · custom models · AI integration'),
+  skillLine('Languages & Frameworks', 'TypeScript · React · Angular · Vue.js · Node.js · Python · C# · C++ · .NET Core · SvelteKit'),
+  skillLine('Data & Cloud', 'Azure · Databricks · Airflow · dbt · data pipelines · timeseries analytics'),
+  skillLine('Interactive & XR', 'WebGL · Three.js · React-Three-Fiber · Unity3D · Unreal Engine · TensorFlow.js · AR/VR · LiDAR'),
+  skillLine('Architecture & DevOps', 'solutions architecture · microservices · API design · CI/CD · system design · cloud deployment'),
+  skillLine('Leadership', 'tech lead · CTO · remote team management · product strategy · mentorship · startup advisory'),
+  skillLine('Domains', 'sustainability & ESG · FinTech & trading · cybersecurity · IoT & embedded · EduTech / DRM'),
+];
+
+// ─── Education + availability ───────────────────────────────────────────────
+const education = [
+  sectionHeader('Education'),
+  new Paragraph({
+    spacing: { before: 40, after: 40 },
+    tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
+    children: [
+      new TextRun({ text: 'BSc Computer Science', bold: true, color: INK, size: 20, font: 'Calibri' }),
+      new TextRun({ text: '  —  Pearson Institute, South Africa  ·  ', color: SOFT, size: 20, font: 'Calibri' }),
+      new TextRun({ text: 'Cum Laude', bold: true, color: ACCENT, size: 20, font: 'Calibri' }),
+      new TextRun({ text: '\t', font: 'Calibri' }),
+      new TextRun({ text: '2014 – 2016', bold: true, color: MUTED, size: 19, font: 'Calibri' }),
+    ],
+  }),
+];
+
 const availability = [
   new Paragraph({
-    spacing: { before: 360, after: 60 },
+    spacing: { before: 240, after: 0 },
     border: {
-      top: { style: BorderStyle.SINGLE, size: 4, color: ACCENT, space: 6 },
-      bottom: { style: BorderStyle.SINGLE, size: 4, color: ACCENT, space: 6 },
-      left: { style: BorderStyle.SINGLE, size: 4, color: ACCENT, space: 6 },
-      right: { style: BorderStyle.SINGLE, size: 4, color: ACCENT, space: 6 },
+      top: { style: BorderStyle.SINGLE, size: 4, color: ACCENT, space: 8 },
+      bottom: { style: BorderStyle.SINGLE, size: 4, color: ACCENT, space: 8 },
+      left: { style: BorderStyle.SINGLE, size: 4, color: ACCENT, space: 8 },
+      right: { style: BorderStyle.SINGLE, size: 4, color: ACCENT, space: 8 },
     },
-    shading: { fill: 'F4FCFB', type: ShadingType.CLEAR, color: 'auto' },
+    shading: { fill: 'F4FCFB', type: 'clear', color: 'auto' },
     indent: { left: 120, right: 120 },
-    children: [new TextRun({ text: 'Currently available', bold: true, color: INK, size: 22, font: 'Calibri' })],
-  }),
-  new Paragraph({
-    spacing: { before: 0, after: 60 },
-    border: {
-      bottom: { style: BorderStyle.SINGLE, size: 4, color: ACCENT, space: 6 },
-      left: { style: BorderStyle.SINGLE, size: 4, color: ACCENT, space: 6 },
-      right: { style: BorderStyle.SINGLE, size: 4, color: ACCENT, space: 6 },
-    },
-    shading: { fill: 'F4FCFB', type: ShadingType.CLEAR, color: 'auto' },
-    indent: { left: 120, right: 120 },
-    children: [new TextRun({
-      text: 'Open to interactive & 3D work, data-visualisation projects, AI agents and workflow automation, sustainability engineering, and fractional CTO roles — across the EU and globally.',
-      color: MUTED, size: 18, font: 'Calibri',
-    })],
+    children: [
+      new TextRun({ text: 'Currently available  —  ', bold: true, color: INK, size: 20, font: 'Calibri' }),
+      new TextRun({
+        text: 'open to senior & principal engineering, tech-lead, and fractional CTO roles (AI, full-stack, interactive, sustainability). On-site NL, hybrid, or remote.',
+        color: MUTED, size: 19, font: 'Calibri',
+      }),
+    ],
   }),
 ];
 
-// ─── Assemble document ──────────────────────────────────────────────────────
-const children = [
-  ...hero,
-  new Paragraph({ spacing: { after: 120 }, children: [new TextRun('')] }),
-  statsRow,
-
-  sectionHeader('Professional Experience'),
-  ...EXPERIENCE.flatMap(experienceEntry),
-
-  sectionHeader('Education'),
-  ...educationBlock,
-
-  sectionHeader('Skills'),
-  ...skillsBlock(),
-
-  ...availability,
-];
-
+// ─── Assemble ───────────────────────────────────────────────────────────────
 const doc = new Document({
   creator: 'JP Bothma',
   title: 'JP Bothma — CV',
-  description: 'Tech Lead · OT/ICS Security · GreenTech · Full-Stack',
+  description: 'Tech Lead & Creative Technologist — AI Agents · Full-Stack · Interactive 3D · Sustainability',
   styles: {
-    default: { document: { run: { font: 'Calibri', size: 22, color: INK } } },
+    default: { document: { run: { font: 'Calibri', size: 21, color: INK } } },
     paragraphStyles: [
       {
         id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', next: 'Normal', quickFormat: true,
-        run: { size: 36, bold: true, color: INK, font: 'Georgia' },
-        paragraph: { spacing: { before: 360, after: 120 }, outlineLevel: 0 },
+        run: { size: 26, bold: true, color: INK, font: 'Georgia' },
+        paragraph: { spacing: { before: 280, after: 120 }, outlineLevel: 0 },
       },
     ],
   },
@@ -474,17 +303,17 @@ const doc = new Document({
       levels: [{
         level: 0,
         format: LevelFormat.BULLET,
-        text: '\u2022',
+        text: '•',
         alignment: AlignmentType.LEFT,
-        style: { paragraph: { indent: { left: 360, hanging: 240 } } },
+        style: { paragraph: { indent: { left: 300, hanging: 200 } } },
       }],
     }],
   },
   sections: [{
     properties: {
       page: {
-        size: { width: 12240, height: 15840 }, // US Letter
-        margin: { top: 1080, right: 1080, bottom: 1080, left: 1080 }, // 0.75"
+        size: { width: 11906, height: 16838 }, // A4
+        margin: { top: 900, right: 1000, bottom: 900, left: 1000 },
       },
     },
     footers: {
@@ -492,17 +321,25 @@ const doc = new Document({
         children: [new Paragraph({
           tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
           children: [
-            new TextRun({ text: 'JP Bothma  ·  Leiden, Netherlands  ·  jpbothma.com', color: MUTED, size: 16, font: 'Calibri' }),
+            new TextRun({ text: 'JP Bothma  ·  juan.bothma@gmail.com  ·  jpbothma.com', color: MUTED, size: 15, font: 'Calibri' }),
             new TextRun({ text: '\t', font: 'Calibri' }),
-            new TextRun({ text: 'Page ', color: MUTED, size: 16, font: 'Calibri' }),
-            new TextRun({ children: [PageNumber.CURRENT], color: MUTED, size: 16, font: 'Calibri' }),
-            new TextRun({ text: ' / ', color: MUTED, size: 16, font: 'Calibri' }),
-            new TextRun({ children: [PageNumber.TOTAL_PAGES], color: MUTED, size: 16, font: 'Calibri' }),
+            new TextRun({ text: 'Page ', color: MUTED, size: 15, font: 'Calibri' }),
+            new TextRun({ children: [PageNumber.CURRENT], color: MUTED, size: 15, font: 'Calibri' }),
+            new TextRun({ text: ' / ', color: MUTED, size: 15, font: 'Calibri' }),
+            new TextRun({ children: [PageNumber.TOTAL_PAGES], color: MUTED, size: 15, font: 'Calibri' }),
           ],
         })],
       }),
     },
-    children,
+    children: [
+      ...header,
+      ...profile,
+      ...experience,
+      ...projects,
+      ...skills,
+      ...education,
+      ...availability,
+    ],
   }],
 });
 

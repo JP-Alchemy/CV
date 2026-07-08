@@ -36,9 +36,9 @@ interface SkillGroup {
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 const STATS = [
-  { value: '10+', label: 'Years experience' },
-  { value: '3+', label: 'Companies & ventures' },
-  { value: '5', label: 'Continents' },
+  { value: '10+', label: 'Years shipping software' },
+  { value: '4×', label: 'CTO & Tech Lead roles' },
+  { value: '5', label: 'Continents worked across' },
   { value: 'Cum Laude', label: 'BSc Computer Science & Psychology' },
 ]
 
@@ -53,16 +53,14 @@ const EXPERIENCE: ExperienceItem[] = [
     industry: 'SustainTech',
     color: '#4ecdc4',
     summary:
-      'Driving integration of sustainable practices into the global dairy industry through innovative digital solutions — bridging sustainability and technology at scale.',
+      'Own sustainability technology for a global dairy trading group — shipping the products and AI automation that turn climate targets into operational reality.',
     highlights: [
-      'Lead cross-functional efforts across R&D, Trade and Logistics to solve complex sustainability challenges',
-      'Designed and shipped Interfarm, a live platform where customers and dairy suppliers plan, fund, and track on-farm CO₂-reduction interventions together',
-      'Building AI agents and orchestrated automation across sustainability operations — hyper-automating the repetitive so teams focus on judgement and care',
-      'Manage multiple outsourced software development teams, consistently delivering thoughtful, durable solutions',
-      'Design customer-centric products that drive measurable business value and enhance satisfaction',
-      'Cultivate a culture of collaboration, creativity and continuous improvement across all departments',
+      'Shipped Interfarm — a live platform where customers and dairy suppliers plan, fund, and track on-farm CO₂-reduction interventions together',
+      'Building AI agents and orchestrated workflows that automate sustainability operations end-to-end, from data intake to customer reporting',
+      'Set technical direction across R&D, Trade, and Logistics; own architecture and delivery across multiple external engineering teams',
+      'Translate regulatory and customer sustainability requirements into shipped, scalable product',
     ],
-    tech: ['Interfarm', 'AI Agents', 'Workflow Automation', 'Digital Sustainability', 'Team Leadership', 'Cross-functional Delivery', 'Global Ops'],
+    tech: ['Interfarm', 'AI Agents', 'Workflow Automation', 'Azure', 'Data Platforms', 'Team Leadership', 'Product Ownership'],
   },
   {
     id: 'pwxr',
@@ -76,10 +74,10 @@ const EXPERIENCE: ExperienceItem[] = [
     summary:
       'Built next-generation full-body gaming technology — pushing the boundaries of immersive, real-time interactive experiences on web and native platforms.',
     highlights: [
-      'Created full-body tracking mini-game using React-Three-Fiber and TensorFlow.js running entirely in-browser',
-      'Built Event Management Systems and Content Management Systems as part of the product suite',
-      'Native app development with Unity3D (C#) and Unreal Engine (C++) for Windows and VR mobile platforms',
-      'Implemented custom CI/CD pipelines for automated, reliable cross-platform deployments',
+      'Built an in-browser full-body-tracking game with React-Three-Fiber and TensorFlow.js — no installs, no wearables, just a webcam',
+      'Shipped native titles in Unity3D (C#) and Unreal Engine (C++) for Windows and mobile VR',
+      'Delivered the event- and content-management systems powering the product suite',
+      'Introduced custom CI/CD pipelines for reliable, automated cross-platform releases',
     ],
     tech: ['React-Three-Fiber', 'TensorFlow.js', 'Unity3D', 'Unreal Engine', 'C#', 'C++', 'CI/CD', 'VR'],
   },
@@ -95,9 +93,9 @@ const EXPERIENCE: ExperienceItem[] = [
     summary:
       'Led an internationally distributed remote team building a pioneering payment platform designed to expand access to global communication.',
     highlights: [
-      'Strategically led a globally distributed remote tech team delivering the Talk360 Payment Platform',
-      'Designed backend API aggregation using Node.js (MarbleJS) for robust, scalable provider integrations',
-      'Built the frontend with Vue.js, crafting intuitive and accessible payment interfaces',
+      'Led a globally distributed team delivering the Talk360 payment platform for emerging markets',
+      'Designed the backend API-aggregation layer in Node.js (MarbleJS), unifying multiple payment providers behind one interface',
+      'Built the Vue.js frontend with a focus on accessible, low-friction payments',
     ],
     tech: ['Node.js', 'MarbleJS', 'Vue.js', 'Remote Leadership', 'Payment Systems', 'FinTech'],
   },
@@ -113,11 +111,9 @@ const EXPERIENCE: ExperienceItem[] = [
     summary:
       'Co-founded and led a FinTech venture building trading education, gamification experiences, and an automated algorithmic hedge fund.',
     highlights: [
-      'Developed Trading Education and Gamification platform empowering students in financial markets',
-      'Built an Automated Trading Hedge Fund with quantitative and algorithmic trading systems',
-      'Launched Vaultron.io white-labeled online education platform for scalable client deployment',
-      'Mastered full trading technology stacks: PineScript, MQL4/5, C++ and Python',
-      'Integrated intercommunication across diverse data layers from multiple brokers and providers',
+      'Co-founded and ran the technology side of a trading venture: education products, gamification, and an automated algorithmic hedge fund',
+      'Built quantitative trading systems in PineScript, MQL4/5, C++ and Python, integrating live data from multiple brokers and providers',
+      'Launched Vaultron.io as a white-labelled education platform for scalable client deployments',
     ],
     tech: ['PineScript', 'MQL4/5', 'C++', 'Python', 'Algorithmic Trading', 'Quantitative Finance', 'Platform Architecture'],
   },
@@ -133,10 +129,9 @@ const EXPERIENCE: ExperienceItem[] = [
     summary:
       'Created a revolutionary e-learning platform combining AAA Hollywood-grade media encryption with a proprietary anti-piracy layer — a first in EduTech.',
     highlights: [
-      'Built e-learning platform with Hollywood-grade media encryption plus a proprietary encryption layer',
-      'Developed industry-leading anti-piracy system redefining security standards in online education',
-      'Designed scalable platform architecture serving educational organisations worldwide',
-      'Led hands-on technical team with a solution-driven, innovation-first culture',
+      'Designed and shipped an e-learning platform with studio-grade media encryption plus a proprietary anti-piracy layer',
+      'Architected multi-tenant infrastructure serving educational organisations internationally',
+      'Led the hands-on engineering team from concept through production',
     ],
     tech: ['Media Encryption', 'DRM', 'Anti-piracy', 'Platform Architecture', 'EduTech', 'SaaS'],
   },
@@ -152,10 +147,10 @@ const EXPERIENCE: ExperienceItem[] = [
     summary:
       'Co-founded a game studio building an infinite multi-scaled ARPG MMO with custom voxel technology and advanced procedural world generation.',
     highlights: [
-      'Built city-building and voxel technology delivering dynamic, infinitely scalable in-game environments',
-      'Implemented infinite world generation using procedural algorithms, blend maps and custom shader editors',
-      'Created special effects with VFX Graphs; designed scalable backend server architecture',
-      'Mentored and developed team members, fostering a culture of ambition and technical excellence',
+      'Built voxel and city-building technology delivering infinitely scalable in-game worlds',
+      'Implemented procedural world generation with blend maps and custom shader tooling',
+      'Designed the backend server architecture; built VFX with Unity VFX Graphs',
+      'Mentored the engineering team from prototype through playable builds',
     ],
     tech: ['Unity3D', 'C#', 'VFX Graphs', 'Procedural Generation', 'Network Architecture', 'ARPG / MMO'],
   },
@@ -171,10 +166,9 @@ const EXPERIENCE: ExperienceItem[] = [
     summary:
       'Strategic advisor and hands-on developer across a diverse portfolio of startups — banking, food services, IoT, health, and online retail.',
     highlights: [
-      'Technology and business process architecture for banking, hedge funds and financial operations',
-      'IoT productionisation and 3D data visualisation for complex industrial use cases',
-      'Product development and production deployment with cybersecurity embedded at the core',
-      'Online retail automation, bot development and algorithmic competitive tooling',
+      'Architected technology and business processes for banking, hedge-fund, and financial operations',
+      'Productionised IoT systems and built 3D data visualisation for industrial clients',
+      'Delivered retail automation and algorithmic tooling with security designed in from the start',
     ],
     tech: ['Solutions Architecture', 'IoT', '3D Visualisation', 'Cybersecurity', 'Automation', 'FinTech', 'DevOps'],
   },
@@ -190,10 +184,10 @@ const EXPERIENCE: ExperienceItem[] = [
     summary:
       'Built the company\'s core IoT data visualisation platform and led a skunkworks innovation division pioneering AR/VR and robotics applications.',
     highlights: [
-      'Developed Commander Web — IoT.nxt\'s primary data visualisation interface — using Angular, C# and .Net Core',
-      'Led innovation division creating AR/VR prototypes with Hololens, HTC Vive, Unity3D, Unreal Engine and LiDAR',
-      'Built immersive 3D representations of live IoT data for Commander\'s next-generation interface',
-      'Prototyped IoT-enabled robotic arms with self-taught inverse kinematics and facial recognition',
+      'Built Commander Web — the company\'s primary IoT data-visualisation product — in Angular, C# and .NET Core',
+      'Led the innovation division: AR/VR prototypes on HoloLens and HTC Vive, LiDAR scanning, and robotics',
+      'Created live 3D representations of IoT data for the next-generation product interface',
+      'Prototyped IoT-driven robotic arms with self-taught inverse kinematics and facial recognition',
     ],
     tech: ['Angular', 'C#', '.Net Core', 'Ubuntu Snaps', 'AR/VR', 'Hololens', 'Unity3D', 'Robotics', 'LiDAR'],
   },
@@ -201,39 +195,74 @@ const EXPERIENCE: ExperienceItem[] = [
 
 const SKILL_GROUPS: SkillGroup[] = [
   {
-    category: 'Software Engineering',
+    category: 'AI & Automation',
     color: '#4ecdc4',
-    skills: ['Full-Stack Development', 'Angular', 'React', 'Vue.js', 'Node.js', 'C#', 'C++', 'Python', '.Net Core'],
+    skills: ['AI Agents', 'LLM Orchestration', 'Workflow Automation', 'Custom Models', 'AI Integration', 'Hyper-Automation'],
+  },
+  {
+    category: 'Software Engineering',
+    color: '#60a5fa',
+    skills: ['TypeScript', 'React', 'Angular', 'Vue.js', 'Node.js', 'Python', 'C#', 'C++', '.NET Core'],
+  },
+  {
+    category: 'Data & Cloud',
+    color: '#fbbf24',
+    skills: ['Azure', 'Databricks', 'Airflow', 'dbt', 'Data Pipelines', 'Timeseries Analytics'],
+  },
+  {
+    category: 'Interactive & XR',
+    color: '#a78bfa',
+    skills: ['WebGL', 'React-Three-Fiber', 'Unity3D', 'Unreal Engine', 'TensorFlow.js', 'AR / VR', 'LiDAR'],
   },
   {
     category: 'Architecture & DevOps',
-    color: '#60a5fa',
-    skills: ['Solutions Architecture', 'CI/CD Pipelines', 'Microservices', 'API Design', 'System Design', 'Cloud Deployment'],
-  },
-  {
-    category: 'Emerging & XR Tech',
-    color: '#a78bfa',
-    skills: ['Unity3D', 'Unreal Engine', 'AR / VR', 'TensorFlow.js', 'IoT', 'Robotics', 'LiDAR', 'VFX Graphs'],
-  },
-  {
-    category: 'FinTech & Trading',
-    color: '#fbbf24',
-    skills: ['Algorithmic Trading', 'PineScript', 'MQL4/5', 'Quantitative Finance', 'Payment Platforms', 'DRM / Encryption'],
-  },
-  {
-    category: 'AI & Automation',
     color: '#fb923c',
-    skills: ['AI Agents', 'LLM Orchestration', 'Workflow Automation', 'Custom Models', 'Hyper-Automation', 'AI Integration'],
-  },
-  {
-    category: 'Security',
-    color: '#94a3b8',
-    skills: ['Cybersecurity', 'OT / ICS Security', 'Media Encryption', 'Anti-piracy', 'Penetration Testing'],
+    skills: ['Solutions Architecture', 'Microservices', 'API Design', 'CI/CD Pipelines', 'System Design', 'Cloud Deployment'],
   },
   {
     category: 'Leadership',
     color: '#94a3b8',
-    skills: ['CTO', 'Tech Lead', 'Remote Team Management', 'Product Strategy', 'Mentorship', 'Startup Advisory'],
+    skills: ['Tech Lead', 'CTO', 'Remote Team Management', 'Product Strategy', 'Mentorship', 'Startup Advisory'],
+  },
+  {
+    category: 'Domain Depth',
+    color: '#94a3b8',
+    skills: ['Sustainability & ESG', 'FinTech & Trading', 'Cybersecurity', 'IoT & Embedded', 'EduTech / DRM'],
+  },
+]
+
+const PROJECTS = [
+  {
+    name: 'Interfarm',
+    tag: 'Live · Interfood',
+    color: '#4ecdc4',
+    desc: 'Sustainability platform where customers and dairy suppliers plan, fund, and track on-farm CO₂-reduction interventions together.',
+    tech: ['Product Ownership', 'Data Platform', 'AI Workflows'],
+    href: null,
+  },
+  {
+    name: 'nezen.io',
+    tag: 'Live · Personal',
+    color: '#a78bfa',
+    desc: 'A daily zen story app — one koan each morning by email or WhatsApp, with journalling, streaks, and a WebGL ink canvas.',
+    tech: ['SvelteKit', 'TypeScript', 'PostgreSQL', 'WhatsApp API'],
+    href: 'https://nezen.io',
+  },
+  {
+    name: 'What The Duck',
+    tag: 'Live · Personal',
+    color: '#fbbf24',
+    desc: 'A physics-driven 3D browser game — ducks, levels, and mayhem — built end-to-end in the browser with real-time physics.',
+    tech: ['React-Three-Fiber', 'Three.js', 'Cannon Physics', 'Zustand'],
+    href: 'https://wtd.jpbothma.com',
+  },
+  {
+    name: 'Cyberspace Central',
+    tag: 'Live · Three.js Challenge',
+    color: '#fb923c',
+    desc: 'A scroll-driven, neon-soaked 3D web experience — interdimensional stories told through WebGL, built for a Three.js challenge.',
+    tech: ['Three.js', 'React-Three-Fiber', 'React Spring', 'Scroll-driven 3D'],
+    href: 'https://contendo.jpbothma.com',
   },
 ]
 
@@ -391,7 +420,7 @@ export default function CVPage() {
                 JP Bothma
               </h1>
               <p className="font-sans font-medium text-accent text-base md:text-lg tracking-wide">
-                Creative Technologist · Interactive & 3D · Data Visualisation · AI Orchestration · Sustainability
+                Tech Lead & Creative Technologist · AI Agents & Orchestration · Full-Stack · Interactive 3D · Sustainability
               </p>
               <div className="flex items-center gap-1.5 mt-2 text-[#6a6a85] font-sans text-sm">
                 <MapPin size={13} />
@@ -421,9 +450,13 @@ export default function CVPage() {
 
           {/* Summary */}
           <blockquote className="border-l-2 border-accent pl-5 py-1 mb-8 max-w-3xl">
-            <p className="font-serif text-lg md:text-xl text-[#f0f0f5] leading-relaxed italic">
-              &ldquo;Courageously pursuing intellectual and creative freedom in technology — committed to solving
-              challenging, meaningful problems that shape the future in sustainable ways.&rdquo;
+            <p className="font-sans text-base md:text-lg text-[#e6e6ef] leading-relaxed">
+              Hands-on tech lead with 10+ years shipping products across sustainability, AI, FinTech,
+              XR, and IoT. Currently heading sustainability technology at Interfood — where I shipped{' '}
+              <strong className="text-accent font-semibold">Interfarm</strong>, a live CO₂-reduction
+              platform for the global dairy chain — while building AI agents that automate entire
+              workflows end-to-end. I own products from first sketch to production: architecture,
+              code, teams, and delivery.
             </p>
           </blockquote>
 
@@ -470,6 +503,62 @@ export default function CVPage() {
 
             {EXPERIENCE.map((job, i) => (
               <TimelineItem key={job.id} job={job} index={i} />
+            ))}
+          </div>
+        </section>
+
+        {/* ── Selected Projects ───────────────────────────────────────────── */}
+        <section className="mb-16" aria-labelledby="projects-heading">
+          <div className="flex items-center gap-4 mb-8">
+            <h2
+              id="projects-heading"
+              className="font-serif text-3xl text-[#f0f0f5] tracking-tight shrink-0"
+            >
+              Selected Projects
+            </h2>
+            <div className="h-px flex-1 bg-border-subtle" />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            {PROJECTS.map((p) => (
+              <div
+                key={p.name}
+                className="rounded-xl border border-border-subtle bg-bg-surface p-6 hover:border-accent/20 transition-colors"
+                style={{ borderLeftColor: p.color, borderLeftWidth: '3px' }}
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  {p.href ? (
+                    <a
+                      href={p.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-serif text-xl text-[#f0f0f5] hover:text-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded"
+                    >
+                      {p.name}
+                    </a>
+                  ) : (
+                    <span className="font-serif text-xl text-[#f0f0f5]">{p.name}</span>
+                  )}
+                  <span
+                    className="shrink-0 text-[10px] font-sans font-semibold tracking-[0.12em] uppercase px-2.5 py-1 rounded-full"
+                    style={{ color: p.color, background: `${p.color}14`, border: `1px solid ${p.color}28` }}
+                  >
+                    {p.tag}
+                  </span>
+                </div>
+                <p className="font-sans text-sm text-[#9b9bb8] leading-relaxed mb-4">{p.desc}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {p.tech.map((t) => (
+                    <span
+                      key={t}
+                      className="text-[11px] font-sans px-2.5 py-1 rounded-full border"
+                      style={{ borderColor: `${p.color}28`, color: `${p.color}cc`, background: `${p.color}08` }}
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </section>
@@ -521,9 +610,9 @@ export default function CVPage() {
                 Currently available
               </p>
               <p className="font-sans text-[#6a6a85] text-xs leading-relaxed">
-                Open to interactive &amp; 3D work, data-visualisation projects, AI agents and workflow
-                automation, sustainability engineering, and fractional CTO roles &mdash; across the EU
-                and globally.
+                Open to senior &amp; principal engineering roles, tech-lead positions, and fractional
+                CTO engagements &mdash; AI, full-stack, interactive, or sustainability. On-site NL,
+                hybrid, or remote.
               </p>
               <a
                 href="#contact"
