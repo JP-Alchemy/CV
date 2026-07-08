@@ -173,7 +173,7 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then(buf => {
-  const out = path.join(__dirname, 'JP_Bothma_Cover_Letter_Eneco.docx');
+  const out = path.join(__dirname, 'JP_Bothma-Letter.docx');
   fs.writeFileSync(out, buf);
   console.log('Wrote', out, '(' + buf.length + ' bytes)');
 });

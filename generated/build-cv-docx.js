@@ -344,7 +344,7 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then(buf => {
-  const out = path.join(__dirname, 'JP_Bothma_CV.docx');
+  const out = path.join(__dirname, 'JP Bothma CV.docx');
   fs.writeFileSync(out, buf);
   console.log('Wrote', out, '(' + buf.length + ' bytes)');
 });
