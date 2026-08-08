@@ -348,7 +348,8 @@ export default function RootLayout({
       className={`${dmSerifDisplay.variable} ${dmSans.variable} ${shipporiMincho.variable} ${zenKaku.variable}`}
       suppressHydrationWarning
     >
-      <body className="bg-bg text-[#f0f0f5] font-sans antialiased">
+      {/* suppressHydrationWarning: the localhost ?jump= screenshot helper mutates body style pre-hydration */}
+      <body className="bg-bg text-[#f0f0f5] font-sans antialiased" suppressHydrationWarning>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         {children}
         <script
