@@ -6,6 +6,34 @@
   :root {
     --font-display: 'DM Serif Display';
     --font-body: 'DM Sans';
+
+    /* ── Zen palette · day (washi paper) ─────────────────────────────── */
+    --paper: #f4efe4;
+    --paper-deep: #eae3d2;
+    --ink: #211f1b;
+    --ink-soft: #4c473e;
+    --ink-faint: #8b8577;
+    --vermilion: #c1392b;
+    --vermilion-glow: rgba(193, 57, 43, 0.16);
+    --line: rgba(33, 31, 27, 0.16);
+    --mist: rgba(244, 239, 228, 0.85);
+    --pond: #d8d2c0;
+    --grain-opacity: 0.5;
+  }
+
+  :root[data-theme='night'] {
+    /* ── Zen palette · night (moonlit indigo) ────────────────────────── */
+    --paper: #11131c;
+    --paper-deep: #0b0d14;
+    --ink: #e6e1d3;
+    --ink-soft: #b3ada0;
+    --ink-faint: #6f6a5e;
+    --vermilion: #e05545;
+    --vermilion-glow: rgba(224, 85, 69, 0.22);
+    --line: rgba(230, 225, 211, 0.18);
+    --mist: rgba(17, 19, 28, 0.85);
+    --pond: #1a1e2b;
+    --grain-opacity: 0.25;
   }
 
   html {
@@ -83,6 +111,192 @@
     width: 100%;
     height: 2px;
     background: #4ecdc4;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ZEN SCROLL — the ink-wash homepage
+   Scoped under .zen-root so the CV page keeps its own world.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.zen-root {
+  position: relative;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-zen-sans), system-ui, sans-serif;
+  transition: background-color 600ms ease, color 600ms ease;
+}
+
+/* Washi paper grain — SVG turbulence, no image request */
+.zen-root::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.45  0 0 0 0 0.42  0 0 0 0 0.36  0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23p)'/%3E%3C/svg%3E");
+}
+
+.zen-root > * {
+  position: relative;
+  z-index: 1;
+}
+
+.zen-serif {
+  font-family: var(--font-zen-serif), Georgia, serif;
+}
+
+/* ── Ink stroke drawing ────────────────────────────────────────────────────
+   Every animated path carries pathLength={1}; dashoffset runs 1 → 0. */
+.ink-scene .draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 1.8s cubic-bezier(0.55, 0, 0.3, 1);
+  transition-delay: var(--delay, 0s);
+}
+
+.ink-scene.in-view .draw {
+  stroke-dashoffset: 0;
+}
+
+.ink-scene .fill-in {
+  opacity: 0;
+  transition: opacity 1.2s ease;
+  transition-delay: var(--delay, 0.4s);
+}
+
+.ink-scene.in-view .fill-in {
+  opacity: 1;
+}
+
+/* ── Drifting mist bands ─────────────────────────────────────────────────── */
+.mist-band {
+  position: absolute;
+  pointer-events: none;
+  /* soft edges via layered gradients — no filter: blur, which black-boxes
+     compositor tiles in software rasterization (screenshots, older GPUs) */
+  background:
+    radial-gradient(ellipse 60% 100% at 50% 50%, var(--mist) 0%, transparent 70%),
+    linear-gradient(90deg, transparent, var(--mist) 35%, var(--mist) 65%, transparent);
+  border-radius: 999px;
+  animation: mist-drift var(--mist-dur, 60s) linear infinite alternate;
+  opacity: 0.55;
+}
+
+@keyframes mist-drift {
+  from { transform: translateX(-6%); }
+  to   { transform: translateX(6%); }
+}
+
+/* ── Lanterns ─────────────────────────────────────────────────────────────── */
+.lantern {
+  transform-origin: 50% 0%;
+  transition: transform 300ms ease;
+}
+
+.lantern:hover,
+.lantern:focus-visible {
+  animation: lantern-sway 2.4s ease-in-out infinite;
+}
+
+@keyframes lantern-sway {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(1.8deg); }
+  75% { transform: rotate(-1.8deg); }
+}
+
+.lantern-glow {
+  transition: opacity 500ms ease;
+}
+
+.flame-flicker {
+  animation: flicker 2.8s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 0.85; transform: scaleY(1); }
+  30% { opacity: 1; transform: scaleY(1.08); }
+  55% { opacity: 0.7; transform: scaleY(0.94); }
+  80% { opacity: 0.95; transform: scaleY(1.04); }
+}
+
+/* ── Pond ripples & koi ───────────────────────────────────────────────────── */
+.ripple {
+  transform-origin: center;
+  animation: ripple-out 7s ease-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes ripple-out {
+  0%   { transform: scale(0.35); opacity: 0; }
+  12%  { opacity: 0.55; }
+  100% { transform: scale(1.25); opacity: 0; }
+}
+
+.koi-orbit {
+  animation: koi-swim var(--koi-dur, 34s) linear infinite;
+  transform-origin: center;
+}
+
+@keyframes koi-swim {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Theme sweep (ink wash on toggle) ────────────────────────────────────── */
+.theme-sweep {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  background: var(--ink);
+  opacity: 0;
+}
+
+.theme-sweep.sweeping {
+  animation: ink-sweep 700ms ease-in-out forwards;
+}
+
+@keyframes ink-sweep {
+  0%   { opacity: 0; }
+  45%  { opacity: 0.92; }
+  100% { opacity: 0; }
+}
+
+/* ── Zen focus & links ────────────────────────────────────────────────────── */
+.zen-root a:focus-visible,
+.zen-root button:focus-visible {
+  outline: 2px solid var(--vermilion);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.zen-link {
+  color: var(--vermilion);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 250ms ease;
+}
+
+.zen-link:hover {
+  border-bottom-color: var(--vermilion);
+}
+
+/* ── Reduced motion: everything arrives pre-painted ──────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .zen-root * {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .ink-scene .draw {
+    stroke-dashoffset: 0;
+  }
+
+  .ink-scene .fill-in {
+    opacity: 1;
   }
 }
 

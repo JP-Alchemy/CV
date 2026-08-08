@@ -1,25 +1,23 @@
-import Nav from '@/components/Nav'
-import Hero from '@/components/Hero'
-import About from '@/components/About'
-import Services from '@/components/Services'
-import Building from '@/components/Building'
-import Credibility from '@/components/Credibility'
-import Contact from '@/components/Contact'
-import Footer from '@/components/Footer'
+import ZenNav from '@/components/zen/ZenNav'
+import Summit from '@/components/zen/Summit'
+import Path from '@/components/zen/Path'
+import Lanterns from '@/components/zen/Lanterns'
+import Pond from '@/components/zen/Pond'
+import TeaHouse from '@/components/zen/TeaHouse'
+import Gate from '@/components/zen/Gate'
 
 export default function Page() {
   return (
-    <>
-      <Nav />
+    <div className="zen-root min-h-screen">
+      <ZenNav />
       <main>
-        <Hero />
-        <About />
-        <Services />
-        <Building />
-        <Credibility />
-        <Contact />
+        <Summit />
+        <Path />
+        <Lanterns />
+        <Pond />
+        <TeaHouse />
+        <Gate />
       </main>
-      <Footer />
-    </>
+    </div>
   )
 }

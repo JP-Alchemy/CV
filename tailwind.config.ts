@@ -23,10 +23,29 @@ const config: Config = {
           subtle: 'rgba(255, 255, 255, 0.12)',
           accent: 'rgba(78, 205, 196, 0.35)',
         },
+        // Zen scroll palette — values live in CSS custom properties so the
+        // day/night toggle swaps them without a Tailwind rebuild
+        paper: {
+          DEFAULT: 'var(--paper)',
+          deep: 'var(--paper-deep)',
+        },
+        ink: {
+          DEFAULT: 'var(--ink)',
+          soft: 'var(--ink-soft)',
+          faint: 'var(--ink-faint)',
+        },
+        vermilion: {
+          DEFAULT: 'var(--vermilion)',
+          glow: 'var(--vermilion-glow)',
+        },
+        inkline: 'var(--line)',
+        pond: 'var(--pond)',
       },
       fontFamily: {
         serif: ['var(--font-display)', 'Georgia', 'serif'],
         sans: ['var(--font-body)', 'system-ui', 'sans-serif'],
+        zen: ['var(--font-zen-serif)', 'Georgia', 'serif'],
+        zensans: ['var(--font-zen-sans)', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         '7xl': ['4.5rem', { lineHeight: '1.05' }],

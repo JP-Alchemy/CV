@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { DM_Serif_Display, DM_Sans } from 'next/font/google'
+import { DM_Serif_Display, DM_Sans, Shippori_Mincho, Zen_Kaku_Gothic_New } from 'next/font/google'
 import './globals.css'
 
 const dmSerifDisplay = DM_Serif_Display({
@@ -16,6 +16,24 @@ const dmSans = DM_Sans({
   weight: ['300', '400', '500', '600'],
   display: 'swap',
 })
+
+// Zen scroll fonts — brushed serif for calligraphy, quiet gothic for body
+const shipporiMincho = Shippori_Mincho({
+  variable: '--font-zen-serif',
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  display: 'swap',
+})
+
+const zenKaku = Zen_Kaku_Gothic_New({
+  variable: '--font-zen-sans',
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '700'],
+  display: 'swap',
+})
+
+// Sets data-theme before first paint: saved preference wins, else system
+const THEME_INIT = `(function(){try{var q=new URLSearchParams(location.search).get('theme');var t=q==='day'||q==='night'?q:localStorage.getItem('zen-theme');if(t!=='day'&&t!=='night'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'night':'day'}document.documentElement.setAttribute('data-theme',t);var j=parseInt(new URLSearchParams(location.search).get('jump'));if(!isNaN(j)){addEventListener('load',function(){document.body.style.transform='translateY(-'+j+'px)'})}}catch(e){document.documentElement.setAttribute('data-theme','day')}})();`
 
 // ── Personalise these ──────────────────────────────────────────────────────────
 const SITE_NAME = 'JP Bothma'
@@ -325,9 +343,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${dmSerifDisplay.variable} ${dmSans.variable}`}
+      className={`${dmSerifDisplay.variable} ${dmSans.variable} ${shipporiMincho.variable} ${zenKaku.variable}`}
+      suppressHydrationWarning
     >
       <body className="bg-bg text-[#f0f0f5] font-sans antialiased">
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         {children}
         <script
           type="application/ld+json"
