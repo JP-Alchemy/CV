@@ -5,16 +5,30 @@ import { useEffect, useRef, useState } from 'react'
 type Theme = 'day' | 'night'
 
 /**
- * The sun/moon hanging in the summit sky. Toggling sweeps an ink wash
- * across the page while the world changes underneath it.
+ * The sun/moon hanging in the sky. Toggling sweeps an ink wash across
+ * the page while the world changes underneath it. The veil's color is
+ * frozen before the flip so the wash itself never flickers.
  */
-export default function ThemeToggle({ className = '' }: { className?: string }) {
+export default function ThemeToggle({
+  className = '',
+  size = 54,
+}: {
+  className?: string
+  size?: number
+}) {
   const [theme, setTheme] = useState<Theme>('day')
   const sweepRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const current = document.documentElement.getAttribute('data-theme')
-    if (current === 'night' || current === 'day') setTheme(current)
+    const read = () => {
+      const current = document.documentElement.getAttribute('data-theme')
+      if (current === 'night' || current === 'day') setTheme(current)
+    }
+    read()
+    // stay in sync when another toggle instance flips the world
+    const observer = new MutationObserver(read)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => observer.disconnect()
   }, [])
 
   function toggle() {
@@ -33,8 +47,11 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
     }
 
     if (sweep && !reduced) {
+      // freeze the veil's ink before the world changes beneath it
+      sweep.style.background = getComputedStyle(document.documentElement)
+        .getPropertyValue('--ink')
+        .trim()
       sweep.classList.remove('sweeping')
-      // restart the animation, flip the world at its darkest moment
       void sweep.offsetWidth
       sweep.classList.add('sweeping')
       setTimeout(apply, 320)
@@ -56,17 +73,14 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
         title={isDay ? 'Let night fall' : 'Bring back the day'}
         className={`group ${className}`}
       >
-        <svg width="54" height="54" viewBox="0 0 54 54" aria-hidden="true">
+        <svg width={size} height={size} viewBox="0 0 54 54" aria-hidden="true">
           {isDay ? (
-            // the sun — a single brushed circle
+            // the sun — a full hinomaru disc
             <circle
-              cx="27" cy="27" r="14"
-              fill="none"
-              stroke="var(--vermilion)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeDasharray="80 8"
-              className="transition-transform duration-500 group-hover:rotate-90"
+              cx="27" cy="27" r="13"
+              fill="var(--vermilion)"
+              opacity="0.9"
+              className="transition-transform duration-500 group-hover:scale-110"
               style={{ transformOrigin: 'center' }}
             />
           ) : (

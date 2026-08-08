@@ -12,11 +12,12 @@
     --paper-deep: #eae3d2;
     --ink: #211f1b;
     --ink-soft: #4c473e;
-    --ink-faint: #8b8577;
+    --ink-faint: #6d675a;
     --vermilion: #c1392b;
     --vermilion-glow: rgba(193, 57, 43, 0.16);
+    --lantern-glow: rgba(216, 146, 60, 0.24);
     --line: rgba(33, 31, 27, 0.16);
-    --mist: rgba(244, 239, 228, 0.85);
+    --mist: rgba(216, 208, 188, 0.8);
     --pond: #d8d2c0;
     --grain-opacity: 0.5;
   }
@@ -27,11 +28,12 @@
     --paper-deep: #0b0d14;
     --ink: #e6e1d3;
     --ink-soft: #b3ada0;
-    --ink-faint: #6f6a5e;
+    --ink-faint: #8a8577;
     --vermilion: #e05545;
     --vermilion-glow: rgba(224, 85, 69, 0.22);
+    --lantern-glow: rgba(226, 112, 72, 0.42);
     --line: rgba(230, 225, 211, 0.18);
-    --mist: rgba(17, 19, 28, 0.85);
+    --mist: rgba(38, 44, 64, 0.8);
     --pond: #1a1e2b;
     --grain-opacity: 0.25;
   }
@@ -147,26 +149,35 @@
   font-family: var(--font-zen-serif), Georgia, serif;
 }
 
+/* every scene illustration breathes through the ink-bleed filter */
+.ink-scene > svg,
+.ink-scene div > svg,
+.ink-scene a > svg {
+  filter: url(#ink-bleed);
+}
+
 /* ── Ink stroke drawing ────────────────────────────────────────────────────
-   Every animated path carries pathLength={1}; dashoffset runs 1 → 0. */
-.ink-scene .draw {
+   Every animated path carries pathLength={1}; dashoffset runs 1 → 0.
+   Hidden initial states are gated on html.js so a JS-less visit (or a
+   crawler) sees the scroll fully painted. */
+.js .ink-scene .draw {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
   transition: stroke-dashoffset 1.8s cubic-bezier(0.55, 0, 0.3, 1);
   transition-delay: var(--delay, 0s);
 }
 
-.ink-scene.in-view .draw {
+.js .ink-scene.in-view .draw {
   stroke-dashoffset: 0;
 }
 
-.ink-scene .fill-in {
+.js .ink-scene .fill-in {
   opacity: 0;
-  transition: opacity 1.2s ease;
-  transition-delay: var(--delay, 0.4s);
+  transition: opacity 0.6s ease;
+  transition-delay: var(--delay, 0.2s);
 }
 
-.ink-scene.in-view .fill-in {
+.js .ink-scene.in-view .fill-in {
   opacity: 1;
 }
 
@@ -180,6 +191,9 @@
     radial-gradient(ellipse 60% 100% at 50% 50%, var(--mist) 0%, transparent 70%),
     linear-gradient(90deg, transparent, var(--mist) 35%, var(--mist) 65%, transparent);
   border-radius: 999px;
+  /* feather top and bottom so the band never shows a hard seam */
+  mask-image: linear-gradient(180deg, transparent, #000 35%, #000 65%, transparent);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 35%, #000 65%, transparent);
   animation: mist-drift var(--mist-dur, 60s) linear infinite alternate;
   opacity: 0.55;
 }
@@ -195,8 +209,8 @@
   transition: transform 300ms ease;
 }
 
-.lantern:hover,
-.lantern:focus-visible {
+.lantern-card:hover .lantern,
+.lantern-card:focus-visible .lantern {
   animation: lantern-sway 2.4s ease-in-out infinite;
 }
 
@@ -267,10 +281,63 @@
 
 /* ── Zen focus & links ────────────────────────────────────────────────────── */
 .zen-root a:focus-visible,
-.zen-root button:focus-visible {
+.zen-root button:focus-visible,
+.zen-root input:focus-visible,
+.zen-root select:focus-visible,
+.zen-root textarea:focus-visible {
   outline: 2px solid var(--vermilion);
   outline-offset: 3px;
   border-radius: 2px;
+}
+
+.zen-root input:focus-visible,
+.zen-root select:focus-visible,
+.zen-root textarea:focus-visible {
+  border-color: var(--vermilion) !important;
+  outline-offset: 1px;
+}
+
+.zen-root ::placeholder {
+  color: var(--ink-faint);
+  opacity: 1;
+}
+
+.zen-root ::selection {
+  background: var(--vermilion-glow);
+  color: var(--ink);
+}
+
+/* the paper continues beyond the scroll — overscroll, scrollbar, all of it */
+body:has(.zen-root) {
+  background-color: var(--paper);
+}
+
+body:has(.zen-root) ::-webkit-scrollbar-track {
+  background: var(--paper);
+}
+
+body:has(.zen-root) ::-webkit-scrollbar-thumb {
+  background: var(--ink-faint);
+}
+
+/* ── The hanko stamp, pressed on form success ────────────────────────────── */
+.stamp-press {
+  animation: stamp-press 480ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+@keyframes stamp-press {
+  0% { transform: scale(1.7) rotate(-9deg); opacity: 0; }
+  55% { transform: scale(0.94) rotate(-2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-3deg); opacity: 1; }
+}
+
+.stamp-bloom {
+  animation: stamp-bloom 900ms ease-out 200ms both;
+}
+
+@keyframes stamp-bloom {
+  0% { box-shadow: 0 0 0 0 var(--vermilion-glow); }
+  100% { box-shadow: 0 0 0 26px rgba(0, 0, 0, 0); }
 }
 
 .zen-link {
@@ -291,12 +358,19 @@
     transition-duration: 0.01ms !important;
   }
 
+  .js .ink-scene .draw,
   .ink-scene .draw {
     stroke-dashoffset: 0;
   }
 
+  .js .ink-scene .fill-in,
   .ink-scene .fill-in {
     opacity: 1;
+  }
+
+  /* static ripples would stack into one heavy ring — let the water rest */
+  .ripple {
+    display: none;
   }
 }
 

@@ -27,6 +27,20 @@ export default function Summit() {
         aria-hidden="true"
         className="absolute bottom-0 left-0 w-full h-[46vh] min-h-[280px]"
       >
+        <defs>
+          {/* a broad grey wash behind the ridges — sumi before sen */}
+          <radialGradient id="summit-wash" cx="50%" cy="72%" r="65%">
+            <stop offset="0%" stopColor="var(--ink)" stopOpacity="0.10" />
+            <stop offset="55%" stopColor="var(--ink)" stopOpacity="0.05" />
+            <stop offset="100%" stopColor="var(--ink)" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <ellipse
+          cx="600" cy="330" rx="560" ry="200"
+          fill="url(#summit-wash)"
+          className="fill-in"
+          style={{ '--delay': '0.3s' } as React.CSSProperties}
+        />
         {/* far ridge */}
         <path
           d="M0,300 C150,215 260,185 380,240 C480,288 560,268 660,220 C760,172 845,190 925,230 C1010,272 1100,258 1200,215"
@@ -102,18 +116,18 @@ export default function Summit() {
             <h1
               id="summit-name"
               className="zen-serif text-6xl sm:text-7xl md:text-8xl leading-none tracking-tight fill-in"
-              style={{ color: 'var(--ink)', '--delay': '0.5s' } as React.CSSProperties}
+              style={{ color: 'var(--ink)', '--delay': '0.35s' } as React.CSSProperties}
             >
               JP Bothma
             </h1>
-            <div className="fill-in mt-2" style={{ '--delay': '1.1s' } as React.CSSProperties}>
+            <div className="fill-in mt-2" style={{ '--delay': '0.6s' } as React.CSSProperties}>
               <Seal size={40} />
             </div>
           </div>
 
           <p
             className="fill-in mt-7 text-lg md:text-xl max-w-md leading-relaxed font-light"
-            style={{ color: 'var(--ink-soft)', '--delay': '0.9s' } as React.CSSProperties}
+            style={{ color: 'var(--ink-soft)', '--delay': '0.5s' } as React.CSSProperties}
           >
             Creative technologist. Thoughtful software for work that matters —
             interactive worlds, legible data, sustainable systems.
@@ -129,7 +143,7 @@ export default function Summit() {
       >
         <span
           className="fill-in text-[10px] tracking-[0.3em] uppercase"
-          style={{ color: 'var(--ink-faint)', '--delay': '1.8s' } as React.CSSProperties}
+          style={{ color: 'var(--ink-faint)', '--delay': '1.1s' } as React.CSSProperties}
         >
           descend
         </span>
@@ -142,7 +156,7 @@ export default function Summit() {
             stroke="var(--ink-soft)"
             strokeWidth="1.8"
             strokeLinecap="round"
-            style={{ '--delay': '2s' } as React.CSSProperties}
+            style={{ '--delay': '1.3s' } as React.CSSProperties}
           />
           <path
             d="M2,35 C4,38 6,40 7,42 C8,40 10,38 12,35"
@@ -152,7 +166,7 @@ export default function Summit() {
             stroke="var(--ink-soft)"
             strokeWidth="1.8"
             strokeLinecap="round"
-            style={{ '--delay': '2.3s' } as React.CSSProperties}
+            style={{ '--delay': '1.5s' } as React.CSSProperties}
           />
         </svg>
       </a>

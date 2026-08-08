@@ -15,10 +15,12 @@ import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const MAX_RIPPLES = 24
-const POND_RX = 4.2 // world half-width of the water ellipse
-const POND_RZ = 2.7 // world half-depth
-const KOI_RX = 3.3 // swimming bounds
-const KOI_RZ = 2.0
+// sized to sit inside the frustum (half-width ≈4.25 at the water plane)
+// with the fallback SVG's 2:1 silhouette
+const POND_RX = 4.05 // world half-width of the water ellipse
+const POND_RZ = 2.0 // world half-depth
+const KOI_RX = 3.15 // swimming bounds
+const KOI_RZ = 1.5
 
 // ─── Theme colors from CSS custom properties ───────────────────────────────
 interface ZenColors {
@@ -108,12 +110,13 @@ const WATER_FRAG = /* glsl */ `
   uniform vec3 uInk;
   uniform vec3 uInkSoft;
   uniform vec3 uPaper;
-  uniform float uNight;
   uniform vec4 uRipples[${MAX_RIPPLES}];
   varying vec3 vWorld;
   varying float vEdge;
 
   void main() {
+    // night is when the paper itself is dark — no separate flag to drift
+    float night = 1.0 - step(0.5, dot(uPaper, vec3(0.299, 0.587, 0.114)));
     float ink = 0.0;
 
     // expanding ripple rings
@@ -137,17 +140,24 @@ const WATER_FRAG = /* glsl */ `
     ink += smoothstep(0.86, 1.0, s) * 0.05;
 
     // moon's reflection at night — a pale, trembling coin of light
-    vec2 moonAt = vec2(2.2, -1.05);
+    vec2 moonAt = vec2(1.9, -0.85);
     float md = distance(vWorld.xz, moonAt);
-    float wobble = sin(uTime * 0.9 + vWorld.x * 3.0) * 0.04;
-    float moon = (1.0 - smoothstep(0.1, 0.55 + wobble, md)) * uNight * 0.5;
+    float wobble = sin(uTime * 0.9 + vWorld.x * 3.0) * 0.05;
+    float moon = (1.0 - smoothstep(0.05, 0.95 + wobble, md)) * night * 0.55;
 
     // brushed rim where water meets bank — a thin, confident stroke
     float rim = smoothstep(0.955, 0.985, vEdge) * (1.0 - smoothstep(0.988, 1.0, vEdge));
 
     vec3 col = uPond;
+    // tonal wash — by day the middle breathes toward the paper; by night
+    // a faint sheen of pale ink, so the wash always lightens the water
+    col = mix(col, uPaper, (1.0 - vEdge) * 0.16 * (1.0 - night));
+    col = mix(col, uInk, (1.0 - vEdge) * 0.05 * night);
+    float tone = sin(vWorld.x * 0.55 + 1.3) * sin(vWorld.z * 0.8 - 0.6);
+    col = mix(col, uInkSoft, (tone * 0.5 + 0.5) * 0.06);
     col = mix(col, uInk, clamp(ink, 0.0, 0.8) * 0.55);
-    col = mix(col, uPaper, moon);
+    // uInk is pale at night, so the moon actually brightens the water
+    col = mix(col, uInk, moon);
     col = mix(col, uInkSoft, rim * 0.8);
 
     gl_FragColor = vec4(col, 1.0);
@@ -173,22 +183,23 @@ function Water({
       uInk: { value: new THREE.Color() },
       uInkSoft: { value: new THREE.Color() },
       uPaper: { value: new THREE.Color() },
-      uNight: { value: 0 },
       uRipples: { value: pool.data },
     }),
     [pool]
   )
 
-  useEffect(() => {
-    uniforms.uPond.value.copy(colors.pond)
-    uniforms.uInk.value.copy(colors.ink)
-    uniforms.uInkSoft.value.copy(colors.inkSoft)
-    uniforms.uPaper.value.copy(colors.paper)
-    uniforms.uNight.value = colors.night
-  }, [colors, uniforms])
+  // synced per-frame from a ref — immune to effect-ordering and stale
+  // closures across the Canvas bridge
+  const colorsRef = useRef(colors)
+  colorsRef.current = colors
 
   useFrame(({ clock }) => {
+    const c = colorsRef.current
     uniforms.uTime.value = clock.elapsedTime
+    uniforms.uPond.value.copy(c.pond)
+    uniforms.uInk.value.copy(c.ink)
+    uniforms.uInkSoft.value.copy(c.inkSoft)
+    uniforms.uPaper.value.copy(c.paper)
   })
 
   function pointOf(e: ThreeEvent<PointerEvent>) {
@@ -297,7 +308,7 @@ interface KoiState {
   x: number
   z: number
   heading: number
-  speed: number
+  baseSpeed: number
   phase: number
   lastWake: number
 }
@@ -307,11 +318,15 @@ function Koi({
   seed,
   pool,
   attract,
+  school,
+  index,
 }: {
   colorCss: string
   seed: number
   pool: RipplePool
   attract: React.MutableRefObject<{ x: number; z: number; until: number } | null>
+  school: React.MutableRefObject<KoiState[]>
+  index: number
 }) {
   const group = useRef<THREE.Group>(null)
   const tailPivot = useRef<THREE.Group>(null)
@@ -319,10 +334,18 @@ function Koi({
     x: Math.cos(seed * 2.4) * KOI_RX * 0.6,
     z: Math.sin(seed * 3.1) * KOI_RZ * 0.6,
     heading: seed * 2.4,
-    speed: 0.5 + (seed % 1) * 0.18,
+    baseSpeed: 0.42 + (seed % 1) * 0.16,
     phase: seed * 7.3,
     lastWake: 0,
   })
+
+  useEffect(() => {
+    const arr = school.current
+    arr[index] = state.current
+    return () => {
+      delete arr[index]
+    }
+  }, [school, index])
 
   const bodyTex = useMemo(() => paintKoiBody(colorCss), [colorCss])
   const tailTex = useMemo(() => paintKoiTail(colorCss), [colorCss])
@@ -336,17 +359,43 @@ function Koi({
     const t = clock.elapsedTime
     const dt = Math.min(rawDt, 1 / 30) // no teleporting after tab sleep
 
+    // burst-and-glide: koi surge, then coast
+    const surge = Math.max(0, Math.sin(t * 0.5 + s.phase)) ** 2
+    let speed = s.baseSpeed * (0.7 + 0.6 * surge)
+
     // wander — slow sinuous drift, unique per fish
     let turn = Math.sin(t * 0.37 + s.phase) * 0.45 + Math.sin(t * 0.13 + s.phase * 2.7) * 0.25
 
-    // gather toward a held press
+    // gather toward a held press — each fish notices in its own time
     const target = attract.current
-    if (target && t < target.until) {
-      const desired = Math.atan2(target.z - s.z, target.x - s.x)
+    if (target && t > target.until - 3 + index * 0.22 && t < target.until) {
+      const dx = target.x - s.x
+      const dz = target.z - s.z
+      const dist = Math.hypot(dx, dz)
+      const desired = Math.atan2(dz, dx)
       let diff = desired - s.heading
       while (diff > Math.PI) diff -= Math.PI * 2
       while (diff < -Math.PI) diff += Math.PI * 2
-      turn += THREE.MathUtils.clamp(diff, -1, 1) * 2.6
+      turn += THREE.MathUtils.clamp(diff, -1, 1) * 2.4
+      // arrival: slow into the gathering rather than orbiting it
+      if (dist < 0.9) speed *= THREE.MathUtils.clamp(dist / 0.9, 0.25, 1)
+    }
+
+    // separation — no two koi share the same water
+    for (let i = 0; i < school.current.length; i++) {
+      if (i === index) continue
+      const other = school.current[i]
+      if (!other) continue
+      const dx = s.x - other.x
+      const dz = s.z - other.z
+      const d = Math.hypot(dx, dz)
+      if (d > 0.001 && d < 0.55) {
+        const away = Math.atan2(dz, dx)
+        let diff = away - s.heading
+        while (diff > Math.PI) diff -= Math.PI * 2
+        while (diff < -Math.PI) diff += Math.PI * 2
+        turn += THREE.MathUtils.clamp(diff, -1, 1) * (1 - d / 0.55) * 2.2
+      }
     }
 
     // stay inside the pond — steer home as the bank nears
@@ -360,24 +409,31 @@ function Koi({
     }
 
     s.heading += turn * dt
-    s.x += Math.cos(s.heading) * s.speed * dt
-    s.z += Math.sin(s.heading) * s.speed * dt
+    s.x += Math.cos(s.heading) * speed * dt
+    s.z += Math.sin(s.heading) * speed * dt
 
-    // a quiet wake every second or so
+    // a quiet wake, shed behind the tail
     if (t - s.lastWake > 1.15 + (s.phase % 0.7)) {
       s.lastWake = t
-      pool.add(s.x, s.z, 0.07, t)
+      pool.add(
+        s.x - Math.cos(s.heading) * 0.5,
+        s.z - Math.sin(s.heading) * 0.5,
+        0.07,
+        t
+      )
     }
 
+    const speedNorm = speed / (s.baseSpeed * 1.3)
     const g = group.current
     if (g) {
       g.position.set(s.x, 0.02, s.z)
       // swim wiggle laid over the heading
-      g.rotation.y = -s.heading + Math.sin(t * 6 + s.phase) * 0.07
+      g.rotation.y = -s.heading + Math.sin(t * (4 + 4 * speedNorm) + s.phase) * 0.07
     }
     const tail = tailPivot.current
     if (tail) {
-      tail.rotation.y = Math.sin(t * 6 + s.phase + 2.1) * 0.45
+      // the tail works harder when the fish does
+      tail.rotation.y = Math.sin(t * (4 + 5 * speedNorm) + s.phase + 2.1) * (0.28 + 0.28 * speedNorm)
     }
   })
 
@@ -403,6 +459,7 @@ function Koi({
 function Scene({ colors }: { colors: ZenColors }) {
   const pool = useMemo(makeRipplePool, [])
   const attract = useRef<{ x: number; z: number; until: number } | null>(null)
+  const school = useRef<KoiState[]>([])
   const clockRef = useRef<THREE.Clock | null>(null)
 
   useFrame(({ clock }) => {
@@ -426,22 +483,28 @@ function Scene({ colors }: { colors: ZenColors }) {
           }
         }}
       />
-      <Koi colorCss={vermCss} seed={1} pool={pool} attract={attract} />
-      <Koi colorCss={inkCss} seed={2} pool={pool} attract={attract} />
-      <Koi colorCss={inkSoftCss} seed={3} pool={pool} attract={attract} />
-      <Koi colorCss={vermCss} seed={4} pool={pool} attract={attract} />
+      <Koi colorCss={vermCss} seed={1} pool={pool} attract={attract} school={school} index={0} />
+      <Koi colorCss={inkCss} seed={2} pool={pool} attract={attract} school={school} index={1} />
+      <Koi colorCss={inkSoftCss} seed={3} pool={pool} attract={attract} school={school} index={2} />
+      <Koi colorCss={vermCss} seed={4} pool={pool} attract={attract} school={school} index={3} />
     </>
   )
 }
 
 export default function PondScene({ paused }: { paused: boolean }) {
   const colors = useZenColors()
+  // headless screenshot runs (?jump=, localhost only) need the buffer
+  // preserved; real visitors never pay for it
+  const preserve =
+    typeof location !== 'undefined' &&
+    location.hostname === 'localhost' &&
+    location.search.includes('jump')
 
   return (
     <Canvas
       frameloop={paused ? 'never' : 'always'}
       dpr={[1, 1.75]}
-      gl={{ antialias: true, alpha: true, powerPreference: 'low-power', preserveDrawingBuffer: true }}
+      gl={{ antialias: true, alpha: true, powerPreference: 'low-power', preserveDrawingBuffer: preserve }}
       camera={{ position: [0, 11.2, 1.6], fov: 30 }}
       onCreated={({ gl, camera }) => {
         gl.setClearColor(0x000000, 0)

@@ -21,6 +21,19 @@ export default function Path() {
           aria-hidden="true"
           className="hidden md:block md:col-span-2 w-full max-w-[260px] mx-auto"
         >
+          <defs>
+            <radialGradient id="path-wash" cx="40%" cy="25%" r="70%">
+              <stop offset="0%" stopColor="var(--ink)" stopOpacity="0.08" />
+              <stop offset="60%" stopColor="var(--ink)" stopOpacity="0.03" />
+              <stop offset="100%" stopColor="var(--ink)" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+          <ellipse
+            cx="100" cy="150" rx="130" ry="180"
+            fill="url(#path-wash)"
+            className="fill-in"
+            style={{ '--delay': '0.4s' } as React.CSSProperties}
+          />
           {/* the path itself */}
           <path
             d="M150,10 C110,90 190,150 150,230 C110,310 60,340 95,430 C115,485 90,530 70,552"
@@ -144,7 +157,7 @@ export default function Path() {
               style={{
                 color: 'var(--ink)',
                 borderColor: 'var(--vermilion)',
-                '--delay': '1.05s',
+                '--delay': '0.55s',
               } as React.CSSProperties}
             >
               It&rsquo;s not about the best technology. It&rsquo;s about the most

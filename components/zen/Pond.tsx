@@ -21,13 +21,6 @@ export default function Pond() {
         {/* The pond */}
         <div className="relative">
           <PondWater />
-          <p
-            className="mt-3 text-center text-[11px] italic select-none"
-            style={{ color: 'var(--ink-faint)' }}
-            aria-hidden="true"
-          >
-            stir the water · press to call the koi
-          </p>
         </div>
 
         {/* What I'm up to */}
@@ -51,20 +44,20 @@ export default function Pond() {
               <li
                 key={`${note.date}-${i}`}
                 className="fill-in"
-                style={{
-                  opacity: 1 - i * 0.22,
-                  '--delay': `${0.35 + i * 0.2}s`,
-                } as React.CSSProperties}
+                style={{ '--delay': `${0.3 + i * 0.15}s` } as React.CSSProperties}
               >
-                <span
-                  className="block text-[11px] tracking-[0.2em] uppercase mb-1"
-                  style={{ color: 'var(--vermilion)' }}
-                >
-                  {note.date}
-                </span>
-                <p className="text-base md:text-lg font-light leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
-                  {note.text}
-                </p>
+                {/* age fades the note, floored so it stays readable */}
+                <div style={{ opacity: Math.max(0.78, 1 - i * 0.11) }}>
+                  <span
+                    className="block text-[11px] tracking-[0.2em] uppercase mb-1"
+                    style={{ color: 'var(--vermilion)' }}
+                  >
+                    {note.date}
+                  </span>
+                  <p className="text-base md:text-lg font-light leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                    {note.text}
+                  </p>
+                </div>
               </li>
             ))}
           </ol>

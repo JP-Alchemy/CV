@@ -45,28 +45,40 @@ export default function PondWater() {
   }, [near])
 
   return (
-    <div ref={holder} className="relative w-full aspect-[420/300]">
-      {mode === 'svg' ? (
-        <PondSvg />
-      ) : (
-        <Suspense fallback={<PondSvg />}>
-          <PondScene paused={!near} />
-          {/* reeds at the near bank, brushed over the water */}
-          <svg
-            viewBox="0 0 60 90"
-            aria-hidden="true"
-            className="absolute bottom-[6%] left-[8%] w-[9%] pointer-events-none"
-          >
-            <path
-              d="M22,86 C26,58 22,36 30,10 M34,88 C36,62 32,44 40,20 M12,82 C14,62 10,48 16,30"
-              fill="none"
-              stroke="var(--ink-soft)"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-            />
-          </svg>
-        </Suspense>
+    <>
+      <div ref={holder} className="relative w-full aspect-[420/300]">
+        {mode === 'svg' ? (
+          <PondSvg />
+        ) : (
+          <Suspense fallback={<PondSvg />}>
+            <PondScene paused={!near} />
+            {/* reeds at the near bank, brushed over the water's rim */}
+            <svg
+              viewBox="0 0 60 90"
+              aria-hidden="true"
+              className="absolute bottom-[16%] left-[13%] w-[8%] pointer-events-none"
+            >
+              <path
+                d="M22,86 C26,58 22,36 30,10 M34,88 C36,62 32,44 40,20 M12,82 C14,62 10,48 16,30"
+                fill="none"
+                stroke="var(--ink-soft)"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+              />
+            </svg>
+          </Suspense>
+        )}
+      </div>
+      {/* the invitation only appears when the water can actually answer */}
+      {mode === 'canvas' && (
+        <p
+          className="mt-3 text-center text-[11px] italic select-none"
+          style={{ color: 'var(--ink-faint)' }}
+          aria-hidden="true"
+        >
+          stir the water · press to call the koi
+        </p>
       )}
-    </div>
+    </>
   )
 }

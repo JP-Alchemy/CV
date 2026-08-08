@@ -8,6 +8,7 @@ const dmSerifDisplay = DM_Serif_Display({
   weight: '400',
   style: ['normal', 'italic'],
   display: 'swap',
+  preload: false, // only the CV page uses these
 })
 
 const dmSans = DM_Sans({
@@ -15,6 +16,7 @@ const dmSans = DM_Sans({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600'],
   display: 'swap',
+  preload: false, // only the CV page uses these
 })
 
 // Zen scroll fonts — brushed serif for calligraphy, quiet gothic for body
@@ -33,7 +35,7 @@ const zenKaku = Zen_Kaku_Gothic_New({
 })
 
 // Sets data-theme before first paint: saved preference wins, else system
-const THEME_INIT = `(function(){try{var q=new URLSearchParams(location.search).get('theme');var t=q==='day'||q==='night'?q:localStorage.getItem('zen-theme');if(t!=='day'&&t!=='night'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'night':'day'}document.documentElement.setAttribute('data-theme',t);var j=parseInt(new URLSearchParams(location.search).get('jump'));if(!isNaN(j)){addEventListener('load',function(){document.body.style.transform='translateY(-'+j+'px)'})}}catch(e){document.documentElement.setAttribute('data-theme','day')}})();`
+const THEME_INIT = `(function(){document.documentElement.classList.add('js');try{var q=new URLSearchParams(location.search).get('theme');var t=q==='day'||q==='night'?q:localStorage.getItem('zen-theme');if(t!=='day'&&t!=='night'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'night':'day'}document.documentElement.setAttribute('data-theme',t);if(location.hostname==='localhost'){var j=parseInt(new URLSearchParams(location.search).get('jump'));if(!isNaN(j)){addEventListener('load',function(){document.body.style.transform='translateY(-'+j+'px)'})}}}catch(e){document.documentElement.setAttribute('data-theme','day')}})();`
 
 // ── Personalise these ──────────────────────────────────────────────────────────
 const SITE_NAME = 'JP Bothma'
@@ -161,7 +163,7 @@ const jsonLd = [
     image: `${SITE_URL}/favicon.png`,
     sameAs: [
       'https://www.linkedin.com/in/jp-bothma',
-      'https://github.com/jp-bothma',
+      'https://github.com/JP-Alchemy',
     ],
     address: {
       '@type': 'PostalAddress',

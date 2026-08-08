@@ -6,24 +6,33 @@ import { PROJECTS, type Project, type LanternState } from '@/data/projects'
  * kindling means being built, ember means resting.
  */
 
-function LanternSvg({ state, delay }: { state: LanternState; delay: number }) {
+function LanternSvg({ state, delay, variant }: { state: LanternState; delay: number; variant: number }) {
   const lit = state === 'lit'
   const kindling = state === 'kindling'
 
+  // three hand-cut silhouettes so the row doesn't read as a stamp sheet
+  const bodies = [
+    { x: 36, y: 48, w: 48, h: 88, rx: 22 }, // classic
+    { x: 43, y: 42, w: 34, h: 98, rx: 16 }, // tall & narrow
+    { x: 30, y: 58, w: 60, h: 70, rx: 30 }, // low & round
+  ]
+  const b = bodies[variant % bodies.length]
+  const midY = b.y + b.h / 2
+
   return (
     <svg viewBox="0 0 120 190" className="w-24 mx-auto lantern" aria-hidden="true">
-      {/* glow */}
+      {/* glow — warm amber by day, lantern-red by night */}
       {(lit || kindling) && (
         <ellipse
-          cx="60" cy="102" rx="42" ry="48"
-          fill="var(--vermilion-glow)"
+          cx="60" cy={midY + 8} rx="42" ry="48"
+          fill="var(--lantern-glow)"
           className={`lantern-glow ${kindling ? 'flame-flicker' : ''}`}
         />
       )}
 
       {/* hanging cord */}
       <path
-        d="M60,4 C59,14 61,22 60,32"
+        d={`M60,4 C59,${b.y - 30} 61,${b.y - 22} 60,${b.y - 12}`}
         pathLength={1}
         className="draw"
         fill="none"
@@ -34,7 +43,7 @@ function LanternSvg({ state, delay }: { state: LanternState; delay: number }) {
       />
       {/* top cap */}
       <path
-        d="M44,42 L60,30 L76,42"
+        d={`M${60 - b.w / 2 + 8},${b.y - 4} L60,${b.y - 14} L${60 + b.w / 2 - 8},${b.y - 4}`}
         pathLength={1}
         className="draw"
         fill="none"
@@ -46,29 +55,34 @@ function LanternSvg({ state, delay }: { state: LanternState; delay: number }) {
       />
       {/* body */}
       <rect
-        x="36" y="48" width="48" height="88" rx="22"
+        x={b.x} y={b.y} width={b.w} height={b.h} rx={b.rx}
         pathLength={1}
         className="draw"
-        fill={lit || kindling ? 'var(--vermilion-glow)' : 'none'}
+        fill={lit || kindling ? 'var(--lantern-glow)' : 'none'}
         stroke="var(--ink)"
         strokeWidth="2.5"
         style={{ '--delay': `${delay + 0.3}s` } as React.CSSProperties}
       />
-      {/* ribs */}
+      {/* ribs — the paper's bones */}
       <path
-        d="M38,76 C50,80 70,80 82,76 M38,104 C50,108 70,108 82,104"
+        d={[
+          `M${b.x + 2},${b.y + b.h * 0.24} C${b.x + b.w * 0.3},${b.y + b.h * 0.28} ${b.x + b.w * 0.7},${b.y + b.h * 0.28} ${b.x + b.w - 2},${b.y + b.h * 0.24}`,
+          `M${b.x},${b.y + b.h * 0.46} C${b.x + b.w * 0.3},${b.y + b.h * 0.5} ${b.x + b.w * 0.7},${b.y + b.h * 0.5} ${b.x + b.w},${b.y + b.h * 0.46}`,
+          `M${b.x + 1},${b.y + b.h * 0.68} C${b.x + b.w * 0.3},${b.y + b.h * 0.72} ${b.x + b.w * 0.7},${b.y + b.h * 0.72} ${b.x + b.w - 1},${b.y + b.h * 0.68}`,
+          `M${b.x + 4},${b.y + b.h * 0.88} C${b.x + b.w * 0.35},${b.y + b.h * 0.92} ${b.x + b.w * 0.65},${b.y + b.h * 0.92} ${b.x + b.w - 4},${b.y + b.h * 0.88}`,
+        ].join(' ')}
         pathLength={1}
         className="draw"
         fill="none"
         stroke="var(--ink-soft)"
-        strokeWidth="1.6"
+        strokeWidth="1.4"
         strokeLinecap="round"
         style={{ '--delay': `${delay + 0.5}s` } as React.CSSProperties}
       />
-      {/* inner flame */}
+      {/* inner flame — a teardrop reaching upward */}
       {(lit || kindling) && (
         <path
-          d="M60,100 C55,94 56,87 60,82 C64,87 65,94 60,100 Z"
+          d={`M60,${midY + 12} C54,${midY + 6} 55,${midY - 2} 60,${midY - 10} C65,${midY - 2} 66,${midY + 6} 60,${midY + 12} Z`}
           className={`fill-in ${kindling ? 'flame-flicker' : ''}`}
           fill="var(--vermilion)"
           opacity={lit ? 0.85 : 0.6}
@@ -77,7 +91,7 @@ function LanternSvg({ state, delay }: { state: LanternState; delay: number }) {
       )}
       {/* bottom cap + tassel */}
       <path
-        d="M48,140 L72,140 M60,144 C59,152 61,158 60,166"
+        d={`M${60 - b.w / 2 + 12},${b.y + b.h + 4} L${60 + b.w / 2 - 12},${b.y + b.h + 4} M60,${b.y + b.h + 8} C59,${b.y + b.h + 16} 61,${b.y + b.h + 22} 60,${b.y + b.h + 30}`}
         pathLength={1}
         className="draw"
         fill="none"
@@ -97,12 +111,12 @@ const STATE_LABEL: Record<LanternState, string | null> = {
 }
 
 function LanternCard({ project, index }: { project: Project; index: number }) {
-  const delay = 0.2 + index * 0.25
+  const delay = 0.2 + index * 0.2
   const label = STATE_LABEL[project.state]
 
   const inner = (
     <>
-      <LanternSvg state={project.state} delay={delay} />
+      <LanternSvg state={project.state} delay={delay} variant={index} />
       <h3
         className="zen-serif text-xl mt-5 mb-2 tracking-tight"
         style={{ color: 'var(--ink)' }}
@@ -119,7 +133,7 @@ function LanternCard({ project, index }: { project: Project; index: number }) {
   )
 
   const cardClass =
-    'fill-in block text-center px-5 py-6 rounded-sm transition-colors duration-300 hover:bg-[color-mix(in_srgb,var(--ink)_4%,transparent)]'
+    'lantern-card fill-in block text-center px-5 pb-6 pt-0 -mt-1 rounded-sm transition-colors duration-300 hover:bg-[color-mix(in_srgb,var(--ink)_4%,transparent)]'
   const style = { '--delay': `${delay}s` } as React.CSSProperties
 
   if (project.href) {
@@ -175,21 +189,41 @@ export default function Lanterns() {
           </p>
         </div>
 
-        {/* the branch they hang from */}
-        <svg viewBox="0 0 1100 30" aria-hidden="true" className="w-full mb-2">
+        {/* the branch they hang from — with a few living twigs */}
+        <svg viewBox="0 0 1100 44" aria-hidden="true" className="w-full -mb-3">
           <path
-            d="M0,18 C180,8 340,24 520,15 C700,6 900,20 1100,12"
+            d="M0,30 C180,18 340,36 520,26 C700,16 900,32 1100,22"
             pathLength={1}
             className="draw"
             fill="none"
             stroke="var(--ink-soft)"
-            strokeWidth="2.5"
+            strokeWidth="3"
             strokeLinecap="round"
             style={{ '--delay': '0.1s' } as React.CSSProperties}
           />
+          <path
+            d="M212,26 C230,16 244,10 264,8 M700,21 C716,12 728,8 748,8 M962,26 C978,18 988,12 1004,8"
+            pathLength={1}
+            className="draw"
+            fill="none"
+            stroke="var(--ink-faint)"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            style={{ '--delay': '0.5s' } as React.CSSProperties}
+          />
+          <path
+            d="M256,12 C262,10 268,9 274,10 M740,10 C746,8 752,8 758,9"
+            pathLength={1}
+            className="draw"
+            fill="none"
+            stroke="var(--ink-faint)"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            style={{ '--delay': '0.8s' } as React.CSSProperties}
+          />
         </svg>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
           {PROJECTS.map((p, i) => (
             <LanternCard key={p.id} project={p} index={i} />
           ))}

@@ -6,7 +6,8 @@ import { Github, Linkedin } from 'lucide-react'
 import InkScene from './InkScene'
 import Seal from './Seal'
 
-const FORMSPREE_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT ?? 'YOUR_FORMSPREE_ID'
+// `||` (not `??`) so an empty CI secret also falls through to the sentinel
+const FORMSPREE_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT || ''
 
 const ENQUIRY_TYPES = [
   { value: '', label: 'What brings you here…' },
@@ -22,7 +23,7 @@ const ENQUIRY_TYPES = [
 type FormState = 'idle' | 'submitting' | 'success' | 'error'
 
 const inputClass =
-  'w-full px-4 py-3 rounded-sm text-sm font-light bg-transparent border transition-colors placeholder:opacity-60 focus:outline-none'
+  'w-full px-4 py-3 rounded-sm text-sm font-light bg-transparent border transition-colors'
 const inputStyle = {
   borderColor: 'var(--line)',
   color: 'var(--ink)',
@@ -35,6 +36,7 @@ const inputStyle = {
 export default function Gate() {
   const [formState, setFormState] = useState<FormState>('idle')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [enquiryChosen, setEnquiryChosen] = useState(false)
 
   function validate(data: FormData): Record<string, string> {
     const errs: Record<string, string> = {}
@@ -56,6 +58,11 @@ export default function Gate() {
       return
     }
     setErrors({})
+    if (!FORMSPREE_ENDPOINT) {
+      // endpoint never configured — fail visibly instead of posting into the void
+      setFormState('error')
+      return
+    }
     setFormState('submitting')
     try {
       const res = await fetch(`https://formspree.io/f/${FORMSPREE_ENDPOINT}`, {
@@ -181,8 +188,12 @@ export default function Gate() {
               style={{ borderColor: 'var(--vermilion)', background: 'var(--vermilion-glow)' }}
               role="status"
             >
+              {/* the hanko comes down — sealed, sincerely */}
+              <div className="stamp-press stamp-bloom inline-block rounded-md mb-5">
+                <Seal size={64} />
+              </div>
               <p className="zen-serif text-2xl mb-2" style={{ color: 'var(--ink)' }}>
-                Your message is on its way.
+                Sealed. Your message is on its way.
               </p>
               <p className="text-sm font-light" style={{ color: 'var(--ink-soft)' }}>
                 I usually reply within a day. Until then — wander well.
@@ -205,6 +216,7 @@ export default function Gate() {
                   <label htmlFor="name" className="sr-only">Name</label>
                   <input id="name" name="name" type="text" placeholder="Name"
                     autoComplete="name" className={inputClass} style={inputStyle}
+                    aria-invalid={!!errors.name}
                     aria-describedby={errors.name ? 'name-error' : undefined} />
                   {errors.name && (
                     <p id="name-error" role="alert" className="mt-1.5 text-xs" style={{ color: 'var(--vermilion)' }}>
@@ -216,6 +228,7 @@ export default function Gate() {
                   <label htmlFor="email" className="sr-only">Email</label>
                   <input id="email" name="email" type="email" placeholder="Email"
                     autoComplete="email" className={inputClass} style={inputStyle}
+                    aria-invalid={!!errors.email}
                     aria-describedby={errors.email ? 'email-error' : undefined} />
                   {errors.email && (
                     <p id="email-error" role="alert" className="mt-1.5 text-xs" style={{ color: 'var(--vermilion)' }}>
@@ -225,13 +238,32 @@ export default function Gate() {
                 </div>
               </div>
 
-              <div>
+              <div className="relative">
                 <label htmlFor="enquiry" className="sr-only">Type of enquiry</label>
-                <select id="enquiry" name="enquiry" defaultValue="" className={`${inputClass} cursor-pointer`} style={inputStyle}>
+                <select
+                  id="enquiry"
+                  name="enquiry"
+                  defaultValue=""
+                  onChange={(e) => setEnquiryChosen(e.currentTarget.value !== '')}
+                  className={`${inputClass} cursor-pointer appearance-none pr-10`}
+                  style={{
+                    ...inputStyle,
+                    color: enquiryChosen ? 'var(--ink)' : 'var(--ink-faint)',
+                  }}
+                >
                   {ENQUIRY_TYPES.map(({ value, label }) => (
                     <option key={value} value={value} disabled={value === ''}>{label}</option>
                   ))}
                 </select>
+                {/* a small brushed chevron in place of the native one */}
+                <svg
+                  viewBox="0 0 12 8"
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-3"
+                >
+                  <path d="M1,1.5 C3,3.5 4.5,5 6,6.5 C7.5,5 9,3.5 11,1.5" fill="none"
+                    stroke="var(--ink-faint)" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
               </div>
 
               <div>
@@ -239,6 +271,7 @@ export default function Gate() {
                 <textarea id="message" name="message" rows={5}
                   placeholder="The project, the problem, or just hello."
                   className={`${inputClass} resize-none`} style={inputStyle}
+                  aria-invalid={!!errors.message}
                   aria-describedby={errors.message ? 'message-error' : undefined} />
                 {errors.message && (
                   <p id="message-error" role="alert" className="mt-1.5 text-xs" style={{ color: 'var(--vermilion)' }}>
