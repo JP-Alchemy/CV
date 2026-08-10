@@ -13,14 +13,14 @@ export default function InkCursor() {
   const [awake, setAwake] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  // wake on the first qualifying mouse move
+  // wake on the first qualifying mouse move — every condition is checked
+  // at that moment, never snapshotted at mount (mount-time reads can be
+  // stale: zero-width layouts, changing pointers, toggled OS settings)
   useEffect(() => {
-    const fine = window.matchMedia('(pointer: fine)').matches
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (!fine || reduced || window.innerWidth < 768) return
-
     const wake = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse') return
+      if (!window.matchMedia('(pointer: fine)').matches) return
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
       setAwake(true)
       window.removeEventListener('pointermove', wake)
     }
@@ -74,9 +74,9 @@ export default function InkCursor() {
           const dist = Math.hypot(x - last.x, y - last.y)
           const speed = dist / dt // px per ms
           // a fast brush leaves a thinner, drier line
-          const width = Math.max(1, 3.2 - speed * 1.6) * dpr
+          const width = Math.max(1.2, 3.4 - speed * 1.6) * dpr
           ctx.strokeStyle = ink
-          ctx.globalAlpha = 0.22
+          ctx.globalAlpha = 0.28
           ctx.lineWidth = width
           ctx.lineCap = 'round'
           ctx.beginPath()
@@ -103,6 +103,8 @@ export default function InkCursor() {
 
     const onMove = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse') return
+      // self-heal if we mounted while the window reported zero size
+      if (canvas.width === 0 || canvas.height === 0) resize()
       pending = { x: e.clientX, y: e.clientY }
       if (!running) {
         running = true
