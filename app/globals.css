@@ -123,6 +123,11 @@
 
 .zen-root {
   position: relative;
+  /* own stacking context: the grain can sit at z:-1 (above this
+     element's paper background, below every child) without forcing
+     position/z-index onto children — Tailwind's fixed/z-* utilities
+     on nav, canvas, and enso keep working untouched */
+  isolation: isolate;
   background-color: var(--paper);
   color: var(--ink);
   font-family: var(--font-zen-sans), system-ui, sans-serif;
@@ -134,15 +139,10 @@
   content: '';
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
   opacity: var(--grain-opacity);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.45  0 0 0 0 0.42  0 0 0 0 0.36  0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23p)'/%3E%3C/svg%3E");
-}
-
-.zen-root > * {
-  position: relative;
-  z-index: 1;
 }
 
 .zen-serif {

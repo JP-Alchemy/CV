@@ -43,9 +43,14 @@ export default function InkCursor() {
 
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
 
+    // size and map from the canvas's own on-screen rect — innerWidth
+    // includes scrollbars and would skew stroke coordinates sideways
+    let rect = { left: 0, top: 0 }
     const resize = () => {
-      canvas.width = Math.round(window.innerWidth * dpr)
-      canvas.height = Math.round(window.innerHeight * dpr)
+      const r = canvas.getBoundingClientRect()
+      rect = { left: r.left, top: r.top }
+      canvas.width = Math.max(1, Math.round(r.width * dpr))
+      canvas.height = Math.max(1, Math.round(r.height * dpr))
     }
     resize()
 
@@ -65,7 +70,8 @@ export default function InkCursor() {
 
       if (pending) {
         const now = performance.now()
-        const { x, y } = pending
+        const x = pending.x - rect.left
+        const y = pending.y - rect.top
         pending = null
         if (last) {
           const dt = Math.max(now - last.t, 1)
