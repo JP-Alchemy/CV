@@ -15,9 +15,9 @@ function webglAvailable(): boolean {
 }
 
 /**
- * The living water. Mounts the R3F pond only when the section nears the
- * viewport, WebGL exists, and the visitor hasn't asked for reduced motion —
- * otherwise the still SVG pond remains, and nothing is lost.
+ * The living water. Mounts the R3F pond when the section nears the
+ * viewport and WebGL exists — otherwise the still SVG pond remains,
+ * and nothing is lost.
  */
 export default function PondWater() {
   const holder = useRef<HTMLDivElement>(null)
@@ -27,7 +27,6 @@ export default function PondWater() {
   useEffect(() => {
     const el = holder.current
     if (!el) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     if (!webglAvailable()) return
 
     // mount when within 1.5 viewports, release when far beyond it

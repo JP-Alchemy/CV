@@ -1,6 +1,6 @@
 /**
- * The still pond — SVG fallback shown when WebGL is unavailable,
- * reduced motion is requested, or the R3F scene hasn't loaded yet.
+ * The still pond — SVG fallback shown when WebGL is unavailable
+ * or the R3F scene hasn't loaded yet.
  */
 export default function PondSvg() {
   return (

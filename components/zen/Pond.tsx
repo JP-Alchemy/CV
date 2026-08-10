@@ -4,7 +4,7 @@ import { NOW } from '@/data/now'
 
 /**
  * 四 · The Pond — living water (R3F ripple shader + koi) with an SVG
- * fallback for reduced motion, missing WebGL, and while loading.
+ * fallback for missing WebGL and while loading.
  */
 
 export default function Pond() {

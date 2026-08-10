@@ -34,7 +34,6 @@ export default function ThemeToggle({
   function toggle() {
     const next: Theme = theme === 'day' ? 'night' : 'day'
     const sweep = sweepRef.current
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     const apply = () => {
       document.documentElement.setAttribute('data-theme', next)
@@ -46,7 +45,7 @@ export default function ThemeToggle({
       setTheme(next)
     }
 
-    if (sweep && !reduced) {
+    if (sweep) {
       // freeze the veil's ink before the world changes beneath it
       sweep.style.background = getComputedStyle(document.documentElement)
         .getPropertyValue('--ink')

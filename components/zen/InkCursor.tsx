@@ -13,14 +13,12 @@ export default function InkCursor() {
   const [awake, setAwake] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  // wake on the first qualifying mouse move — every condition is checked
-  // at that moment, never snapshotted at mount (mount-time reads can be
-  // stale: zero-width layouts, changing pointers, toggled OS settings)
+  // wake on the first real mouse move — the only gate is "is this a
+  // mouse", checked at that moment, never snapshotted at mount. Touch
+  // devices never wake it; system settings don't decide the experience.
   useEffect(() => {
     const wake = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse') return
-      if (!window.matchMedia('(pointer: fine)').matches) return
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
       setAwake(true)
       window.removeEventListener('pointermove', wake)
     }

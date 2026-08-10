@@ -357,28 +357,10 @@ body:has(.zen-root) ::-webkit-scrollbar-thumb {
   border-bottom-color: var(--vermilion);
 }
 
-/* ── Reduced motion: everything arrives pre-painted ──────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  .zen-root * {
-    animation: none !important;
-    transition-duration: 0.01ms !important;
-  }
-
-  .js .ink-scene .draw,
-  .ink-scene .draw {
-    stroke-dashoffset: 0;
-  }
-
-  .js .ink-scene .fill-in,
-  .ink-scene .fill-in {
-    opacity: 1;
-  }
-
-  /* static ripples would stack into one heavy ring — let the water rest */
-  .ripple {
-    display: none;
-  }
-}
+/* The ink scroll deliberately does NOT gate on prefers-reduced-motion:
+   the experience is the site, and its motion is gentle by design —
+   slow draws, fades, drifting mist, nothing that lurches or parallaxes.
+   (Per-feature gating can be reintroduced here if it's ever wanted.) */
 
 /* ── Print styles (CV page) ───────────────────────────────────────────────── */
 @media print {
