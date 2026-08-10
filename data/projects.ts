@@ -30,9 +30,9 @@ export const PROJECTS: Project[] = [
   {
     id: 'moto-tour',
     name: 'Motorcycle Tour Framework',
-    story: 'A free, self-guided touring kit — click, book, download the route, and ride your own adventure.',
+    story: 'A free, self-guided touring kit — the first roadbook: Leiden to the Alps, every pass, bed, and euro accounted for.',
     state: 'kindling',
-    href: null,
+    href: '/projects/moto-tour',
   },
   {
     id: 'what-the-duck',

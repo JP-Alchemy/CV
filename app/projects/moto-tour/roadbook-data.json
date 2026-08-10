@@ -1,0 +1,2487 @@
+{
+ "days": [
+  {
+   "n": 1,
+   "kind": "ride",
+   "title": "Escape day",
+   "frm": "Leiden",
+   "to": "Cochem",
+   "country": "NL → DE",
+   "km": 420,
+   "hrs": "≈5 h",
+   "roads": "A4 and A2 to Utrecht, A67 past Eindhoven, A61 south. Leave the motorway at Koblenz and take the B49 and B416 along the water for the last 50 km.",
+   "why": "The only motorway day of the trip. Get out of the Netherlands quickly, then drop into the Mosel and let the pace change.",
+   "vias": [
+    [
+     52.1601,
+     4.497,
+     "Leiden",
+     0
+    ],
+    [
+     52.0907,
+     5.1214,
+     "Utrecht",
+     0
+    ],
+    [
+     51.4416,
+     5.4697,
+     "Eindhoven",
+     0
+    ],
+    [
+     51.1805,
+     6.4428,
+     "Mönchengladbach",
+     0
+    ],
+    [
+     50.3569,
+     7.594,
+     "Koblenz",
+     0
+    ],
+    [
+     50.302,
+     7.46,
+     "Kobern-Gondorf",
+     0
+    ],
+    [
+     50.172,
+     7.3,
+     "Treis-Karden",
+     0
+    ],
+    [
+     50.1474,
+     7.1702,
+     "Cochem",
+     0
+    ]
+   ],
+   "profile": [
+    [
+     0,
+     0,
+     "Leiden"
+    ],
+    [
+     120,
+     10,
+     null
+    ],
+    [
+     250,
+     60,
+     null
+    ],
+    [
+     360,
+     80,
+     "Koblenz"
+    ],
+    [
+     420,
+     85,
+     "Cochem"
+    ]
+   ],
+   "sleep": [],
+   "foot": [],
+   "date": "Mon 24 Aug",
+   "iso": "2026-08-24",
+   "booked": {
+    "status": "Selected · Beim Weinbauer",
+    "price": "€100",
+    "nights": "1 night · Mon 24 → Tue 25 Aug · Cochem",
+    "links": [
+     "https://www.booking.com/hotel/de/beimweinbauer.en-gb.html?checkin=2026-08-24&checkout=2026-08-25&group_adults=1&no_rooms=1"
+    ],
+    "note": "Moselpromenade, on the water under the castle. Breakfast included and they run their own vineyard. No lift, and the rooms are on floors two to five — worth knowing with luggage."
+   },
+   "picks": null,
+   "cost": {
+    "n": 1,
+    "bed": 92.36,
+    "fuel": 41.08,
+    "tolls": 0.0,
+    "food": 45.0,
+    "extras": 5.0,
+    "total": 183.44,
+    "cum": 183.44,
+    "bed_note": "Beim Weinbauer",
+    "toll_note": "",
+    "food_note": "Leaving from home, so lunch and dinner only",
+    "extras_note": "Parking, water, chain lube",
+    "fuel_note": "420 km at about 0.10 a kilometre"
+   }
+  },
+  {
+   "n": 2,
+   "kind": "ride",
+   "title": "Hunsrück and the Wine Road",
+   "frm": "Cochem",
+   "to": "Ribeauvillé",
+   "country": "DE → FR",
+   "km": 330,
+   "hrs": "≈6 h",
+   "roads": "B49 to Kastellaun, over the Hunsrück to Simmern and Bad Kreuznach, then the Deutsche Weinstraße through Bad Dürkheim and Landau. Cross at Wissembourg, over the Col du Pigeonnier, then the Route des Vins south through Barr.",
+   "why": "First proper back-road day. Forest, then vineyards the whole way down.",
+   "vias": [
+    [
+     50.1474,
+     7.1702,
+     "Cochem",
+     0
+    ],
+    [
+     50.068,
+     7.444,
+     "Kastellaun",
+     0
+    ],
+    [
+     49.988,
+     7.522,
+     "Simmern",
+     0
+    ],
+    [
+     49.84,
+     7.867,
+     "Bad Kreuznach",
+     0
+    ],
+    [
+     49.462,
+     8.169,
+     "Bad Dürkheim",
+     0
+    ],
+    [
+     49.199,
+     8.119,
+     "Landau",
+     0
+    ],
+    [
+     49.037,
+     7.945,
+     "Wissembourg",
+     0
+    ],
+    [
+     48.952,
+     7.641,
+     "Niederbronn",
+     0
+    ],
+    [
+     48.741,
+     7.362,
+     "Saverne",
+     0
+    ],
+    [
+     48.407,
+     7.447,
+     "Barr",
+     0
+    ],
+    [
+     48.1947,
+     7.3191,
+     "Ribeauvillé",
+     0
+    ]
+   ],
+   "profile": [
+    [
+     0,
+     85,
+     "Cochem"
+    ],
+    [
+     40,
+     450,
+     "Hunsrück"
+    ],
+    [
+     110,
+     120,
+     "Bad Kreuznach"
+    ],
+    [
+     200,
+     130,
+     "Weinstraße"
+    ],
+    [
+     260,
+     340,
+     "Col du Pigeonnier"
+    ],
+    [
+     330,
+     240,
+     "Ribeauvillé"
+    ]
+   ],
+   "sleep": [],
+   "foot": [
+    {
+     "t": "Evening",
+     "h": "Walk the Grand'Rue",
+     "d": "Arrive around five and the old street is yours — the day visitors have gone and the walled centre goes quiet. Thirty minutes end to end at a wander."
+    },
+    {
+     "t": "Optional",
+     "h": "Half an hour up the vines",
+     "d": "The castle trail leaves from the top of town. You will not reach Saint-Ulrich and back before dark, but twenty minutes up gets you above the roofs with the Rhine plain behind them, which is the view worth having."
+    }
+   ],
+   "date": "Tue 25 Aug",
+   "iso": "2026-08-25",
+   "booked": {
+    "status": "Selected · Au Cheval Blanc",
+    "price": "€100",
+    "nights": "1 night · Tue 25 → Wed 26 Aug · Ribeauvillé",
+    "links": [
+     "https://www.booking.com/hotel/fr/restaurant-au-cheval-blanc.en-gb.html?checkin=2026-08-25&checkout=2026-08-26&group_adults=1&no_rooms=1"
+    ],
+    "note": "In Ribeauvillé itself, air conditioning and a spa. You arrive around five, so there is time to walk the Grand'Rue before dinner — this is your Alsace, since the rest day went."
+   },
+   "picks": null,
+   "cost": {
+    "n": 2,
+    "bed": 96.03,
+    "fuel": 32.28,
+    "tolls": 0.0,
+    "food": 56.0,
+    "extras": 5.0,
+    "total": 189.31,
+    "cum": 372.75,
+    "bed_note": "Au Cheval Blanc",
+    "toll_note": "",
+    "food_note": "",
+    "extras_note": "Parking, water, chain lube",
+    "fuel_note": "330 km at about 0.10 a kilometre"
+   }
+  },
+  {
+   "n": 3,
+   "kind": "ride",
+   "title": "Route des Crêtes into the Black Forest",
+   "frm": "Ribeauvillé",
+   "to": "Schluchsee",
+   "country": "FR → DE",
+   "km": 250,
+   "hrs": "≈5 h",
+   "roads": "Up to the Col du Bonhomme, then the Route des Crêtes south along the ridge over the Col de la Schlucht and the Grand Ballon. Down to Guebwiller, cross the Rhine at Breisach, then Freiburg, the Schauinsland climb, Todtnau, the Feldberg and down to the lake.",
+   "why": "Two mountain ranges in one day, with the Rhine plain in between as a palate cleanser.",
+   "vias": [
+    [
+     48.1947,
+     7.3191,
+     "Ribeauvillé",
+     0
+    ],
+    [
+     48.162,
+     7.087,
+     "Col du Bonhomme",
+     1
+    ],
+    [
+     48.063,
+     7.027,
+     "Col de la Schlucht",
+     1
+    ],
+    [
+     47.901,
+     7.098,
+     "Grand Ballon",
+     1
+    ],
+    [
+     47.908,
+     7.21,
+     "Guebwiller",
+     0
+    ],
+    [
+     48.029,
+     7.581,
+     "Breisach",
+     0
+    ],
+    [
+     47.911,
+     7.899,
+     "Schauinsland",
+     1
+    ],
+    [
+     47.829,
+     7.944,
+     "Todtnau",
+     0
+    ],
+    [
+     47.873,
+     8.004,
+     "Feldberg",
+     1
+    ],
+    [
+     47.8187,
+     8.1771,
+     "Schluchsee",
+     0
+    ]
+   ],
+   "profile": [
+    [
+     0,
+     240,
+     "Ribeauvillé"
+    ],
+    [
+     45,
+     1140,
+     "Col de la Schlucht"
+    ],
+    [
+     80,
+     1330,
+     "Grand Ballon"
+    ],
+    [
+     130,
+     200,
+     "Breisach"
+    ],
+    [
+     175,
+     1220,
+     "Schauinsland"
+    ],
+    [
+     215,
+     1230,
+     "Feldberg"
+    ],
+    [
+     250,
+     930,
+     "Schluchsee"
+    ]
+   ],
+   "sleep": [],
+   "foot": [],
+   "date": "Wed 26 Aug",
+   "iso": "2026-08-26",
+   "booked": {
+    "status": "Selected · Wochner's Hotel-Sternen",
+    "price": "€100",
+    "nights": "1 night · Wed 26 → Thu 27 Aug · Schluchsee",
+    "links": [
+     "https://www.booking.com/hotel/de/wochner-s-sternen.en-gb.html?checkin=2026-08-26&checkout=2026-08-27&group_adults=1&no_rooms=1"
+    ],
+    "note": "On the Schluchsee in the Hochschwarzwald — the best-scoring of your first three at 8.8."
+   },
+   "picks": null,
+   "cost": {
+    "n": 3,
+    "bed": 92.5,
+    "fuel": 24.45,
+    "tolls": 0.0,
+    "food": 56.0,
+    "extras": 5.0,
+    "total": 177.95,
+    "cum": 550.7,
+    "bed_note": "Wochner's Hotel-Sternen",
+    "toll_note": "",
+    "food_note": "",
+    "extras_note": "Parking, water, chain lube",
+    "fuel_note": "250 km at about 0.10 a kilometre"
+   }
+  },
+  {
+   "n": 4,
+   "kind": "ride",
+   "title": "Into the Alps over the Klausenpass",
+   "frm": "Schluchsee",
+   "to": "Hospental",
+   "country": "DE → CH",
+   "km": 330,
+   "hrs": "≈6 h",
+   "roads": "South to Waldshut and across the border, then east on back roads through Brugg and Zug, along the Walensee to Linthal. Over the Klausenpass to Altdorf, then up the Reuss valley through Andermatt to Hospental.",
+   "why": "The Klausen is the right way to arrive in Switzerland — quieter than the Gotthard, and it drops you exactly where you want to be.",
+   "vias": [
+    [
+     47.8187,
+     8.1771,
+     "Schluchsee",
+     0
+    ],
+    [
+     47.623,
+     8.213,
+     "Waldshut",
+     0
+    ],
+    [
+     47.484,
+     8.208,
+     "Brugg",
+     0
+    ],
+    [
+     47.166,
+     8.515,
+     "Zug",
+     0
+    ],
+    [
+     47.021,
+     8.656,
+     "Schwyz",
+     0
+    ],
+    [
+     46.92,
+     8.999,
+     "Linthal",
+     0
+    ],
+    [
+     46.876,
+     8.86,
+     "Klausenpass",
+     1
+    ],
+    [
+     46.88,
+     8.644,
+     "Altdorf",
+     0
+    ],
+    [
+     46.6339,
+     8.5936,
+     "Andermatt",
+     0
+    ],
+    [
+     46.6193,
+     8.5686,
+     "Hospental",
+     0
+    ]
+   ],
+   "profile": [
+    [
+     0,
+     930,
+     "Schluchsee"
+    ],
+    [
+     60,
+     340,
+     "Waldshut"
+    ],
+    [
+     160,
+     420,
+     "Zug"
+    ],
+    [
+     230,
+     650,
+     "Linthal"
+    ],
+    [
+     265,
+     1948,
+     "Klausenpass"
+    ],
+    [
+     300,
+     450,
+     "Altdorf"
+    ],
+    [
+     330,
+     1450,
+     "Hospental"
+    ]
+   ],
+   "sleep": [],
+   "foot": [],
+   "date": "Thu 27 Aug",
+   "iso": "2026-08-27",
+   "booked": {
+    "status": "Selected · Sust Lodge",
+    "price": "€230",
+    "nights": "2 nights · Thu 27 → Sat 29 Aug · Hospental · €115 a night",
+    "links": [
+     "https://www.booking.com/hotel/ch/gotthard-palace.en-gb.html?checkin=2026-08-27&checkout=2026-08-29&group_adults=1&no_rooms=1"
+    ],
+    "note": "Two nights, correctly. Property ID 13751010 — the slug says gotthard-palace but the property is the Sust Lodge, Gotthardstrasse 46. Parking is guest-only with cameras but uncovered, so bring a cover. Breakfast included, buffet from 07:30. Check-in from 14:30. Your URL encodes €230 total, against the €246.76 the connector quoted on 5 August — take the €230."
+   },
+   "picks": null,
+   "cost": {
+    "n": 4,
+    "bed": 115.0,
+    "fuel": 32.28,
+    "tolls": 0.0,
+    "food": 56.0,
+    "extras": 5.0,
+    "total": 208.28,
+    "cum": 758.98,
+    "bed_note": "Sust Lodge, first of two nights",
+    "toll_note": "",
+    "food_note": "",
+    "extras_note": "Parking, water, chain lube",
+    "fuel_note": "330 km at about 0.10 a kilometre"
+   }
+  },
+  {
+   "n": 5,
+   "kind": "light",
+   "title": "Three passes, no luggage",
+   "frm": "Hospental",
+   "to": "Hospental",
+   "country": "CH",
+   "km": 180,
+   "hrs": "≈4 h",
+   "roads": "Furkapass, down to Gletsch, up the Grimsel, down to Innertkirchen, over the Susten to Wassen and back up through Andermatt. Ride it in that order and early — the Furka fills with cars by eleven.",
+   "why": "Bags stay in the room. The one day in fourteen where you ride purely for the sake of it.",
+   "vias": [
+    [
+     46.6193,
+     8.5686,
+     "Hospental",
+     0
+    ],
+    [
+     46.5722,
+     8.415,
+     "Furkapass",
+     1
+    ],
+    [
+     46.563,
+     8.366,
+     "Gletsch",
+     0
+    ],
+    [
+     46.561,
+     8.338,
+     "Grimselpass",
+     1
+    ],
+    [
+     46.706,
+     8.232,
+     "Innertkirchen",
+     0
+    ],
+    [
+     46.725,
+     8.447,
+     "Sustenpass",
+     1
+    ],
+    [
+     46.706,
+     8.596,
+     "Wassen",
+     0
+    ],
+    [
+     46.6339,
+     8.5936,
+     "Andermatt",
+     0
+    ],
+    [
+     46.6193,
+     8.5686,
+     "Hospental",
+     0
+    ]
+   ],
+   "profile": [
+    [
+     0,
+     1450,
+     "Hospental"
+    ],
+    [
+     20,
+     2429,
+     "Furkapass"
+    ],
+    [
+     40,
+     2164,
+     "Grimselpass"
+    ],
+    [
+     85,
+     625,
+     "Innertkirchen"
+    ],
+    [
+     120,
+     2224,
+     "Sustenpass"
+    ],
+    [
+     155,
+     915,
+     "Wassen"
+    ],
+    [
+     180,
+     1450,
+     "Hospental"
+    ]
+   ],
+   "sleep": [],
+   "foot": [
+    {
+     "t": "15:30",
+     "h": "Schöllenen Gorge",
+     "d": "From Andermatt the path drops through the gorge to the Teufelsbrücke, where the old Gotthard mule road crossed. An hour there and back. The noise of the water in the narrows justifies it on its own."
+    },
+    {
+     "t": "Evening",
+     "h": "Eat in Hospental",
+     "d": "Fewer covers than Andermatt, no queue, and you are already home. Order the Geschnetzeltes."
+    }
+   ],
+   "date": "Fri 28 Aug",
+   "iso": "2026-08-28",
+   "booked": {
+    "status": "Same room · Sust Lodge",
+    "price": "—",
+    "nights": "Second night of the 27 → 29 Aug stay",
+    "links": [
+     ""
+    ],
+    "note": "No packing, no checkout. Breakfast at 07:30 puts you on the Furka before the coaches."
+   },
+   "picks": null,
+   "cost": {
+    "n": 5,
+    "bed": 115.0,
+    "fuel": 17.61,
+    "tolls": 0.0,
+    "food": 56.0,
+    "extras": 5.0,
+    "total": 193.61,
+    "cum": 952.59,
+    "bed_note": "Sust Lodge, second night",
+    "toll_note": "",
+    "food_note": "",
+    "extras_note": "Parking, water, chain lube",
+    "fuel_note": "180 km at about 0.10 a kilometre"
+   }
+  },
+  {
+   "n": 6,
+   "kind": "ride",
+   "title": "Oberalp, Albula, Bernina",
+   "frm": "Hospental",
+   "to": "Bormio",
+   "country": "CH → IT",
+   "km": 300,
+   "hrs": "≈6 h",
+   "roads": "Over the Oberalp to Disentis and down the Vorderrhein to Chur, then Tiefencastel and the Albula to La Punt. Through St. Moritz, over the Bernina, then the Forcola di Livigno into Italy, through Livigno and over the Foscagno to Bormio.",
+   "why": "Three of the finest passes in Graubünden in sequence, ending at the foot of the Stelvio.",
+   "vias": [
+    [
+     46.6193,
+     8.5686,
+     "Hospental",
+     0
+    ],
+    [
+     46.66,
+     8.671,
+     "Oberalppass",
+     1
+    ],
+    [
+     46.705,
+     8.851,
+     "Disentis",
+     0
+    ],
+    [
+     46.85,
+     9.532,
+     "Chur",
+     0
+    ],
+    [
+     46.66,
+     9.579,
+     "Tiefencastel",
+     0
+    ],
+    [
+     46.583,
+     9.832,
+     "Albulapass",
+     1
+    ],
+    [
+     46.58,
+     9.92,
+     "La Punt",
+     0
+    ],
+    [
+     46.498,
+     9.838,
+     "St. Moritz",
+     0
+    ],
+    [
+     46.411,
+     10.022,
+     "Berninapass",
+     1
+    ],
+    [
+     46.479,
+     10.073,
+     "Forcola di Livigno",
+     1
+    ],
+    [
+     46.538,
+     10.135,
+     "Livigno",
+     0
+    ],
+    [
+     46.49,
+     10.2,
+     "Passo di Foscagno",
+     1
+    ],
+    [
+     46.4685,
+     10.3718,
+     "Bormio",
+     0
+    ]
+   ],
+   "profile": [
+    [
+     0,
+     1450,
+     "Hospental"
+    ],
+    [
+     25,
+     2044,
+     "Oberalppass"
+    ],
+    [
+     60,
+     1130,
+     "Disentis"
+    ],
+    [
+     110,
+     590,
+     "Chur"
+    ],
+    [
+     150,
+     850,
+     "Tiefencastel"
+    ],
+    [
+     180,
+     2312,
+     "Albulapass"
+    ],
+    [
+     215,
+     1770,
+     "St. Moritz"
+    ],
+    [
+     245,
+     2328,
+     "Berninapass"
+    ],
+    [
+     265,
+     2315,
+     "Forcola"
+    ],
+    [
+     285,
+     2291,
+     "Foscagno"
+    ],
+    [
+     300,
+     1225,
+     "Bormio"
+    ]
+   ],
+   "sleep": [],
+   "foot": [],
+   "date": "Sat 29 Aug",
+   "iso": "2026-08-29",
+   "booked": {
+    "status": "Selected · Hotel Rezia",
+    "price": "€141.20?",
+    "nights": "1 night · Sat 29 → Sun 30 Aug · Bormio",
+    "links": [
+     "https://www.booking.com/hotel/it/rezia-bormio.en-gb.html?checkin=2026-08-29&checkout=2026-08-30&group_adults=1&no_rooms=1"
+    ],
+    "note": "200 m from the centre of Bormio, 8.4 from 751 reviews. But your URL encodes €141.20 total, not the €125 you quoted earlier — Bormio was 88% sold out for this night, so the rate has probably moved. Re-check before you book; this is the night least worth losing, with the Stelvio the next morning."
+   },
+   "picks": null,
+   "cost": {
+    "n": 6,
+    "bed": 141.2,
+    "fuel": 29.34,
+    "tolls": 0.0,
+    "food": 56.0,
+    "extras": 15.0,
+    "total": 241.54,
+    "cum": 1194.13,
+    "bed_note": "Hotel Rezia",
+    "toll_note": "",
+    "food_note": "",
+    "extras_note": "Bormio garage €10",
+    "fuel_note": "300 km at about 0.10 a kilometre"
+   }
+  },
+  {
+   "n": 7,
+   "kind": "ride",
+   "title": "Stelvio morning",
+   "frm": "Bormio",
+   "to": "Arabba",
+   "country": "IT",
+   "km": 250,
+   "hrs": "≈6 h",
+   "roads": "Up the Stelvio from the Bormio side, down the 48 hairpins to Prato, then east down the Val Venosta through Silandro and Merano to Bolzano. North into Val Gardena through Ortisei, over the Passo Gardena to Corvara, then the Campolongo down into Arabba.",
+   "why": "Leave by 07:30 and the Stelvio is yours. By ten it is a queue of camper vans and the hairpins stop being fun.",
+   "vias": [
+    [
+     46.4685,
+     10.3718,
+     "Bormio",
+     0
+    ],
+    [
+     46.5285,
+     10.453,
+     "Passo dello Stelvio",
+     1
+    ],
+    [
+     46.618,
+     10.594,
+     "Prato allo Stelvio",
+     0
+    ],
+    [
+     46.629,
+     10.774,
+     "Silandro",
+     0
+    ],
+    [
+     46.67,
+     11.159,
+     "Merano",
+     0
+    ],
+    [
+     46.498,
+     11.355,
+     "Bolzano",
+     0
+    ],
+    [
+     46.598,
+     11.532,
+     "Ponte Gardena",
+     0
+    ],
+    [
+     46.576,
+     11.674,
+     "Ortisei",
+     0
+    ],
+    [
+     46.547,
+     11.809,
+     "Passo Gardena",
+     1
+    ],
+    [
+     46.5476,
+     11.8754,
+     "Corvara",
+     0
+    ],
+    [
+     46.5133,
+     11.8756,
+     "Passo Campolongo",
+     1
+    ],
+    [
+     46.4936,
+     11.8748,
+     "Arabba",
+     0
+    ]
+   ],
+   "profile": [
+    [
+     0,
+     1225,
+     "Bormio"
+    ],
+    [
+     22,
+     2757,
+     "Stelvio"
+    ],
+    [
+     45,
+     915,
+     "Prato"
+    ],
+    [
+     110,
+     325,
+     "Merano"
+    ],
+    [
+     150,
+     265,
+     "Bolzano"
+    ],
+    [
+     185,
+     1236,
+     "Ortisei"
+    ],
+    [
+     210,
+     2121,
+     "Passo Gardena"
+    ],
+    [
+     230,
+     1568,
+     "Corvara"
+    ],
+    [
+     242,
+     1875,
+     "Campolongo"
+    ],
+    [
+     250,
+     1602,
+     "Arabba"
+    ]
+   ],
+   "sleep": [],
+   "foot": [],
+   "date": "Sun 30 Aug",
+   "iso": "2026-08-30",
+   "booked": {
+    "status": "Selected · Laguscei Dolomites Mountain Hotel",
+    "price": "€234.40",
+    "nights": "2 nights · Sun 30 Aug → Tue 1 Sep · Arabba · €117.20 a night",
+    "links": [
+     "https://www.booking.com/hotel/it/laguscei.en-gb.html?checkin=2026-08-30&checkout=2026-09-01&group_adults=1&no_rooms=1"
+    ],
+    "note": "Two nights, correctly, and matching the €234 you quoted. Arabba sits between the Campolongo and the Pordoi, which is why day 9's Sella loop closes without a detour."
+   },
+   "picks": null,
+   "cost": {
+    "n": 7,
+    "bed": 117.2,
+    "fuel": 24.45,
+    "tolls": 0.0,
+    "food": 56.0,
+    "extras": 5.0,
+    "total": 202.65,
+    "cum": 1396.78,
+    "bed_note": "Laguscei, first of two nights",
+    "toll_note": "",
+    "food_note": "",
+    "extras_note": "Parking, water, chain lube",
+    "fuel_note": "250 km at about 0.10 a kilometre"
+   }
+  },
+  {
+   "n": 8,
+   "kind": "rest",
+   "title": "Dolomites on foot",
+   "frm": "Arabba",
+   "to": "Arabba",
+   "country": "IT",
+   "km": 0,
+   "hrs": "—",
+   "roads": "Bike stays parked. Two nights in the same bed — the only time on the trip.",
+   "why": "The one full rest day left standing, and the right one to keep. Arabba sits at 1,600 m with a cable car out of the village — you are inside the best walking country in Europe and spending it in a helmet would be a waste.",
+   "vias": [
+    [
+     46.4936,
+     11.8748,
+     "Arabba",
+     0
+    ]
+   ],
+   "profile": [],
+   "sleep": [],
+   "foot": [
+    {
+     "t": "08:30",
+     "h": "Porta Vescovo cable car",
+     "d": "Straight out of the village up to 2,478 m. From the top the whole Marmolada face is in front of you and the Sella massif behind — the best view in Fodom and you did not have to walk for it."
+    },
+    {
+     "t": "09:30",
+     "h": "Viel dal Pan",
+     "d": "The reason to be here, and it starts where the cable car drops you. An old smugglers' path that runs the balcony from Porta Vescovo across to the Pordoi, almost level, at around 2,400 m, with the Marmolada glacier on your right the whole way. Two and a half to three hours, and easy. Take a windproof layer regardless of what it is doing in the valley."
+    },
+    {
+     "t": "12:30",
+     "h": "Rifugio Viel dal Pan",
+     "d": "About two thirds along the path. Barley soup, casunziei, a glass of Lagrein, on a terrace at two and a half thousand metres. This is the entire point of the Dolomites — do not bring a packed lunch."
+    },
+    {
+     "t": "14:00",
+     "h": "Sass Pordoi, if the legs allow",
+     "d": "The path ends at Passo Pordoi. The funivia there goes to 2,950 m in four minutes — the Terrace of the Dolomites, a flat limestone desert on top of the Sella. Twenty minutes up there is enough."
+    },
+    {
+     "t": "16:00",
+     "h": "Bus back",
+     "d": "Dolomiti Bus runs Pordoi to Arabba through the afternoon. Check the last departure before you set off in the morning — they thin out after five."
+    },
+    {
+     "t": "Alternative",
+     "h": "The famous ridge instead",
+     "d": "Drive or bus over to Ortisei, cable car to Seceda, and walk the ridge with the Odle spires on your shoulder. Half a day, more photographs, more people."
+    }
+   ],
+   "date": "Mon 31 Aug",
+   "iso": "2026-08-31",
+   "booked": {
+    "status": "Same room · Laguscei",
+    "price": "—",
+    "nights": "Second night of the 30 Aug → 1 Sep stay",
+    "links": [
+     ""
+    ],
+    "note": "No packing, no checkout. Porta Vescovo leaves from the village."
+   },
+   "picks": null,
+   "cost": {
+    "n": 8,
+    "bed": 117.2,
+    "fuel": 0.0,
+    "tolls": 0.0,
+    "food": 65.0,
+    "extras": 50.0,
+    "total": 232.2,
+    "cum": 1628.98,
+    "bed_note": "Laguscei, second night",
+    "toll_note": "",
+    "food_note": "Rifugio lunch on the Viel dal Pan, and a proper dinner",
+    "extras_note": "Porta Vescovo and Sass Pordoi lifts, about €45",
+    "fuel_note": "No riding today"
+   }
+  },
+  {
+   "n": 9,
+   "kind": "ride",
+   "title": "Sella Ronda, then east",
+   "frm": "Arabba",
+   "to": "Heiligenblut",
+   "country": "IT → AT",
+   "km": 300,
+   "hrs": "≈6.5 h",
+   "roads": "Close the Sella Ronda first — Campolongo, Corvara, Gardena, Sella, Pordoi, back down to Arabba. Then east on the SS48 through Andraz to the Falzarego and down to Cortina, up to Lago di Misurina for the Tre Cime view, north to Dobbiaco and east down the Val Pusteria to Lienz. Over the Iselsberg and up the Möll valley.",
+   "why": "Arabba sits on the Sella Ronda itself, so the loop closes without a detour. Still the longest day of the trip and the price of fitting the plan into fourteen — but it ends at the foot of the Grossglockner.",
+   "vias": [
+    [
+     46.4936,
+     11.8748,
+     "Arabba",
+     0
+    ],
+    [
+     46.5133,
+     11.8756,
+     "Passo Campolongo",
+     1
+    ],
+    [
+     46.5476,
+     11.8754,
+     "Corvara",
+     0
+    ],
+    [
+     46.547,
+     11.809,
+     "Passo Gardena",
+     1
+    ],
+    [
+     46.512,
+     11.762,
+     "Passo Sella",
+     1
+    ],
+    [
+     46.488,
+     11.813,
+     "Passo Pordoi",
+     1
+    ],
+    [
+     46.4936,
+     11.8748,
+     "Arabba",
+     0
+    ],
+    [
+     46.527,
+     11.952,
+     "Andraz",
+     0
+    ],
+    [
+     46.519,
+     12.009,
+     "Passo Falzarego",
+     1
+    ],
+    [
+     46.537,
+     12.136,
+     "Cortina",
+     0
+    ],
+    [
+     46.583,
+     12.253,
+     "Lago di Misurina",
+     0
+    ],
+    [
+     46.735,
+     12.223,
+     "Dobbiaco",
+     0
+    ],
+    [
+     46.75,
+     12.419,
+     "Sillian",
+     0
+    ],
+    [
+     46.829,
+     12.769,
+     "Lienz",
+     0
+    ],
+    [
+     46.848,
+     12.838,
+     "Iselsberg",
+     1
+    ],
+    [
+     47.0353,
+     12.8433,
+     "Heiligenblut",
+     0
+    ]
+   ],
+   "profile": [
+    [
+     0,
+     1602,
+     "Arabba"
+    ],
+    [
+     10,
+     1875,
+     "Campolongo"
+    ],
+    [
+     25,
+     1568,
+     "Corvara"
+    ],
+    [
+     42,
+     2121,
+     "Gardena"
+    ],
+    [
+     60,
+     2244,
+     "Sella"
+    ],
+    [
+     75,
+     2239,
+     "Pordoi"
+    ],
+    [
+     85,
+     1602,
+     "Arabba"
+    ],
+    [
+     100,
+     2105,
+     "Falzarego"
+    ],
+    [
+     120,
+     1224,
+     "Cortina"
+    ],
+    [
+     140,
+     1754,
+     "Misurina"
+    ],
+    [
+     175,
+     1256,
+     "Dobbiaco"
+    ],
+    [
+     235,
+     673,
+     "Lienz"
+    ],
+    [
+     255,
+     1204,
+     "Iselsberg"
+    ],
+    [
+     300,
+     1301,
+     "Heiligenblut"
+    ]
+   ],
+   "sleep": [
+    {
+     "name": "Pension Bergkristall",
+     "kind": "Guesthouse",
+     "rating": "4.9",
+     "count": "224",
+     "where": "Hof 71, Heiligenblut",
+     "note": "Large rooms with a kitchenette, free parking, a cable car on the property and a view straight at the Glockner. The best-reviewed bed on the whole route.",
+     "pid": "ChIJyS500bJqd0cR7Zs6bmwcixM"
+    },
+    {
+     "name": "Pension Trojerhof",
+     "kind": "Guesthouse",
+     "rating": "4.7",
+     "count": "153",
+     "where": "Hof 52, Heiligenblut",
+     "note": "Front rooms look across at the Heiligenblut church with the Grossglockner behind it — the photograph everyone takes. Dinner is served early, from seven.",
+     "pid": "ChIJpcUCqK1qd0cRc3vinVfeHKQ"
+    },
+    {
+     "name": "Pension Bäuerle",
+     "kind": "Guesthouse",
+     "rating": "4.3",
+     "count": "113",
+     "where": "Hadergasse 4, Heiligenblut",
+     "note": "The cheapest of the three and the most basic — older rooms, thin walls. But cyclists report kit washed and dried overnight without being asked, which counts for something.",
+     "pid": "ChIJC17pBrJqd0cRKMMkqsROtqI"
+    }
+   ],
+   "foot": [
+    {
+     "t": "Note",
+     "h": "If 6.5 hours is too much",
+     "d": "Cut the Misurina spur and go straight from Cortina to Dobbiaco. That is 40 km and about 50 minutes back, at the cost of the best Tre Cime view on the route."
+    }
+   ],
+   "date": "Tue 1 Sep",
+   "iso": "2026-09-01",
+   "picks": null,
+   "booked": {
+    "status": "Selected · Landhaus Alpenrose – Feriendomizile Pichler",
+    "price": "€77.70",
+    "nights": "1 night · Tue 1 → Wed 2 Sep · Heiligenblut",
+    "links": [
+     "https://www.booking.com/hotel/at/landhaus-alpenrose-feriendomizile-pichler.en-gb.html?checkin=2026-09-01&checkout=2026-09-02&group_adults=1&no_rooms=1"
+    ],
+    "note": "Winkl 69, Heiligenblut. 9.0 from 242 reviews, free parking, and free cancellation — the only flexible night on the trip, which is useful the evening before the Grossglockner. Buy the Glockner day ticket at the village booking centre when you arrive: €33.50 instead of €36.50."
+   },
+   "cost": {
+    "n": 9,
+    "bed": 77.7,
+    "fuel": 29.34,
+    "tolls": 7.0,
+    "food": 56.0,
+    "extras": 5.0,
+    "total": 175.04,
+    "cum": 1804.02,
+    "bed_note": "Landhaus Alpenrose",
+    "toll_note": "Austrian 10-day motorcycle vignette, bought crossing at Sillian",
+    "food_note": "",
+    "extras_note": "Parking, water, chain lube",
+    "fuel_note": "300 km at about 0.10 a kilometre"
+   }
+  },
+  {
+   "n": 10,
+   "kind": "ride",
+   "title": "Grossglockner to the Fernpass",
+   "frm": "Heiligenblut",
+   "to": "Füssen",
+   "country": "AT → DE",
+   "km": 370,
+   "hrs": "≈8 h",
+   "roads": "Be at the Glockner toll gate when it opens. Franz-Josefs-Höhe for the glacier, back down over the Hochtor and the Edelweißspitze spur, then Fusch to Zell am See. West along the Salzach through Mittersill to Krimml, over the Gerlos Alpenstraße and down the Zillertal to Jenbach. West up the Inn to Telfs, then Nassereith and over the Fernpass to Reutte and Füssen.",
+   "why": "Two of the old days pressed into one. It is the only day on the trip over your seven-hour ceiling, and it is over it by about an hour — see the note below before you commit to it.",
+   "vias": [
+    [
+     47.0353,
+     12.8433,
+     "Heiligenblut",
+     0
+    ],
+    [
+     47.0745,
+     12.7523,
+     "Franz-Josefs-Höhe",
+     0
+    ],
+    [
+     47.0806,
+     12.8386,
+     "Hochtor",
+     1
+    ],
+    [
+     47.1222,
+     12.8318,
+     "Edelweißspitze",
+     1
+    ],
+    [
+     47.23,
+     12.825,
+     "Fusch",
+     0
+    ],
+    [
+     47.3235,
+     12.7969,
+     "Zell am See",
+     0
+    ],
+    [
+     47.279,
+     12.483,
+     "Mittersill",
+     0
+    ],
+    [
+     47.213,
+     12.174,
+     "Krimml",
+     0
+    ],
+    [
+     47.2274,
+     12.1135,
+     "Gerlospass",
+     1
+    ],
+    [
+     47.232,
+     11.883,
+     "Zell am Ziller",
+     0
+    ],
+    [
+     47.388,
+     11.777,
+     "Jenbach",
+     0
+    ],
+    [
+     47.305,
+     11.07,
+     "Telfs",
+     0
+    ],
+    [
+     47.318,
+     10.842,
+     "Nassereith",
+     0
+    ],
+    [
+     47.362,
+     10.83,
+     "Fernpass",
+     1
+    ],
+    [
+     47.49,
+     10.718,
+     "Reutte",
+     0
+    ],
+    [
+     47.5696,
+     10.7004,
+     "Füssen",
+     0
+    ]
+   ],
+   "profile": [
+    [
+     0,
+     1301,
+     "Heiligenblut"
+    ],
+    [
+     25,
+     2369,
+     "Franz-Josefs-Höhe"
+    ],
+    [
+     45,
+     2504,
+     "Hochtor"
+    ],
+    [
+     60,
+     2571,
+     "Edelweißspitze"
+    ],
+    [
+     85,
+     800,
+     "Fusch"
+    ],
+    [
+     105,
+     757,
+     "Zell am See"
+    ],
+    [
+     145,
+     790,
+     "Mittersill"
+    ],
+    [
+     175,
+     1076,
+     "Krimml"
+    ],
+    [
+     195,
+     1531,
+     "Gerlospass"
+    ],
+    [
+     230,
+     575,
+     "Zell am Ziller"
+    ],
+    [
+     250,
+     563,
+     "Jenbach"
+    ],
+    [
+     310,
+     634,
+     "Telfs"
+    ],
+    [
+     345,
+     1216,
+     "Fernpass"
+    ],
+    [
+     360,
+     854,
+     "Reutte"
+    ],
+    [
+     370,
+     808,
+     "Füssen"
+    ]
+   ],
+   "sleep": [
+    {
+     "name": "Hotel Hirsch",
+     "kind": "Hotel",
+     "rating": "4.4",
+     "count": "1,274",
+     "where": "Kaiser-Maximilian-Platz 7, Füssen",
+     "note": "On-site parking and seconds from the old town on foot. Rooms in the new wing are larger. Ask for one away from the square.",
+     "pid": "ChIJs2v5GAj2nEcRyW4MDMKODak"
+    },
+    {
+     "name": "Hotel Schlosskrone",
+     "kind": "Hotel",
+     "rating": "4.6",
+     "count": "1,128",
+     "where": "Prinzregentenplatz 2, Füssen",
+     "note": "Has its own patisserie downstairs and a spa upstairs. Two minutes from the station and the old town. Front rooms can be noisy.",
+     "pid": "ChIJd8Z30OL1nEcRSTyQZePIx8c"
+    },
+    {
+     "name": "Hotel Sonne Füssen",
+     "kind": "Boutique hotel",
+     "rating": "4.6",
+     "count": "2,232",
+     "where": "Prinzregentenplatz 1, Füssen",
+     "note": "The nicest of the three by some distance — spa, big rooms, an excellent breakfast — and the one most likely to break the budget. Worth pricing anyway on a quiet date.",
+     "pid": "ChIJPQ3QxuL1nEcRAmpGl4MJ5BU"
+    }
+   ],
+   "foot": [
+    {
+     "t": "Read first",
+     "h": "This day is about an hour over your limit",
+     "d": "370 km with the Grossglockner in it runs to roughly eight hours in the saddle. Three ways to pull it back: skip the Franz-Josefs-Höhe spur and save 35 km and about 45 minutes; take the Inn valley motorway from Jenbach to Telfs and save another 30, at the cost of your no-motorway rule; or accept it and leave at the toll gate opening. Sunset is around 19:45 in early September, so the light is there."
+    },
+    {
+     "t": "Midday",
+     "h": "Twenty minutes at Krimml",
+     "d": "The lower basin is a five-minute walk from the car park and gets you the full drop. The trail to the top is two hours — not on this day."
+    },
+    {
+     "t": "Evening",
+     "h": "Füssen on foot",
+     "d": "Arrive late afternoon and the Lechfall is ten minutes away, the Hohes Schloss courtyard five. Enough for the evening, not for Neuschwanstein."
+    }
+   ],
+   "date": "Wed 2 Sep",
+   "iso": "2026-09-03",
+   "picks": null,
+   "booked": {
+    "status": "Selected · Lucky Home Ludwig Appartment",
+    "price": "€69",
+    "nights": "1 night · Thu 3 → Fri 4 Sep · Füssen",
+    "links": [
+     "https://www.booking.com/hotel/de/lucky-home-ludwig-appartment.en-gb.html?checkin=2026-09-03&checkout=2026-09-04&group_adults=1&no_rooms=1"
+    ],
+    "note": "Old town, 100 m from the centre, location scored 9.9, 9.5 from 301 reviews. A 27 m² apartment with a kitchen for less than a single room elsewhere in Füssen — self-catering here would cut the food line for the day."
+   },
+   "cost": {
+    "n": 10,
+    "bed": 103.0,
+    "fuel": 36.19,
+    "tolls": 38.5,
+    "food": 56.0,
+    "extras": 9.0,
+    "total": 242.69,
+    "cum": 2046.71,
+    "bed_note": "Hotel Hirsch — private parking on site",
+    "toll_note": "Grossglockner €33.50 bought in advance at Heiligenblut, Gerlos €5 same-day rate",
+    "food_note": "",
+    "extras_note": "Krimml falls entry €9 — the Hirsch has its own parking, so nothing extra there",
+    "fuel_note": "370 km at about 0.10 a kilometre"
+   }
+  },
+  {
+   "n": 11,
+   "kind": "ride",
+   "title": "Across Germany to the Rhine",
+   "frm": "Füssen",
+   "to": "Boppard",
+   "country": "DE",
+   "km": 535,
+   "hrs": "≈7 h",
+   "roads": "West to Kempten and Memmingen, then the A7 and A8 through Ulm to Stuttgart, the A6 to Heidelberg and the A61 to Mainz — motorway through the middle, deliberately. Drop onto the B9 at Bingen and take the Rhine gorge past Bacharach and St. Goar into Boppard. <b>Alternative:</b> stay on the A7 north from Ulm through Aalen and Crailsheim, stop at Rothenburg, then carry on to Würzburg and pick up the A3 west — about 80 km and an hour more.",
+   "why": "A transit day with a good ending. Two thirds of it is fast road so the last 65 km can be the gorge, and so tomorrow is a short one. Rothenburg is still reachable as a mid-day stop if you are willing to make it a long day — see below.",
+   "vias": [
+    [
+     47.5696,
+     10.7004,
+     "Füssen",
+     0
+    ],
+    [
+     47.7267,
+     10.3169,
+     "Kempten",
+     0
+    ],
+    [
+     47.9878,
+     10.1811,
+     "Memmingen",
+     0
+    ],
+    [
+     48.4011,
+     9.9876,
+     "Ulm",
+     0
+    ],
+    [
+     48.7758,
+     9.1829,
+     "Stuttgart",
+     0
+    ],
+    [
+     49.1427,
+     9.2109,
+     "Heilbronn",
+     0
+    ],
+    [
+     49.3988,
+     8.6724,
+     "Heidelberg",
+     0
+    ],
+    [
+     49.9929,
+     8.2473,
+     "Mainz",
+     0
+    ],
+    [
+     49.967,
+     7.899,
+     "Bingen",
+     0
+    ],
+    [
+     50.057,
+     7.769,
+     "Bacharach",
+     0
+    ],
+    [
+     50.15,
+     7.716,
+     "St. Goar",
+     0
+    ],
+    [
+     50.2312,
+     7.5885,
+     "Boppard",
+     0
+    ]
+   ],
+   "profile": [
+    [
+     0,
+     808,
+     "Füssen"
+    ],
+    [
+     40,
+     675,
+     "Kempten"
+    ],
+    [
+     80,
+     601,
+     "Memmingen"
+    ],
+    [
+     135,
+     478,
+     "Ulm"
+    ],
+    [
+     230,
+     245,
+     "Stuttgart"
+    ],
+    [
+     280,
+     157,
+     "Heilbronn"
+    ],
+    [
+     345,
+     114,
+     "Heidelberg"
+    ],
+    [
+     435,
+     89,
+     "Mainz"
+    ],
+    [
+     470,
+     80,
+     "Bingen"
+    ],
+    [
+     535,
+     70,
+     "Boppard"
+    ]
+   ],
+   "sleep": [
+    {
+     "name": "Historik Hotel Gotisches Haus Garni",
+     "kind": "Historic guesthouse",
+     "rating": "4.7",
+     "count": "397",
+     "where": "Herrngasse 13, Rothenburg",
+     "note": "A block from the market square in a genuinely gothic building. Large rooms, big bathrooms, a library breakfast room. The pick of the three.",
+     "pid": "ChIJ-QZ9yqePmEcRc26pZdIWNlQ"
+    },
+    {
+     "name": "Altes Brauhaus",
+     "kind": "Bed & breakfast",
+     "rating": "4.5",
+     "count": "491",
+     "where": "Wenggasse 24, Rothenburg",
+     "note": "Inside the walls and still has its own parking, which is rare here. Rooms 111–117 face the sun and get very hot in summer — ask for another.",
+     "pid": "ChIJ88GV9qWPmEcRNSM-dWSZjK0"
+    },
+    {
+     "name": "Altfränkische Weinstube",
+     "kind": "Rooms above a wine tavern",
+     "rating": "4.6",
+     "count": "862",
+     "where": "Klosterhof 7, Rothenburg",
+     "note": "Half a dozen rooms over a very old, very atmospheric Weinstube in a quiet courtyard. Book direct — reviewers report third-party bookings going missing.",
+     "pid": "ChIJq62WDaePmEcRtxKWzO_sKR0"
+    }
+   ],
+   "foot": [
+    {
+     "t": "Option",
+     "h": "Cut through Rothenburg",
+     "d": "You do not have to give it up entirely — it just becomes a stop rather than a night. Take the A7 north out of Ulm instead of the A8 to Stuttgart: Aalen, Crailsheim, and the Rothenburg exit is about 12 km from the old town. Rejoin the A7 to Würzburg afterwards and pick the A3 west exactly as planned. Costs roughly 80 km and an hour of riding over the Stuttgart–Heidelberg line, so call it 615 km and eight hours in the saddle."
+    },
+    {
+     "t": "If you stop",
+     "h": "Ninety minutes is enough",
+     "d": "Park outside the walls — the old town is closed to through traffic. Walk the covered rampart from the Klingentor round to the Burggarten, about half the circuit and 40 minutes, then the Plönlein and the market square. That is the town's best hour. The Night Watchman's tour starts at 20:00, so it is off the table on a day you are riding on to the Rhine."
+    },
+    {
+     "t": "Timing",
+     "h": "It makes for a long day",
+     "d": "Away from Füssen at seven, Rothenburg by about half eleven, back on the road at one, Boppard around six with fuel and food stops. Sunset is near 20:00, so the light holds — but this turns a seven-hour day into something closer to nine door to door."
+    },
+    {
+     "t": "From Bingen",
+     "h": "The gorge is the payoff either way",
+     "d": "65 km of B9 along the left bank, castle after castle, Bacharach and St. Goar with the Loreley opposite. Do not shortcut this onto the A61 — it is the reason the rest of the day is motorway."
+    },
+    {
+     "t": "Evening",
+     "h": "Boppard on foot",
+     "d": "The Rheinallee promenade is a ten-minute walk from Steinstraße. The Roman fort walls are in the middle of town, and the chairlift to the Vierseenblick runs until early evening if you want the view over the four bends."
+    }
+   ],
+   "date": "Thu 3 Sep",
+   "iso": "2026-09-04",
+   "picks": null,
+   "booked": {
+    "status": "⚠ Wrong hotel — this one is in Austria",
+    "price": "€88.83 for the right one",
+    "nights": "1 night · Fri 4 → Sat 5 Sep · should be Rothenburg",
+    "links": [
+     "https://www.booking.com/hotel/de/schwarzer-adler-rothenburg-ob-der-tauber.en-gb.html?checkin=2026-09-04&checkout=2026-09-05&group_adults=1&no_rooms=1"
+    ],
+    "note": "Your link points at booking.com/hotel/<b>at</b>/schwarzer-adler, ID 76755 — an Austrian property, and the connector places it in Nauders in Tirol, roughly 300 km south of Rothenburg and back past the Stelvio. The Rothenburg one is a different property: <b>Hotel Schwarzer Adler, Klingengasse 12</b>, ID 273032, €88.83 on your dates, ninety seconds from the Klingentor where the wall walk starts. The link here is corrected to that one — check it before you book."
+   },
+   "cost": {
+    "n": 11,
+    "bed": 77.5,
+    "fuel": 52.33,
+    "tolls": 0.0,
+    "food": 56.0,
+    "extras": 12.0,
+    "total": 197.83,
+    "cum": 2244.54,
+    "bed_note": "Hotel Ohm Patt, Boppard",
+    "toll_note": "",
+    "food_note": "",
+    "extras_note": "Public car park about €7 — the Ohm Patt lists no parking of its own",
+    "fuel_note": "535 km at about 0.10 a kilometre"
+   }
+  },
+  {
+   "n": 12,
+   "kind": "ride",
+   "title": "Eifel, Ardennes, home",
+   "frm": "Boppard",
+   "to": "Leiden",
+   "country": "DE → BE → NL",
+   "km": 350,
+   "hrs": "≈6.5 h",
+   "roads": "North-west through Mayen and across the Eifel past the Nürburgring, over to Monschau and Eupen, then through the Ardennes and Limburg. Motorway only for the last hour from Eindhoven.",
+   "why": "Back to back roads for the run home, and short enough to enjoy them. The trip ends the way it began, in reverse.",
+   "vias": [
+    [
+     50.2312,
+     7.5885,
+     "Boppard",
+     0
+    ],
+    [
+     50.328,
+     7.223,
+     "Mayen",
+     0
+    ],
+    [
+     50.335,
+     6.948,
+     "Nürburg",
+     0
+    ],
+    [
+     50.554,
+     6.244,
+     "Monschau",
+     0
+    ],
+    [
+     50.628,
+     6.036,
+     "Eupen",
+     0
+    ],
+    [
+     50.851,
+     5.691,
+     "Maastricht",
+     0
+    ],
+    [
+     51.4416,
+     5.4697,
+     "Eindhoven",
+     0
+    ],
+    [
+     52.1601,
+     4.497,
+     "Leiden",
+     0
+    ]
+   ],
+   "profile": [
+    [
+     0,
+     70,
+     "Boppard"
+    ],
+    [
+     60,
+     210,
+     "Mayen"
+    ],
+    [
+     95,
+     620,
+     "Nürburgring"
+    ],
+    [
+     160,
+     440,
+     "Monschau"
+    ],
+    [
+     230,
+     50,
+     "Maastricht"
+    ],
+    [
+     290,
+     20,
+     "Eindhoven"
+    ],
+    [
+     350,
+     0,
+     "Leiden"
+    ]
+   ],
+   "sleep": [
+    {
+     "name": "Hotel Ebertor",
+     "kind": "Hotel",
+     "rating": "4.3",
+     "count": "1,418",
+     "where": "Heerstraße 172, Boppard",
+     "note": "On the river with its own beer garden, and it also runs proper hostel rooms if you want to spend nothing on the last night. Simple, clean, easy parking.",
+     "pid": "ChIJ77x0LE5wvkcRS7g1NvDyAVo"
+    },
+    {
+     "name": "Bellevue Rheinhotel",
+     "kind": "Historic hotel",
+     "rating": "4.5",
+     "count": "1,597",
+     "where": "Rheinallee 41, Boppard",
+     "note": "Art nouveau, right on the promenade, with an indoor pool and sauna. Off-season the cheaper rooms are reachable; in summer probably not.",
+     "pid": "ChIJ1d6C41BwvkcRB9voRfULCqg"
+    },
+    {
+     "name": "Hotel Rheinfels",
+     "kind": "Hotel",
+     "rating": "4.3",
+     "count": "254",
+     "where": "St. Goar — 20 min upriver",
+     "note": "Family-run with river-view rooms looking across at the ferry crossing. Older fittings, spotless, very good breakfast. A quieter alternative to Boppard.",
+     "pid": "ChIJwzRXsJN1vkcR1YlOVA5dIFE"
+    }
+   ],
+   "foot": [
+    {
+     "t": "Timing",
+     "h": "No need to rush",
+     "d": "350 km on back roads is about six and a half hours. Away at nine puts you home for dinner with stops at Monschau and somewhere in the Ardennes."
+    },
+    {
+     "t": "Worth stopping",
+     "h": "Monschau",
+     "d": "Half-timbered town in a narrow valley on the Belgian border, about two thirds of the way. Twenty minutes on foot is enough and it is the last proper thing you will see."
+    }
+   ],
+   "date": "Fri 4 Sep",
+   "iso": "2026-09-05",
+   "picks": null,
+   "booked": {
+    "status": "Selected · Hotel Rheinlust",
+    "price": "€102",
+    "nights": "1 night · Sat 5 → Sun 6 Sep · Boppard",
+    "links": [
+     "https://www.booking.com/hotel/de/rheinlustboppard.en-gb.html?checkin=2026-09-05&checkout=2026-09-06&group_adults=1&no_rooms=1"
+    ],
+    "note": "Rheinallee 29-30, on the promenade with the river view for the last night. Parking is street or a public lot at €7 a day, not a garage, and breakfast is charged separately at about €15 — both are in today's costs below."
+   },
+   "cost": {
+    "n": 12,
+    "bed": 0.0,
+    "fuel": 34.23,
+    "tolls": 0.0,
+    "food": 45.0,
+    "extras": 5.0,
+    "total": 84.23,
+    "cum": 2328.77,
+    "bed_note": "Home tonight",
+    "toll_note": "",
+    "food_note": "Lunch on the road, dinner at home",
+    "extras_note": "Coffee stops. No tolls on this route",
+    "fuel_note": "350 km at about 0.10 a kilometre"
+   }
+  }
+ ],
+ "budget": {
+  "subtotal": 2328.77,
+  "contingency": 232.88,
+  "total": 2561.65,
+  "per_day": 213,
+  "rows": [
+   {
+    "item": "Accommodation",
+    "amount": 1144.69,
+    "note": "Eleven nights across nine properties, all booked. Every one verified by property ID against Booking on the dates you are travelling."
+   },
+   {
+    "item": "Fuel",
+    "amount": 353.58,
+    "note": "3,615 km at 4.8 L/100 km and €1.95 a litre, with 4.5% added for wrong turns and detours."
+   },
+   {
+    "item": "Tolls & vignettes",
+    "amount": 45.5,
+    "note": "Two days now carry tolls, not three — the Zillertaler Höhenstraße goes with the Mayrhofen night."
+   },
+   {
+    "item": "Food & drink",
+    "amount": 659.0,
+    "note": "€56 on a normal day — breakfast is included nearly everywhere, so this is lunch, dinner, coffee and water. Less on days 1 and 14, more on the rest day."
+   },
+   {
+    "item": "Parking, lifts & incidentals",
+    "amount": 126.0,
+    "note": "A €5 daily floor plus the specific ones: cable cars on the rest day, the Krimml entry, the Night Watchman tour, garage in Bormio, and the Rheinlust's separate parking and breakfast on the last night."
+   }
+  ],
+  "before": [
+   {
+    "item": "Tyres",
+    "cost": "€200–260",
+    "note": "3,740 km with a lot of it leaned over is roughly a third of a rear Road 6. If yours are past half worn, fit a new rear before you go rather than hunting a fitment in Bormio."
+   },
+   {
+    "item": "Service & chain",
+    "cost": "€0–250",
+    "note": "Get the service interval to fall before the trip, not during it."
+   },
+   {
+    "item": "Insurance & breakdown",
+    "cost": "€30–90",
+    "note": "Check the policy covers Switzerland, which is outside the EU. European breakdown cover is worth having on a route with this much altitude."
+   }
+  ],
+  "basis": [
+   "Solo, one room, one bike. Twelve days, eleven nights, 24 August to 4 September.",
+   "All accommodation booked — the bed figures are what you paid, not quotes.",
+   "One day breaks the seven-hour ceiling: day 10, at about eight hours. It is locked in now, so plan the early start rather than the shortcut.",
+   "Fuel at €1.95/L against an EU average of €1.83/L on 4 August — the largest remaining unknown.",
+   "Contingency is 10%. With no spare days and the beds fixed, it now covers weather and mechanical trouble rather than accommodation."
+  ]
+ },
+ "warnings": [
+  {
+   "h": "Before you leave — the short list",
+   "d": "Fit a rear tyre if yours is past half worn; 3,615 km with this much lean angle is about a third of one. Get the service interval to fall before the trip. Check the policy covers Switzerland, which is outside the EU. Buy the Austrian 10-day motorcycle vignette. And check the pass operators' own pages the week before — Stelvio, Furka, Grimsel, Susten, Grossglockner and Gerlos all close for snow outside roughly June to late October."
+  },
+  {
+   "h": "Three things to do on the road",
+   "d": "Buy the Grossglockner day ticket at the Heiligenblut booking centre the evening you arrive: €33.50 instead of €36.50, and no cash window at six in the morning. Keep the receipt — it gets you the reduced Gerlos rate the same day. And ask the Ohm Patt about parking when you check in; it lists none of its own."
+  },
+  {
+   "h": "Two mornings that need an early alarm",
+   "d": "Sunday 30 August, Bormio: be moving by 07:00. A Sunday at the end of August on the Stelvio is the worst combination there is, and by nine the hairpins are solid. Wednesday 2 September, Heiligenblut: be at the Glockner toll gate when it opens — it is an eight-hour day and the only way to make it a good one is to ride the best part of it empty."
+  },
+  {
+   "h": "Day 11 is mostly motorway",
+   "d": "Ulm, Stuttgart, Heidelberg and Mainz go past on fast road so that the last 65 km can be the Rhine gorge. That is the trade — a dull middle for a good end and a short final day."
+  },
+  {
+   "h": "Day 10 breaks the seven-hour rule",
+   "d": "Heiligenblut to Füssen with the Grossglockner in it is 370 km and roughly eight hours. Skipping the Franz-Josefs-Höhe spur saves 35 km and about 45 minutes; the Inn valley motorway from Jenbach to Telfs saves another 30. Otherwise it is an early start and a long day, and it is the day right after the trip's only rest day but one."
+  },
+  {
+   "h": "Sunday 30 August is the Stelvio day",
+   "d": "The worst possible combination: a Sunday at the end of August on the most famous pass in Europe. Leave Bormio at 07:00, not 07:30. By nine the hairpins are solid."
+  },
+  {
+   "h": "Buy the Glockner ticket the night before",
+   "d": "Heiligenblut's Information & Booking Center sells the motorcycle day ticket in advance for €33.50 instead of €36.50 at the gate. You are sleeping there anyway, and it means you are not queueing at a cash window at six in the morning."
+  }
+ ],
+ "practical": [
+  {
+   "h": "Pass season",
+   "d": "Stelvio, Furka, Grimsel, Susten, the Grossglockner and the Gerlos are all snow-closed outside roughly early June to late October. Check the operators' own pages the week before you leave; a late spring pushes opening back."
+  },
+  {
+   "h": "Tolls",
+   "d": "Grossglockner Hochalpenstraße, around €30 for a motorcycle day ticket. Gerlos Alpenstraße, around €12. Both are worth it. Every Swiss and Italian pass on this route is free."
+  },
+  {
+   "h": "Vignettes",
+   "d": "You will not need the Swiss motorway vignette if you genuinely stay off the autobahn. Austria's ten-day motorcycle vignette is cheap enough to buy as insurance in case you end up on an A-road."
+  },
+  {
+   "h": "ZTL and parking",
+   "d": "Italian historic centres have camera-enforced restricted zones. Park outside the walls in Rothenburg too — the old town is closed to through traffic."
+  },
+  {
+   "h": "Tyres",
+   "d": "Roughly 3,700 km, a lot of it leaned over. That is about a third of a rear sport-touring tyre. Check tread depth before you leave rather than hunting for a fitment in Bormio."
+  },
+  {
+   "h": "Booking",
+   "d": "Days 1\\u20138 are done. The five open nights are Heiligenblut, Mayrhofen, F\\u00fcssen, Rothenburg and Boppard \\u2014 all well under the ceiling, but all in towns that were over 80% sold out when checked. Reserve them before the prices move."
+  },
+  {
+   "h": "Sunday",
+   "d": "Shops close in Germany and Austria on Sundays and many village fuel stations go card-only and unstaffed. Fill up on Saturday evening."
+  },
+  {
+   "h": "Weather margin",
+   "d": "With no spare days, a bad-weather day has to be absorbed rather than waited out. The two places to lose time cheaply are the Misurina spur on day 9 and the Romantic Road detours on day 12."
+  }
+ ],
+ "costs": [
+  {
+   "n": 1,
+   "bed": 92.36,
+   "fuel": 41.08,
+   "tolls": 0.0,
+   "food": 45.0,
+   "extras": 5.0,
+   "total": 183.44,
+   "cum": 183.44,
+   "bed_note": "Beim Weinbauer",
+   "toll_note": "",
+   "food_note": "Leaving from home, so lunch and dinner only",
+   "extras_note": "Parking, water, chain lube",
+   "fuel_note": "420 km at about 0.10 a kilometre"
+  },
+  {
+   "n": 2,
+   "bed": 96.03,
+   "fuel": 32.28,
+   "tolls": 0.0,
+   "food": 56.0,
+   "extras": 5.0,
+   "total": 189.31,
+   "cum": 372.75,
+   "bed_note": "Au Cheval Blanc",
+   "toll_note": "",
+   "food_note": "",
+   "extras_note": "Parking, water, chain lube",
+   "fuel_note": "330 km at about 0.10 a kilometre"
+  },
+  {
+   "n": 3,
+   "bed": 92.5,
+   "fuel": 24.45,
+   "tolls": 0.0,
+   "food": 56.0,
+   "extras": 5.0,
+   "total": 177.95,
+   "cum": 550.7,
+   "bed_note": "Wochner's Hotel-Sternen",
+   "toll_note": "",
+   "food_note": "",
+   "extras_note": "Parking, water, chain lube",
+   "fuel_note": "250 km at about 0.10 a kilometre"
+  },
+  {
+   "n": 4,
+   "bed": 115.0,
+   "fuel": 32.28,
+   "tolls": 0.0,
+   "food": 56.0,
+   "extras": 5.0,
+   "total": 208.28,
+   "cum": 758.98,
+   "bed_note": "Sust Lodge, first of two nights",
+   "toll_note": "",
+   "food_note": "",
+   "extras_note": "Parking, water, chain lube",
+   "fuel_note": "330 km at about 0.10 a kilometre"
+  },
+  {
+   "n": 5,
+   "bed": 115.0,
+   "fuel": 17.61,
+   "tolls": 0.0,
+   "food": 56.0,
+   "extras": 5.0,
+   "total": 193.61,
+   "cum": 952.59,
+   "bed_note": "Sust Lodge, second night",
+   "toll_note": "",
+   "food_note": "",
+   "extras_note": "Parking, water, chain lube",
+   "fuel_note": "180 km at about 0.10 a kilometre"
+  },
+  {
+   "n": 6,
+   "bed": 141.2,
+   "fuel": 29.34,
+   "tolls": 0.0,
+   "food": 56.0,
+   "extras": 15.0,
+   "total": 241.54,
+   "cum": 1194.13,
+   "bed_note": "Hotel Rezia",
+   "toll_note": "",
+   "food_note": "",
+   "extras_note": "Bormio garage €10",
+   "fuel_note": "300 km at about 0.10 a kilometre"
+  },
+  {
+   "n": 7,
+   "bed": 117.2,
+   "fuel": 24.45,
+   "tolls": 0.0,
+   "food": 56.0,
+   "extras": 5.0,
+   "total": 202.65,
+   "cum": 1396.78,
+   "bed_note": "Laguscei, first of two nights",
+   "toll_note": "",
+   "food_note": "",
+   "extras_note": "Parking, water, chain lube",
+   "fuel_note": "250 km at about 0.10 a kilometre"
+  },
+  {
+   "n": 8,
+   "bed": 117.2,
+   "fuel": 0.0,
+   "tolls": 0.0,
+   "food": 65.0,
+   "extras": 50.0,
+   "total": 232.2,
+   "cum": 1628.98,
+   "bed_note": "Laguscei, second night",
+   "toll_note": "",
+   "food_note": "Rifugio lunch on the Viel dal Pan, and a proper dinner",
+   "extras_note": "Porta Vescovo and Sass Pordoi lifts, about €45",
+   "fuel_note": "No riding today"
+  },
+  {
+   "n": 9,
+   "bed": 77.7,
+   "fuel": 29.34,
+   "tolls": 7.0,
+   "food": 56.0,
+   "extras": 5.0,
+   "total": 175.04,
+   "cum": 1804.02,
+   "bed_note": "Landhaus Alpenrose",
+   "toll_note": "Austrian 10-day motorcycle vignette, bought crossing at Sillian",
+   "food_note": "",
+   "extras_note": "Parking, water, chain lube",
+   "fuel_note": "300 km at about 0.10 a kilometre"
+  },
+  {
+   "n": 10,
+   "bed": 103.0,
+   "fuel": 36.19,
+   "tolls": 38.5,
+   "food": 56.0,
+   "extras": 9.0,
+   "total": 242.69,
+   "cum": 2046.71,
+   "bed_note": "Hotel Hirsch — private parking on site",
+   "toll_note": "Grossglockner €33.50 bought in advance at Heiligenblut, Gerlos €5 same-day rate",
+   "food_note": "",
+   "extras_note": "Krimml falls entry €9 — the Hirsch has its own parking, so nothing extra there",
+   "fuel_note": "370 km at about 0.10 a kilometre"
+  },
+  {
+   "n": 11,
+   "bed": 77.5,
+   "fuel": 52.33,
+   "tolls": 0.0,
+   "food": 56.0,
+   "extras": 12.0,
+   "total": 197.83,
+   "cum": 2244.54,
+   "bed_note": "Hotel Ohm Patt, Boppard",
+   "toll_note": "",
+   "food_note": "",
+   "extras_note": "Public car park about €7 — the Ohm Patt lists no parking of its own",
+   "fuel_note": "535 km at about 0.10 a kilometre"
+  },
+  {
+   "n": 12,
+   "bed": 0.0,
+   "fuel": 34.23,
+   "tolls": 0.0,
+   "food": 45.0,
+   "extras": 5.0,
+   "total": 84.23,
+   "cum": 2328.77,
+   "bed_note": "Home tonight",
+   "toll_note": "",
+   "food_note": "Lunch on the road, dinner at home",
+   "extras_note": "Coffee stops. No tolls on this route",
+   "fuel_note": "350 km at about 0.10 a kilometre"
+  }
+ ],
+ "hotels": [
+  {
+   "days": [
+    1
+   ],
+   "name": "Beim Weinbauer",
+   "town": "Cochem",
+   "where": "Moselpromenade 11-12",
+   "lat": 50.145567,
+   "lon": 7.166838,
+   "precision": "v",
+   "price": 92.36,
+   "nights": 1,
+   "checkin": "Mon 24 Aug",
+   "checkout": "Tue 25 Aug",
+   "note": "On the water under the castle, in the best-rated part of Cochem. Breakfast included, own vineyard, parking garage. Now quoting €92.36, down from the €100 you had. No lift and the rooms run from the second floor to the fifth — worth knowing with luggage.",
+   "url": "https://www.booking.com/hotel/de/beimweinbauer.en-gb.html?checkin=2026-08-24&checkout=2026-08-25&group_adults=1&no_rooms=1&req_adults=1",
+   "pid": 62161
+  },
+  {
+   "days": [
+    2
+   ],
+   "name": "Au Cheval Blanc",
+   "town": "Ribeauvillé",
+   "where": "122 Grand Rue",
+   "lat": 48.19661,
+   "lon": 7.313408,
+   "precision": "v",
+   "price": 96.03,
+   "nights": 1,
+   "checkin": "Tue 25 Aug",
+   "checkout": "Wed 26 Aug",
+   "note": "On the Grand'Rue itself, so you step straight out into the walled centre — which is the whole of your Alsace, since the rest day went. Adults only, air-conditioned, with a spa, sauna and hot tub, 8.2 from 1,012 reviews. Your link's rate is €96.03; the connector's default room shows €104.76, so you are on the cheaper one.",
+   "url": "https://www.booking.com/hotel/fr/restaurant-au-cheval-blanc.en-gb.html?checkin=2026-08-25&checkout=2026-08-26&group_adults=1&no_rooms=1&req_adults=1",
+   "pid": 47700
+  },
+  {
+   "days": [
+    3
+   ],
+   "name": "Wochner's Hotel-Sternen",
+   "town": "Schluchsee",
+   "where": "Dresselbacher Straße 1",
+   "lat": 47.818888,
+   "lon": 8.177323,
+   "precision": "v",
+   "price": 92.5,
+   "nights": 1,
+   "checkin": "Wed 26 Aug",
+   "checkout": "Thu 27 Aug",
+   "note": "On the lake in the Hochschwarzwald, 30 m from where the route already passes. Your URL confirms both the ID and the €92.50, matching what I read independently.",
+   "url": "https://www.booking.com/hotel/de/wochner-s-sternen.en-gb.html?checkin=2026-08-26&checkout=2026-08-27&group_adults=1&no_rooms=1&req_adults=1",
+   "pid": 431203
+  },
+  {
+   "days": [
+    4,
+    5
+   ],
+   "name": "Sust Lodge",
+   "town": "Hospental",
+   "where": "Gotthardstrasse 46",
+   "lat": 46.617959,
+   "lon": 8.56744,
+   "precision": "v",
+   "price": 230.0,
+   "nights": 2,
+   "checkin": "Thu 27 Aug",
+   "checkout": "Sat 29 Aug",
+   "note": "In the village, five minutes from the foot of the Furka. Parking is guest-only with cameras but uncovered. Breakfast buffet from 07:30, check-in from 14:30.",
+   "url": "https://www.booking.com/hotel/ch/gotthard-palace.en-gb.html?checkin=2026-08-27&checkout=2026-08-29&group_adults=1&no_rooms=1&req_adults=1",
+   "pid": 13751010
+  },
+  {
+   "days": [
+    6
+   ],
+   "name": "Hotel Rezia",
+   "town": "Bormio",
+   "where": "Via Milano 9",
+   "lat": 46.467364,
+   "lon": 10.371803,
+   "precision": "v",
+   "price": 141.2,
+   "nights": 1,
+   "checkin": "Sat 29 Aug",
+   "checkout": "Sun 30 Aug",
+   "note": "8.4 from 752 reviews, official four-star with a parking garage, 200 m off the centre. €141.20 confirmed — the €125 figure is out of date. Get the bike out early; the Stelvio on a Sunday needs a 07:00 start.",
+   "url": "https://www.booking.com/hotel/it/rezia-bormio.en-gb.html?checkin=2026-08-29&checkout=2026-08-30&group_adults=1&no_rooms=1&req_adults=1",
+   "pid": 18941
+  },
+  {
+   "days": [
+    7,
+    8
+   ],
+   "name": "Laguscei Dolomites Mountain Hotel",
+   "town": "Arabba",
+   "where": "Via Passo Campolongo 22",
+   "lat": 46.517451,
+   "lon": 11.872791,
+   "precision": "v",
+   "price": 234.4,
+   "nights": 2,
+   "checkin": "Sun 30 Aug",
+   "checkout": "Tue 1 Sep",
+   "note": "Not in Arabba village — it sits 2.5 km north, essentially at the Passo Campolongo. That is better than it sounds: you wake up already on a pass at 1,875 m, and day 9's Sella loop starts by rolling downhill. Garage, indoor pool, 8.9 from 375.",
+   "url": "https://www.booking.com/hotel/it/laguscei.en-gb.html?checkin=2026-08-30&checkout=2026-09-01&group_adults=1&no_rooms=1&req_adults=1",
+   "pid": 1460757
+  },
+  {
+   "days": [
+    9
+   ],
+   "name": "Landhaus Alpenrose – Feriendomizile Pichler",
+   "town": "Heiligenblut",
+   "where": "Winkl 69",
+   "lat": 47.040975,
+   "lon": 12.836269,
+   "precision": "v",
+   "price": 77.7,
+   "nights": 1,
+   "checkin": "Tue 1 Sep",
+   "checkout": "Wed 2 Sep",
+   "note": "Winkl 69, Heiligenblut. 9.0 from 242 reviews, free parking, and the only free-cancellation night on the trip — worth having the evening before the Grossglockner. Buy the Glockner day ticket in the village that evening: €33.50 instead of €36.50 at the gate, and no cash window at six in the morning.",
+   "url": "https://www.booking.com/hotel/at/landhaus-alpenrose-feriendomizile-pichler.en-gb.html?checkin=2026-09-01&checkout=2026-09-02&group_adults=1&no_rooms=1&req_adults=1",
+   "pid": 618217
+  },
+  {
+   "name": "Hotel Hirsch",
+   "town": "Füssen",
+   "where": "Kaiser-Maximilian-Platz 7",
+   "lat": 47.569059,
+   "lon": 10.702376,
+   "price": 103.0,
+   "days": [
+    10
+   ],
+   "nights": 1,
+   "checkin": "Wed 2 Sep",
+   "checkout": "Thu 3 Sep",
+   "precision": "v",
+   "pid": 62907,
+   "note": "Back to one of the original shortlist, and the position is verified this time. Kaiser-Maximilian-Platz is the middle of the old town — the Lechfall is ten minutes on foot, the Hohes Schloss five. Private parking on site, which matters more than usual after an eight-hour day. 8.8 from 3,156 reviews, official four-star. Rooms in the newer wing are larger; ask for one off the square.",
+   "url": "https://www.booking.com/hotel/de/hirsch.en-gb.html?checkin=2026-09-02&checkout=2026-09-03&group_adults=1&no_rooms=1&req_adults=1"
+  },
+  {
+   "name": "Hotel Ohm Patt",
+   "town": "Boppard",
+   "where": "Steinstraße 30",
+   "lat": 50.230726,
+   "lon": 7.594454,
+   "price": 77.5,
+   "days": [
+    11
+   ],
+   "nights": 1,
+   "pid": 29949,
+   "precision": "v",
+   "checkin": "Thu 3 Sep",
+   "checkout": "Fri 4 Sep",
+   "url": "https://www.booking.com/hotel/de/ohm-patt.en-gb.html?checkin=2026-09-03&checkout=2026-09-04&group_adults=1&no_rooms=1&req_adults=1",
+   "note": "Steinstraße is a couple of minutes back from the Rheinallee promenade, in the middle of Boppard. Restaurant and bar on site, which after 535 km is the point. €77.50, ID 29949. No parking listed in the facilities — worth asking when you book, since the public lot nearby runs about €7 a day."
+  }
+ ]
+}

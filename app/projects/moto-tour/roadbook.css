@@ -1,0 +1,188 @@
+/* Roadbook — ported from roadbook_15.html, scoped under .rb */
+.rb{
+  --sumi:#171412; --ink:#2E2A25; --stone:#6E6960; --mist:#9C968C;
+  --rule:#C2BCAF; --washi:#DFDCD3; --paper:#EDEBE4; --shu:#A63A2B; --moss:#5C6B54;
+  --display:var(--font-rb-display),"Hiragino Mincho ProN",Georgia,serif;
+  --mono:var(--font-rb-mono),ui-monospace,Menlo,monospace;
+  --body:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+.rb *{box-sizing:border-box}
+.rb html,.rb{margin:0;padding:0}
+.rb{background:var(--washi);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.62;-webkit-font-smoothing:antialiased}
+.rb .wrap{max-width:1180px;margin:0 auto;padding:0 20px 90px}
+.rb a{color:inherit}
+/* ---------- sticky top ---------- */
+.rb .topbar{position:sticky;top:0;z-index:700;background:var(--washi);border-bottom:1px solid var(--rule)}
+.rb .topbar .inner{max-width:1180px;margin:0 auto;padding:11px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.rb .brand{font-family:var(--display);font-size:17px;color:var(--sumi);white-space:nowrap}
+.rb .brand small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--stone);margin-top:2px}
+.rb .seg{display:flex;border:1px solid var(--ink);margin-left:auto}
+.rb .seg button{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;background:transparent;color:var(--ink);border:0;padding:9px 16px;cursor:pointer}
+.rb .seg button+button{border-left:1px solid var(--ink)}
+.rb .seg button[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+.rb .chip{font-family:var(--mono);font-size:11px;color:var(--stone);white-space:nowrap}
+.rb .chip b{color:var(--sumi);font-size:14px}
+/* ---------- day strip ---------- */
+.rb .strip{position:sticky;top:57px;z-index:650;background:var(--washi);border-bottom:1px solid var(--rule);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.rb .strip .inner{max-width:1180px;margin:0 auto;padding:9px 20px;display:flex;gap:6px}
+.rb .pill{flex:0 0 auto;min-width:64px;border:1px solid var(--rule);background:transparent;cursor:pointer;padding:7px 9px;text-align:left;font-family:var(--mono)}
+.rb .pill b{display:block;font-size:12px;color:var(--sumi);letter-spacing:.02em}
+.rb .pill span{display:block;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mist);margin-top:3px;white-space:nowrap}
+.rb .pill:hover{border-color:var(--stone)}
+.rb .pill[aria-current="true"]{background:var(--ink);border-color:var(--ink)}
+.rb .pill[aria-current="true"] b,.rb .pill[aria-current="true"] span{color:var(--paper)}
+.rb .pill.rest b{color:var(--shu)}
+.rb .pill[aria-current="true"].rest b{color:var(--paper)}
+/* ---------- maps ---------- */
+.rb .mapbox{position:relative;border:1px solid var(--rule);background:var(--paper)}
+.rb #omap{height:min(62vh,560px)}
+.rb #dmap{height:340px}
+.rb .leaflet-container{background:var(--paper);font-family:var(--body)}
+.rb .maphint{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--mist);margin-top:7px}
+.rb .pin{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;
+  background:var(--paper);border:1.5px solid var(--sumi);font-family:var(--mono);font-size:10.5px;
+  color:var(--sumi);font-weight:500;box-shadow:0 1px 3px rgba(23,20,18,.25);cursor:pointer}
+.rb .pin.flag{border-color:var(--shu);color:var(--shu)}
+.rb .pin.opt{border-style:dashed;border-color:var(--stone);color:var(--stone);background:var(--washi)}
+.rb .pin.on{background:var(--sumi);color:var(--paper);transform:scale(1.18)}
+.rb .pin.on.flag{background:var(--shu);border-color:var(--shu);color:var(--paper)}
+.rb .ep{width:23px;height:23px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:9.5px;font-weight:500;letter-spacing:.02em;
+  box-shadow:0 1px 3px rgba(23,20,18,.3)}
+.rb .ep.start{background:var(--paper);border:2px solid var(--moss);color:var(--moss)}
+.rb .ep.end{background:var(--shu);border:2px solid var(--shu);color:var(--paper)}
+.rb .ep.loop{background:var(--paper);border:2px solid var(--sumi);color:var(--sumi)}
+.rb .arw path{fill:var(--sumi);opacity:.62}
+.rb .leaflet-tooltip.ept{background:var(--paper);border:1px solid var(--rule);border-radius:0;box-shadow:none;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink);padding:3px 7px}
+.rb .leaflet-tooltip.ept:before{display:none}
+.rb .leaflet-popup-content-wrapper{border-radius:0;background:var(--paper);border:1px solid var(--sumi);box-shadow:none}
+.rb .leaflet-popup-tip{background:var(--paper);border:1px solid var(--sumi)}
+.rb .leaflet-popup-content{margin:12px 14px;font-size:13px;line-height:1.5}
+.rb .pop b{font-family:var(--display);font-size:15.5px;color:var(--sumi);display:block}
+.rb .pop .m{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--stone);margin:4px 0 7px}
+.rb .pop button{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  background:transparent;border:1px solid var(--ink);color:var(--ink);padding:6px 10px;cursor:pointer;margin-top:4px}
+.rb .pop button:hover{background:var(--ink);color:var(--paper)}
+/* ---------- generic ---------- */
+.rb h2.sec{font-family:var(--display);font-weight:400;font-size:clamp(21px,3vw,29px);margin:0 0 4px;color:var(--sumi)}
+.rb p.lede{font-size:14.5px;color:var(--stone);max-width:64ch;margin:0 0 24px}
+.rb h3.lbl{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--stone);font-weight:400;margin:40px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+.rb .view{display:none}
+.rb .view.on{display:block}
+.rb section.blk{margin-top:34px}
+.rb .bignums{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.rb .bignum{background:var(--paper);padding:15px 15px 13px}
+.rb .bignum b{display:block;font-family:var(--mono);font-size:23px;font-weight:500;color:var(--sumi);letter-spacing:-.03em;line-height:1.1}
+.rb .bignum span{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--stone);margin-top:6px}
+.rb .bignum.hero b{font-size:31px;color:var(--shu)}
+.rb .two{display:grid;grid-template-columns:1.2fr 1fr;gap:38px;align-items:start}
+@media(max-width:900px){
+.rb .two{grid-template-columns:1fr;gap:30px}
+}
+.rb .chartwrap svg,.rb .profile svg{width:100%;height:auto;display:block;overflow:visible}
+.rb .cbar{fill:var(--sumi);opacity:.22}
+.rb .cbar.on{opacity:.85}
+.rb .cline{fill:none;stroke:var(--shu);stroke-width:1.6;stroke-linejoin:round}
+.rb .cdot{fill:var(--shu)}
+.rb .cbase,.rb .pbase{stroke:var(--rule);stroke-width:1}
+.rb .cgrid{stroke:var(--rule);stroke-width:1;stroke-dasharray:2 4}
+.rb .clab{font-family:var(--mono);font-size:9px;fill:var(--mist)}
+.rb .clabr{font-family:var(--mono);font-size:9px;fill:var(--shu)}
+.rb .pline{fill:none;stroke:var(--sumi);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+.rb .pfill{fill:var(--sumi);opacity:.09}
+.rb .ptick{stroke:var(--rule);stroke-width:1}
+.rb .plabel{font-family:var(--mono);font-size:9.5px;fill:var(--stone)}
+.rb .phigh{fill:var(--shu)}
+.rb .phighlab{font-family:var(--mono);font-size:9.5px;fill:var(--shu)}
+.rb .flatlab{font-family:var(--display);font-size:15px;fill:var(--stone)}
+.rb .cap{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--mist);margin-top:7px}
+.rb table.t{width:100%;border-collapse:collapse;font-size:14px}
+.rb table.t th{font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--stone);font-weight:400;text-align:right;padding:0 0 9px;border-bottom:1px solid var(--rule)}
+.rb table.t th:first-child{text-align:left}
+.rb table.t td{padding:12px 0;border-bottom:1px solid var(--rule);vertical-align:top;text-align:right;font-family:var(--mono);font-size:13.5px;color:var(--sumi);white-space:nowrap}
+.rb table.t td:first-child{text-align:left;font-family:var(--body);font-size:14.5px;color:var(--ink);width:99%;padding-right:18px;white-space:normal}
+.rb table.t .sub{display:block;font-family:var(--body);font-size:12.5px;color:var(--stone);margin-top:4px;line-height:1.5}
+.rb table.t tr.total td{border-bottom:0;border-top:2px solid var(--sumi);padding-top:14px}
+.rb table.t tr.total td:first-child{font-family:var(--display);font-size:19px;color:var(--sumi)}
+.rb table.t tr.total td:last-child{font-size:21px;font-weight:500}
+.rb .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(252px,1fr));gap:22px}
+.rb .cards h4{font-family:var(--display);font-weight:500;font-size:16px;margin:0 0 5px;color:var(--sumi)}
+.rb .cards p{margin:0;font-size:13.5px;line-height:1.6}
+/* ---------- stay list ---------- */
+.rb .stays{border:1px solid var(--rule)}
+.rb .stayrow{display:flex;align-items:stretch;border-bottom:1px solid var(--rule);background:var(--paper)}
+.rb .stayrow:last-child{border-bottom:0}
+.rb .stayrow:hover{background:var(--washi)}
+.rb .staymain{flex:1 1 auto;display:grid;grid-template-columns:38px 1fr auto;gap:14px;align-items:baseline;
+  padding:13px 16px;cursor:pointer;background:transparent;border:0;text-align:left;font:inherit;min-width:0}
+.rb .staylink{flex:0 0 auto;display:flex;align-items:center;padding:0 16px;border-left:1px solid var(--rule);
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink);
+  text-decoration:none;white-space:nowrap}
+.rb .staylink:hover{background:var(--ink);color:var(--paper)}
+.rb .pid{display:inline-block;margin-left:12px;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--mist)}
+.rb .popbook{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule);margin-left:8px}
+.rb .popbook:hover{color:var(--shu);border-bottom-color:var(--shu)}
+.rb .stayrow .no{font-family:var(--mono);font-size:11px;color:var(--mist)}
+.rb .stayrow .nm{font-family:var(--display);font-size:16px;color:var(--sumi);line-height:1.3;display:block}
+.rb .stayrow .tw{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--stone);margin-top:3px}
+.rb .stayrow .pr{font-family:var(--mono);font-size:13.5px;color:var(--sumi);white-space:nowrap}
+.rb .stayrow .pr small{display:block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mist);margin-top:3px}
+.rb .stayrow.flag .nm{color:var(--shu)}
+/* ---------- day detail ---------- */
+.rb .dhead{border-top:2px solid var(--sumi);padding-top:14px;margin-top:26px}
+.rb .dhead .no{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--shu);text-transform:uppercase}
+.rb .dhead h2{font-family:var(--display);font-weight:400;font-size:clamp(23px,3.4vw,34px);margin:8px 0 0;color:var(--sumi);line-height:1.14}
+.rb .leg{font-family:var(--mono);font-size:11.5px;letter-spacing:.07em;color:var(--stone);margin-top:9px}
+.rb .why{font-size:16.5px;line-height:1.66;margin:20px 0 0;max-width:62ch}
+.rb .figs{display:flex;flex-wrap:wrap;gap:0;margin:22px 0 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:13px 0}
+.rb .fig{padding-right:34px}
+.rb .fig b{display:block;font-family:var(--mono);font-size:16px;font-weight:500;color:var(--sumi)}
+.rb .fig span{font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--stone)}
+.rb .roads{font-size:15.5px;max-width:66ch;margin:0}
+.rb .stay{border:1px solid var(--sumi);background:var(--paper);padding:18px;max-width:70ch}
+.rb .stay .st{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--shu)}
+.rb .stay h4{font-family:var(--display);font-weight:500;font-size:20px;margin:8px 0 2px;color:var(--sumi)}
+.rb .stay .m{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--stone)}
+.rb .stay p{font-size:13.5px;margin:12px 0 0;line-height:1.58}
+.rb .stay .links{margin-top:14px}
+.rb .stay a{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);text-decoration:none;border:1px solid var(--rule);padding:7px 11px;display:inline-block}
+.rb .stay a:hover{border-color:var(--shu);color:var(--shu)}
+.rb ul.foot{list-style:none;margin:0;padding:0;max-width:68ch}
+.rb ul.foot li{display:grid;grid-template-columns:78px 1fr;gap:16px;padding:14px 0;border-bottom:1px solid var(--rule)}
+.rb ul.foot li:first-child{border-top:1px solid var(--rule)}
+.rb ul.foot .when{font-family:var(--mono);font-size:11px;letter-spacing:.09em;color:var(--shu);padding-top:2px}
+.rb ul.foot h4{font-family:var(--display);font-weight:500;font-size:17px;margin:0 0 5px;color:var(--sumi)}
+.rb ul.foot p{margin:0;font-size:14.5px;line-height:1.6}
+.rb .daycost{border:1px solid var(--rule);background:var(--paper);max-width:62ch}
+.rb .daycost table{width:100%;border-collapse:collapse;font-size:13.5px}
+.rb .daycost td{padding:10px 16px;border-bottom:1px solid var(--rule);vertical-align:top}
+.rb .daycost td:last-child{text-align:right;font-family:var(--mono);white-space:nowrap;color:var(--sumi)}
+.rb .daycost .sub{display:block;font-size:12px;color:var(--stone);margin-top:3px;line-height:1.5}
+.rb .daycost tr.sum td{border-bottom:0;border-top:1px solid var(--sumi);font-family:var(--mono);font-size:15px;color:var(--sumi);padding:13px 16px}
+.rb .daycost tr.sum td:first-child{font-family:var(--display);font-size:17px}
+.rb .daycost tr.run td{border:0;padding-top:0;color:var(--stone);font-size:12.5px}
+.rb .daycost tr.run td:first-child{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase}
+.rb button.act{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;background:transparent;color:var(--ink);border:1px solid var(--ink);padding:9px 15px;cursor:pointer}
+.rb button.act:hover{background:var(--ink);color:var(--paper)}
+.rb .nav{display:flex;gap:10px;margin-top:34px}
+.rb footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--stone);max-width:74ch}
+.rb footer p{margin:0 0 9px}
+.rb ul.basis{margin:24px 0 0;padding:0;list-style:none}
+.rb ul.basis li{font-size:12.5px;color:var(--stone);padding:5px 0 5px 15px;position:relative;line-height:1.55}
+.rb ul.basis li:before{content:"\2014";position:absolute;left:0;color:var(--mist)}
+@media(max-width:600px){
+.rb .strip{top:52px}
+.rb .fig{padding-right:24px}
+.rb ul.foot li{grid-template-columns:1fr;gap:3px}
+.rb table.t td{font-size:12.5px}
+}
+
+
+/* ── additions for the site port ─────────────────────────────────────── */
+.rb{min-height:100vh}
+.rb .backlink{font-family:var(--mono);font-size:15px;color:var(--stone);text-decoration:none;border:1px solid var(--rule);padding:6px 11px;line-height:1}
+.rb .backlink:hover{border-color:var(--stone);color:var(--sumi)}
+.rb footer .koan{font-family:var(--display);font-style:italic;color:var(--mist);margin-top:26px;font-size:13.5px}
