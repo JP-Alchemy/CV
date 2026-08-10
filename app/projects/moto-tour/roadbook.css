@@ -1,7 +1,22 @@
 /* Roadbook — ported from roadbook_15.html, scoped under .rb */
+/* The roadbook wears the site's theme. Aliases are resolved on the
+   wrapper (.rb-theme), where the site's variables are still unshadowed —
+   inside .rb the same names get redefined, which would self-reference. */
+.rb-theme{
+  --rb-sumi: var(--ink, #171412);
+  --rb-ink: color-mix(in srgb, var(--ink, #2E2A25) 86%, var(--paper, #DFDCD3));
+  --rb-stone: var(--ink-faint, #6E6960);
+  --rb-mist: color-mix(in srgb, var(--ink-faint, #9C968C) 62%, var(--paper, #DFDCD3));
+  --rb-rule: var(--line, #C2BCAF);
+  --rb-washi: var(--paper, #DFDCD3);
+  --rb-paper: var(--paper-deep, #EDEBE4);
+  --rb-shu: var(--vermilion, #A63A2B);
+}
 .rb{
-  --sumi:#171412; --ink:#2E2A25; --stone:#6E6960; --mist:#9C968C;
-  --rule:#C2BCAF; --washi:#DFDCD3; --paper:#EDEBE4; --shu:#A63A2B; --moss:#5C6B54;
+  --sumi:var(--rb-sumi, #171412); --ink:var(--rb-ink, #2E2A25);
+  --stone:var(--rb-stone, #6E6960); --mist:var(--rb-mist, #9C968C);
+  --rule:var(--rb-rule, #C2BCAF); --washi:var(--rb-washi, #DFDCD3);
+  --paper:var(--rb-paper, #EDEBE4); --shu:var(--rb-shu, #A63A2B); --moss:#5C6B54;
   --display:var(--font-rb-display),"Hiragino Mincho ProN",Georgia,serif;
   --mono:var(--font-rb-mono),ui-monospace,Menlo,monospace;
   --body:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;

@@ -352,9 +352,22 @@ export default function RoadbookApp() {
   const omapRef = useRef<L.Map | null>(null)
   const dmapRef = useRef<L.Map | null>(null)
   const dLinesRef = useRef<Record<number, L.Polyline>>({})
+  const oLinesRef = useRef<L.Polyline[]>([])
   const oPinsRef = useRef<Record<number, L.Marker>>({})
   const dirLayerRef = useRef<L.LayerGroup | null>(null)
   const goDayRef = useRef<(n: number) => void>(() => {})
+  const rootRef = useRef<HTMLDivElement>(null)
+  // bumps when the site's day/night theme flips, so map ink follows
+  const [themeTick, setThemeTick] = useState(0)
+
+  const inkColors = () => {
+    const el = rootRef.current
+    const cs = el ? getComputedStyle(el) : null
+    return {
+      sumi: cs?.getPropertyValue('--sumi').trim() || '#171412',
+      mist: cs?.getPropertyValue('--mist').trim() || '#9C968C',
+    }
+  }
 
   const goDay = useCallback((n: number) => {
     setCur(n)
@@ -366,6 +379,19 @@ export default function RoadbookApp() {
   useEffect(() => {
     markKoan('lantern')
   }, [])
+
+  // follow the site's day/night theme
+  useEffect(() => {
+    const observer = new MutationObserver(() => setThemeTick((t) => t + 1))
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => observer.disconnect()
+  }, [])
+
+  // restyle the overview routes whenever the ink changes
+  useEffect(() => {
+    const { mist } = inkColors()
+    oLinesRef.current.forEach((l) => l.setStyle({ color: mist }))
+  }, [themeTick])
 
   // build both maps once
   useEffect(() => {
@@ -383,13 +409,16 @@ export default function RoadbookApp() {
     dmapRef.current = dmap
     dirLayerRef.current = L.layerGroup().addTo(dmap)
 
+    const boot = inkColors()
     const allPts: [number, number][] = []
     DAYS.forEach((d) => {
       const pts = d.vias.map((v) => [v[0], v[1]] as [number, number])
       pts.forEach((p) => allPts.push(p))
       if (pts.length > 1) {
-        L.polyline(pts, { color: '#9C968C', weight: 2, opacity: 0.7 }).addTo(omap)
-        dLinesRef.current[d.n] = L.polyline(pts, { color: '#9C968C', weight: 2, opacity: 0.45 }).addTo(dmap)
+        oLinesRef.current.push(
+          L.polyline(pts, { color: boot.mist, weight: 2, opacity: 0.7 }).addTo(omap)
+        )
+        dLinesRef.current[d.n] = L.polyline(pts, { color: boot.mist, weight: 2, opacity: 0.45 }).addTo(dmap)
       }
     })
 
@@ -458,11 +487,12 @@ export default function RoadbookApp() {
     const dLines = dLinesRef.current
 
     dmap.invalidateSize()
+    const ink = inkColors()
     Object.keys(dLines).forEach((k) => {
       dLines[+k].setStyle(
         +k === cur
-          ? { color: '#171412', weight: 3.2, opacity: 1 }
-          : { color: '#9C968C', weight: 2, opacity: 0.35 }
+          ? { color: ink.sumi, weight: 3.2, opacity: 1 }
+          : { color: ink.mist, weight: 2, opacity: 0.35 }
       )
     })
 
@@ -511,7 +541,7 @@ export default function RoadbookApp() {
 
     const t = setTimeout(() => dmap.invalidateSize(), 120)
     return () => clearTimeout(t)
-  }, [view, cur])
+  }, [view, cur, themeTick])
 
   // arrow keys move between days
   useEffect(() => {
@@ -539,7 +569,7 @@ export default function RoadbookApp() {
   ]
 
   return (
-    <div className="rb">
+    <div className="rb" ref={rootRef}>
       <div className="topbar"><div className="inner">
         <Link href="/#lanterns" className="backlink" aria-label="Back to jpbothma.com">←</Link>
         <div className="brand">Leiden → the Alps → Leiden<small>24 Aug – 4 Sep 2026 · solo</small></div>
@@ -572,7 +602,7 @@ export default function RoadbookApp() {
           <section className="blk">
             <h2 className="sec">The whole trip</h2>
             <p className="lede">
-              Eleven nights, 3,625 km. Back roads throughout, bar the transit across Germany. Every marker is a place you
+              Eleven nights, {km.toLocaleString('en-GB')} km. Back roads throughout, bar the transit across Germany. Every marker is a place you
               sleep — click one to open that day.
             </p>
             <div className="mapbox"><div id="omap" /></div>

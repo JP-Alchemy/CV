@@ -10,7 +10,7 @@ function Unrolling() {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: '#DFDCD3', color: '#6E6960',
+      background: 'var(--paper, #DFDCD3)', color: 'var(--ink-faint, #6E6960)',
       fontFamily: '"IBM Plex Mono", ui-monospace, Menlo, monospace',
       fontSize: 12, letterSpacing: '0.14em', textTransform: 'uppercase',
     }}>
@@ -24,7 +24,7 @@ export default function RoadbookShell({ fontClass }: { fontClass: string }) {
   useEffect(() => setMounted(true), [])
 
   return (
-    <div className={fontClass}>
+    <div className={`${fontClass} rb-theme`}>
       {mounted ? (
         <Suspense fallback={<Unrolling />}>
           <RoadbookApp />
