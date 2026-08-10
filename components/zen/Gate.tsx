@@ -320,7 +320,7 @@ export default function Gate() {
 
         {/* Beyond the gate — mist, then a koan for the persistent */}
         <div className="relative h-[38vh] flex items-end justify-center overflow-hidden">
-          <div className="mist-band left-[-25%] right-[-25%] top-8 h-16" style={{ '--mist-dur': '80s' } as React.CSSProperties} aria-hidden="true" />
+          <div className="mist-band left-[2%] right-[2%] top-6 h-20" style={{ '--mist-dur': '80s' } as React.CSSProperties} aria-hidden="true" />
           <p className="pb-8 text-center text-xs font-light italic leading-relaxed max-w-xs" style={{ color: 'var(--ink-faint)' }}>
             A wanderer asked: &ldquo;Where does the path go after the gate?&rdquo;
             <br />

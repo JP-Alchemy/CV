@@ -185,22 +185,17 @@
 .mist-band {
   position: absolute;
   pointer-events: none;
-  /* soft edges via layered gradients — no filter: blur, which black-boxes
-     compositor tiles in software rasterization (screenshots, older GPUs) */
-  background:
-    radial-gradient(ellipse 60% 100% at 50% 50%, var(--mist) 0%, transparent 70%),
-    linear-gradient(90deg, transparent, var(--mist) 35%, var(--mist) 65%, transparent);
-  border-radius: 999px;
-  /* feather top and bottom so the band never shows a hard seam */
-  mask-image: linear-gradient(180deg, transparent, #000 35%, #000 65%, transparent);
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 35%, #000 65%, transparent);
-  animation: mist-drift var(--mist-dur, 60s) linear infinite alternate;
-  opacity: 0.55;
+  /* one radial veil that reaches full transparency well inside its own
+     box — soft in every direction, immune to container clipping, and no
+     filter: blur (which black-boxes software rasterization) */
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, var(--mist) 0%, transparent 70%);
+  animation: mist-drift var(--mist-dur, 60s) ease-in-out infinite alternate;
+  opacity: 0.6;
 }
 
 @keyframes mist-drift {
-  from { transform: translateX(-6%); }
-  to   { transform: translateX(6%); }
+  from { transform: translateX(-4%); }
+  to   { transform: translateX(4%); }
 }
 
 /* ── Lanterns ─────────────────────────────────────────────────────────────── */

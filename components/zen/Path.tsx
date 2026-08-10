@@ -28,8 +28,9 @@ export default function Path() {
               <stop offset="100%" stopColor="var(--ink)" stopOpacity="0" />
             </radialGradient>
           </defs>
+          {/* fades to zero inside the viewBox — never clipped at an edge */}
           <ellipse
-            cx="100" cy="150" rx="130" ry="180"
+            cx="108" cy="160" rx="106" ry="150"
             fill="url(#path-wash)"
             className="fill-in"
             style={{ '--delay': '0.4s' } as React.CSSProperties}

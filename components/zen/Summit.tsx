@@ -12,7 +12,7 @@ export default function Summit() {
       as="section"
       id="top"
       ariaLabelledby="summit-name"
-      className="relative min-h-screen flex flex-col overflow-hidden"
+      className="relative min-h-screen flex flex-col"
       threshold={0.05}
     >
       {/* The sky — sun/moon hangs here */}
@@ -20,30 +20,33 @@ export default function Summit() {
         <ThemeToggle />
       </div>
 
-      {/* Mountains */}
+      {/* Mountains — preserveAspectRatio="none" + strokes that overshoot the
+          viewBox: nothing is ever cropped mid-line, at any viewport */}
       <svg
         viewBox="0 0 1200 430"
-        preserveAspectRatio="xMidYMax slice"
+        preserveAspectRatio="none"
         aria-hidden="true"
         className="absolute bottom-0 left-0 w-full h-[46vh] min-h-[280px]"
       >
         <defs>
           {/* a broad grey wash behind the ridges — sumi before sen */}
-          <radialGradient id="summit-wash" cx="50%" cy="72%" r="65%">
-            <stop offset="0%" stopColor="var(--ink)" stopOpacity="0.10" />
-            <stop offset="55%" stopColor="var(--ink)" stopOpacity="0.05" />
+          <radialGradient id="summit-wash" cx="50%" cy="55%" r="72%">
+            <stop offset="0%" stopColor="var(--ink)" stopOpacity="0.07" />
+            <stop offset="55%" stopColor="var(--ink)" stopOpacity="0.035" />
             <stop offset="100%" stopColor="var(--ink)" stopOpacity="0" />
           </radialGradient>
         </defs>
+        {/* the wash must reach zero inside the viewBox — a clipped gradient
+            leaves a hard seam at the section boundary */}
         <ellipse
-          cx="600" cy="330" rx="560" ry="200"
+          cx="600" cy="298" rx="540" ry="126"
           fill="url(#summit-wash)"
           className="fill-in"
           style={{ '--delay': '0.3s' } as React.CSSProperties}
         />
         {/* far ridge */}
         <path
-          d="M0,300 C150,215 260,185 380,240 C480,288 560,268 660,220 C760,172 845,190 925,230 C1010,272 1100,258 1200,215"
+          d="M-40,310 C120,220 260,185 380,240 C480,288 560,268 660,220 C760,172 845,190 925,230 C1010,272 1110,262 1240,212"
           pathLength={1}
           className="draw"
           fill="none"
@@ -54,7 +57,7 @@ export default function Summit() {
         />
         {/* mid ridge */}
         <path
-          d="M0,345 C130,305 240,255 360,292 C480,328 600,300 700,262 C805,222 920,252 1030,300 C1090,325 1150,332 1200,322"
+          d="M-40,352 C110,308 240,255 360,292 C480,328 600,300 700,262 C805,222 920,252 1030,300 C1100,328 1170,334 1240,324"
           pathLength={1}
           className="draw"
           fill="none"
@@ -65,7 +68,7 @@ export default function Summit() {
         />
         {/* the near peak */}
         <path
-          d="M310,395 C400,268 465,175 560,118 C578,107 596,107 614,119 C706,175 768,262 862,395"
+          d="M318,410 C406,270 465,175 560,118 C578,107 596,107 614,119 C706,175 764,268 852,410"
           pathLength={1}
           className="draw"
           fill="none"
@@ -87,7 +90,7 @@ export default function Summit() {
         />
         {/* ground whisper */}
         <path
-          d="M0,412 C200,406 420,416 640,410 C860,404 1040,414 1200,408"
+          d="M-40,414 C200,406 420,416 640,410 C860,404 1040,414 1240,407"
           pathLength={1}
           className="draw"
           fill="none"
@@ -99,8 +102,8 @@ export default function Summit() {
       </svg>
 
       {/* Drifting mist over the ridges */}
-      <div className="mist-band left-[-10%] right-[30%] bottom-[18vh] h-16" style={{ '--mist-dur': '75s' } as React.CSSProperties} aria-hidden="true" />
-      <div className="mist-band left-[20%] right-[-10%] bottom-[9vh] h-20" style={{ '--mist-dur': '95s' } as React.CSSProperties} aria-hidden="true" />
+      <div className="mist-band left-[2%] right-[34%] bottom-[15vh] h-24" style={{ '--mist-dur': '75s' } as React.CSSProperties} aria-hidden="true" />
+      <div className="mist-band left-[28%] right-[2%] bottom-[6vh] h-28" style={{ '--mist-dur': '95s' } as React.CSSProperties} aria-hidden="true" />
 
       {/* The name, brushed onto the paper */}
       <div className="relative flex-1 flex items-center max-w-5xl mx-auto px-6 w-full pt-24 pb-[38vh]">
