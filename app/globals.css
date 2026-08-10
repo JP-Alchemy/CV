@@ -303,15 +303,18 @@
 }
 
 /* the paper continues beyond the scroll — overscroll, scrollbar, all of it */
-body:has(.zen-root) {
+body:has(.zen-root),
+body:has(.rb-theme) {
   background-color: var(--paper);
 }
 
-body:has(.zen-root) ::-webkit-scrollbar-track {
+body:has(.zen-root),
+body:has(.rb-theme) ::-webkit-scrollbar-track {
   background: var(--paper);
 }
 
-body:has(.zen-root) ::-webkit-scrollbar-thumb {
+body:has(.zen-root),
+body:has(.rb-theme) ::-webkit-scrollbar-thumb {
   background: var(--ink-faint);
 }
 

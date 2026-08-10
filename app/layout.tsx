@@ -35,7 +35,7 @@ const zenKaku = Zen_Kaku_Gothic_New({
 })
 
 // Sets data-theme before first paint: saved preference wins, else system
-const THEME_INIT = `(function(){document.documentElement.classList.add('js');try{var q=new URLSearchParams(location.search).get('theme');var t=q==='day'||q==='night'?q:localStorage.getItem('zen-theme');if(t!=='day'&&t!=='night'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'night':'day'}document.documentElement.setAttribute('data-theme',t);if(location.hostname==='localhost'){var j=parseInt(new URLSearchParams(location.search).get('jump'));if(!isNaN(j)){addEventListener('load',function(){document.body.style.transform='translateY(-'+j+'px)'})}}}catch(e){document.documentElement.setAttribute('data-theme','day')}})();`
+const THEME_INIT = `(function(){document.documentElement.classList.add('js');try{var q=new URLSearchParams(location.search).get('theme');var t=q==='day'||q==='night'?q:localStorage.getItem('zen-theme');if(t!=='day'&&t!=='night'){t='day'}document.documentElement.setAttribute('data-theme',t);if(location.hostname==='localhost'){var j=parseInt(new URLSearchParams(location.search).get('jump'));if(!isNaN(j)){addEventListener('load',function(){document.body.style.transform='translateY(-'+j+'px)'})}}}catch(e){document.documentElement.setAttribute('data-theme','day')}})();`
 
 // ── Personalise these ──────────────────────────────────────────────────────────
 const SITE_NAME = 'JP Bothma'

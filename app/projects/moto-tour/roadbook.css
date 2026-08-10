@@ -27,7 +27,8 @@
 .rb .wrap{max-width:1180px;margin:0 auto;padding:0 20px 90px}
 .rb a{color:inherit}
 /* ---------- sticky top ---------- */
-.rb .topbar{position:sticky;top:0;z-index:700;background:var(--washi);border-bottom:1px solid var(--rule)}
+/* same bar as the landing page's nav: 94% paper over a hairline */
+.rb .topbar{position:sticky;top:0;z-index:700;background:color-mix(in srgb, var(--washi) 94%, transparent);border-bottom:1px solid var(--rule)}
 .rb .topbar .inner{max-width:1180px;margin:0 auto;padding:11px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
 .rb .brand{font-family:var(--display);font-size:17px;color:var(--sumi);white-space:nowrap}
 .rb .brand small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--stone);margin-top:2px}
@@ -38,7 +39,7 @@
 .rb .chip{font-family:var(--mono);font-size:11px;color:var(--stone);white-space:nowrap}
 .rb .chip b{color:var(--sumi);font-size:14px}
 /* ---------- day strip ---------- */
-.rb .strip{position:sticky;top:57px;z-index:650;background:var(--washi);border-bottom:1px solid var(--rule);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.rb .strip{position:sticky;top:57px;z-index:650;background:color-mix(in srgb, var(--washi) 94%, transparent);border-bottom:1px solid var(--rule);overflow-x:auto;-webkit-overflow-scrolling:touch}
 .rb .strip .inner{max-width:1180px;margin:0 auto;padding:9px 20px;display:flex;gap:6px}
 .rb .pill{flex:0 0 auto;min-width:64px;border:1px solid var(--rule);background:transparent;cursor:pointer;padding:7px 9px;text-align:left;font-family:var(--mono)}
 .rb .pill b{display:block;font-size:12px;color:var(--sumi);letter-spacing:.02em}
@@ -201,3 +202,5 @@
 .rb .backlink{font-family:var(--mono);font-size:15px;color:var(--stone);text-decoration:none;border:1px solid var(--rule);padding:6px 11px;line-height:1}
 .rb .backlink:hover{border-color:var(--stone);color:var(--sumi)}
 .rb footer .koan{font-family:var(--display);font-style:italic;color:var(--mist);margin-top:26px;font-size:13.5px}
+.rb ::selection{background:var(--vermilion-glow, rgba(193,57,43,.16));color:var(--sumi)}
+.rb .topbar .themetoggle{display:flex;align-items:center}

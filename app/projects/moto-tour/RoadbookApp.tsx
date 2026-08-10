@@ -7,6 +7,7 @@ import 'leaflet/dist/leaflet.css'
 import './roadbook.css'
 import raw from './roadbook-data.json'
 import { markKoan } from '@/components/zen/koans'
+import ThemeToggle from '@/components/zen/ThemeToggle'
 
 /**
  * Roadbook — Leiden → the Alps → Leiden.
@@ -576,6 +577,10 @@ export default function RoadbookApp() {
         <div className="seg" role="tablist">
           <button role="tab" aria-selected={view === 'O'} onClick={() => { setView('O'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Overview</button>
           <button role="tab" aria-selected={view === 'D'} onClick={() => goDay(cur)}>Day by day</button>
+        </div>
+        {/* the same sun/moon that hangs over the landing page */}
+        <div className="themetoggle">
+          <ThemeToggle size={30} className="block" />
         </div>
         <div className="chip"><b>{eur(B.total)}</b> &nbsp;·&nbsp; {eur(B.per_day)}/day</div>
       </div></div>
