@@ -315,6 +315,17 @@ body:has(.zen-root) ::-webkit-scrollbar-thumb {
   background: var(--ink-faint);
 }
 
+/* ── The koan behind the moon — only the night reveals it ────────────────── */
+.moon-koan {
+  opacity: 0;
+  transition: opacity 1.4s ease 0.4s;
+  pointer-events: none;
+}
+
+:root[data-theme='night'] .moon-koan {
+  opacity: 1;
+}
+
 /* ── The hanko stamp, pressed on form success ────────────────────────────── */
 .stamp-press {
   animation: stamp-press 480ms cubic-bezier(0.2, 1.4, 0.4, 1) both;

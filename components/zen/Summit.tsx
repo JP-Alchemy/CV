@@ -1,6 +1,8 @@
 import InkScene from './InkScene'
 import Seal from './Seal'
 import ThemeToggle from './ThemeToggle'
+import MoonKoan from './MoonKoan'
+import WandererSeal from './WandererSeal'
 
 /**
  * 一 · The Summit — mist parts, mountains draw themselves,
@@ -15,9 +17,10 @@ export default function Summit() {
       className="relative min-h-screen flex flex-col"
       threshold={0.05}
     >
-      {/* The sky — sun/moon hangs here */}
-      <div className="absolute top-20 right-6 sm:right-12 md:right-24 z-10">
+      {/* The sky — sun/moon hangs here; a koan hides behind the moon */}
+      <div className="absolute top-20 right-6 sm:right-12 md:right-24 z-10 flex flex-col items-end">
         <ThemeToggle />
+        <MoonKoan />
       </div>
 
       {/* Mountains — preserveAspectRatio="none" + strokes that overshoot the
@@ -123,8 +126,9 @@ export default function Summit() {
             >
               JP Bothma
             </h1>
-            <div className="fill-in mt-2" style={{ '--delay': '0.6s' } as React.CSSProperties}>
+            <div className="fill-in mt-2 flex flex-col items-center gap-2" style={{ '--delay': '0.6s' } as React.CSSProperties}>
               <Seal size={40} />
+              <WandererSeal />
             </div>
           </div>
 

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Github, Linkedin } from 'lucide-react'
 import InkScene from './InkScene'
 import Seal from './Seal'
+import { markKoan } from './koans'
 
 // `||` (not `??`) so an empty CI secret also falls through to the sentinel
 const FORMSPREE_ENDPOINT = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT || ''
@@ -37,6 +38,24 @@ export default function Gate() {
   const [formState, setFormState] = useState<FormState>('idle')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [enquiryChosen, setEnquiryChosen] = useState(false)
+  const koanRef = useRef<HTMLParagraphElement>(null)
+
+  // the first koan is earned by walking past the end of the scroll
+  useEffect(() => {
+    const el = koanRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          markKoan('gate')
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.8 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   function validate(data: FormData): Record<string, string> {
     const errs: Record<string, string> = {}
@@ -321,7 +340,7 @@ export default function Gate() {
         {/* Beyond the gate — mist, then a koan for the persistent */}
         <div className="relative h-[38vh] flex items-end justify-center overflow-hidden">
           <div className="mist-band left-[2%] right-[2%] top-6 h-20" style={{ '--mist-dur': '80s' } as React.CSSProperties} aria-hidden="true" />
-          <p className="pb-8 text-center text-xs font-light italic leading-relaxed max-w-xs" style={{ color: 'var(--ink-faint)' }}>
+          <p ref={koanRef} className="pb-8 text-center text-xs font-light italic leading-relaxed max-w-xs" style={{ color: 'var(--ink-faint)' }}>
             A wanderer asked: &ldquo;Where does the path go after the gate?&rdquo;
             <br />
             The master said: &ldquo;It goes where you do.&rdquo;

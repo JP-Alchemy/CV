@@ -5,6 +5,8 @@ import Lanterns from '@/components/zen/Lanterns'
 import Pond from '@/components/zen/Pond'
 import TeaHouse from '@/components/zen/TeaHouse'
 import Gate from '@/components/zen/Gate'
+import Enso from '@/components/zen/Enso'
+import InkCursor from '@/components/zen/InkCursor'
 
 export default function Page() {
   return (
@@ -17,6 +19,8 @@ export default function Page() {
         </filter>
       </svg>
       <ZenNav />
+      <InkCursor />
+      <Enso />
       <main>
         <Summit />
         <Path />

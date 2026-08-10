@@ -1,4 +1,5 @@
 import InkScene from './InkScene'
+import LanternWhisper from './LanternWhisper'
 import { PROJECTS, type Project, type LanternState } from '@/data/projects'
 
 /**
@@ -114,15 +115,17 @@ function LanternCard({ project, index }: { project: Project; index: number }) {
   const delay = 0.2 + index * 0.2
   const label = STATE_LABEL[project.state]
 
-  const inner = (
+  const lanternEl = <LanternSvg state={project.state} delay={delay} variant={index} />
+  const titleEl = (
+    <h3
+      className="zen-serif text-xl mt-5 mb-2 tracking-tight"
+      style={{ color: 'var(--ink)' }}
+    >
+      {project.name}
+    </h3>
+  )
+  const storyEl = (
     <>
-      <LanternSvg state={project.state} delay={delay} variant={index} />
-      <h3
-        className="zen-serif text-xl mt-5 mb-2 tracking-tight"
-        style={{ color: 'var(--ink)' }}
-      >
-        {project.name}
-      </h3>
       <p className="text-sm leading-relaxed font-light" style={{ color: 'var(--ink-soft)' }}>
         {project.story}
       </p>
@@ -145,14 +148,17 @@ function LanternCard({ project, index }: { project: Project; index: number }) {
         className={cardClass}
         style={style}
       >
-        {inner}
+        {lanternEl}
+        {titleEl}
+        {storyEl}
       </a>
     )
   }
+  // a lantern with nowhere to link keeps a koan instead
   return (
-    <div className={cardClass} style={style}>
-      {inner}
-    </div>
+    <LanternWhisper className={cardClass} style={style} lantern={lanternEl} title={titleEl}>
+      {storyEl}
+    </LanternWhisper>
   )
 }
 
