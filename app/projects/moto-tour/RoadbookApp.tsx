@@ -723,7 +723,6 @@ export default function RoadbookApp() {
             motorways on every day except 1 and 12.</p>
           <p><strong>Numbers.</strong> Distances, riding times and elevations are close estimates. All accommodation
             is booked; the prices shown are what was paid.</p>
-          <p className="koan">Even an unlit lantern holds the shape of light.</p>
         </footer>
       </div>
     </div>
