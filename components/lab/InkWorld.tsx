@@ -1,16 +1,18 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import HeroPainting from './HeroPainting'
+import Headlines from './Headlines'
 import { useDayScroll } from './useDayScroll'
 
 /**
- * The scene manager. For now: one painting and the runway that turns
- * its day. The garden and the ink-bloom passage arrive in phase ⑤.
+ * The scene manager. One painting and the runway that turns its day;
+ * the garden and the ink-bloom passage arrive in phase ⑤.
  */
 export default function InkWorld() {
   const frameRef = useRef<HTMLDivElement>(null)
-  useDayScroll(frameRef)
+  const { t } = useDayScroll(frameRef)
+  const [, setScene] = useState<'hero' | 'garden'>('hero')
 
   return (
     /* the runway: five viewports of scroll = one day */
@@ -24,6 +26,7 @@ export default function InkWorld() {
         }}
       >
         <HeroPainting />
+        <Headlines t={t} onEnterGarden={() => setScene('garden')} />
 
         {/* scroll hint — evaporates once the day begins */}
         <p
