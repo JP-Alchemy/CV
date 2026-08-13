@@ -36,6 +36,12 @@ export default function NightGarden({ onReturn }: { onReturn: () => void }) {
             <feTurbulence type="fractalNoise" baseFrequency="0.012 0.05" numOctaves="2" seed="4" result="n" />
             <feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G" />
           </filter>
+          <filter id="garden-brush" x="-8%" y="-8%" width="116%" height="116%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.012 0.05" numOctaves="2" seed="4" result="disp" />
+            <feDisplacementMap in="SourceGraphic" in2="disp" scale="3" xChannelSelector="R" yChannelSelector="G" result="wobbly" />
+            <feTurbulence type="fractalNoise" baseFrequency="0.006 0.26" numOctaves="3" seed="9" result="streak" />
+            <feComposite in="wobbly" in2="streak" operator="arithmetic" k1="0.95" k2="0.38" k3="0" k4="0" />
+          </filter>
           <radialGradient id="garden-glow" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor={NIGHT.glow} />
             <stop offset="100%" stopColor="rgba(226,132,82,0)" />
@@ -69,11 +75,16 @@ export default function NightGarden({ onReturn }: { onReturn: () => void }) {
             fill="none" stroke={NIGHT.inkSoft} strokeWidth="2.4" strokeLinecap="round" opacity="0.7"
           />
 
-          {/* the branch the lanterns hang from — reaching in from above */}
-          <path
-            d="M1480,60 C1240,96 980,110 720,104 C500,99 320,88 160,64"
-            fill="none" stroke={NIGHT.ink} strokeWidth="7" strokeLinecap="round" opacity="0.9"
-          />
+          {/* the branch the lanterns hang from — one loaded stroke,
+              thick where it enters, spending its ink leftward */}
+          <g filter="url(#garden-brush)">
+            <path
+              d="M1480,54 C1238,90 980,104 720,99 C500,94 320,83 160,60
+                 L161,68 C320,90 500,101 720,107 C980,113 1240,102 1480,68 Z"
+              fill={NIGHT.ink}
+              opacity="0.92"
+            />
+          </g>
           <path
             d="M1180,102 C1150,124 1130,150 1122,180 M560,100 C540,124 528,152 524,182 M860,108 C848,128 840,150 838,174"
             fill="none" stroke={NIGHT.inkSoft} strokeWidth="3" strokeLinecap="round" opacity="0.7"
