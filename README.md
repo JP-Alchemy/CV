@@ -53,6 +53,10 @@ The mouse (or pen) leaves a short trail of impulses — where it was, how far it
 
 It is stateless — a pure function of the impulses — so it composes with morphs and re-renders without any bookkeeping. Tuning: `pushR` / `pushGain` in `src/main.js`, the spring constants in `PUSH_GLSL` in `src/engine/renderer.js`. Disabled for touch input and `prefers-reduced-motion`.
 
+### Click light
+
+Each click (or tap) sends a ring of light out from the pointer. Blocks and grid dots inside the ring take one flat colour from a 7-step spectrum — red on the leading edge through to violet on the trailing edge — with brightness quantised and dithered per pixel, so it reads as lit pixels rather than a gradient; lit grid dots swell from 2px up to 8px. The ring fades with distance and time (~1.5s). Up to four pulses overlap. Tuning: `pulseSpeed` / `pulseWidth` in `src/main.js`, the palette and falloff in `LIGHT_GLSL` in `src/engine/renderer.js`.
+
 ## Accessibility
 
 - The canvas is `aria-hidden`; the DOM mirror carries the real content in reading order, with real `<a>`/`<button>` elements positioned over their blocks.

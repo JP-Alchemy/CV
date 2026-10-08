@@ -1,4 +1,4 @@
-import { Renderer, TRAIL } from './engine/renderer.js';
+import { Renderer, TRAIL, PULSES } from './engine/renderer.js';
 import { Engine, SHRINK } from './engine/engine.js';
 import { buildScene, pageTitle } from './scene.js';
 import { DomMirror } from './dom.js';
@@ -79,6 +79,7 @@ function render(mode = 'local', o = {}) {
   engine.gridX = scene.S.left;
   engine.morphTo(scene, { mode, scrollFrom, scrollTo, origin: o.origin });
   for (const s of impulses) s.y += scrollTo - scrollFrom; // keep pushes where they were on screen
+  for (const p of pulses) p.y += scrollTo - scrollFrom;
   docEl.style.height = `${scene.height}px`;
   dom.sync(scene);
   if (Math.abs(window.scrollY - scrollTo) > 0.5) window.scrollTo(0, scrollTo);
@@ -127,6 +128,29 @@ function updateTrail(t) {
   return trail.n > 0;
 }
 
+// ---------------------------------------------------------------- click light
+//
+// Every click sends a ring of spectral light out from the click point; the
+// shaders light up blocks and grid dots as it passes.
+
+const PULSE_LIFE = 1.6; // seconds (matches the fade in LIGHT_GLSL)
+const pulses = [];
+const pulseData = { data: new Float32Array(PULSES * 4), n: 0 };
+
+function pulse(x, y) {
+  if (engine.calm) return;
+  pulses.push({ x, y: y + window.scrollY, t: engine.now(), s: 1 });
+  if (pulses.length > PULSES) pulses.shift();
+  kick();
+}
+
+function updatePulses(t) {
+  while (pulses.length && t - pulses[0].t > PULSE_LIFE) pulses.shift();
+  pulses.forEach((p, i) => pulseData.data.set([p.x, p.y, p.t, p.s], i * 4));
+  pulseData.n = pulses.length;
+  return pulseData.n > 0;
+}
+
 // ---------------------------------------------------------------- frame loop
 
 let raf = 0;
@@ -139,6 +163,7 @@ function frame() {
   const t = engine.now();
   engine.tick(t);
   const pushing = updateTrail(t);
+  const lit = updatePulses(t);
   const d = renderer.dpr;
   const tt = (t - themeStart) / 0.9;
   renderer.draw({
@@ -157,8 +182,11 @@ function frame() {
     trail,
     pushR: scene.S.mobile ? 100 : 130,
     pushGain: 0.45,
+    pulses: pulseData,
+    pulseSpeed: 1100,
+    pulseWidth: scene.S.mobile ? 110 : 150,
   });
-  if (t < engine.animUntil + 0.05 || tt < 1 || pushing) { kick(); return; }
+  if (t < engine.animUntil + 0.05 || tt < 1 || pushing || lit) { kick(); return; }
   clearTimeout(timer);
   const next = engine.nextTick();
   if (next < Infinity) timer = setTimeout(kick, Math.max(16, (next - engine.now()) * 1000));
@@ -248,7 +276,13 @@ window.addEventListener('hashchange', () => {
   navByKeyboard = false;
 });
 
-document.addEventListener('pointerdown', (e) => { lastOrigin = [e.clientX, e.clientY]; burst(e); }, { capture: true });
+document.addEventListener('pointerdown', (e) => {
+  lastOrigin = [e.clientX, e.clientY];
+  burst(e);
+  if (e.pointerType !== 'touch' && e.button === 0) pulse(e.clientX, e.clientY);
+}, { capture: true });
+// Touch: pulse on tap (click), not on touch-down, which also starts scrolls.
+document.addEventListener('click', (e) => { if (e.pointerType === 'touch') pulse(e.clientX, e.clientY); }, { capture: true });
 document.addEventListener('pointermove', (e) => { mouse = [e.clientX, e.clientY]; onPointer(e); kick(); }, { passive: true });
 document.documentElement.addEventListener('pointerleave', () => { mouse = [-1e4, -1e4]; pointer = null; pending = [0, 0]; kick(); });
 window.addEventListener('scroll', () => { engine.reveal(window.scrollY); kick(); }, { passive: true });
@@ -295,4 +329,4 @@ render('intro', { scrollTo: 0 });
 window.addEventListener('photo-loaded', () => render('local'));
 
 // Debug/inspection handle.
-window.__site = { engine, state, render, impulses, kick, get scene() { return scene; } };
+window.__site = { engine, state, render, impulses, pulses, kick, get scene() { return scene; } };

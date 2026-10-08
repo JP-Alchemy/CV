@@ -20,6 +20,7 @@ export const FIXED = 1; // ignores scroll (nav)
 export const FLAT = 2; // no tumble/rounding while moving (large fills)
 export const MOSAIC = 4; // three-step path through grid cells
 export const TRAIL = 48; // pointer samples kept for the push field
+export const PULSES = 4; // simultaneous click light pulses
 
 const THEME_GLSL = `
 uniform vec3 u_bgA, u_fgA, u_bgB, u_fgB;
@@ -97,6 +98,45 @@ vec3 pushAt(vec2 p, float mass) {
 }
 `;
 
+// Click light: a ring expanding from the click point. Pixels inside the ring
+// take one flat colour from a 7-step spectrum (red at the leading edge,
+// violet at the trailing edge, like a rainbow) and the brightness is
+// quantised with a per-pixel dither, so it reads as lit pixels rather than
+// a smooth glow. It fades with distance and time.
+const LIGHT_GLSL = `
+uniform vec4 u_pulse[${PULSES}]; // doc-space x, y; start time; strength
+uniform int u_pulseN;
+uniform float u_pulseSpeed;
+uniform float u_pulseWidth;
+const vec3 SPECTRUM[7] = vec3[7](
+  vec3(1.00, 0.27, 0.23), vec3(1.00, 0.58, 0.16), vec3(1.00, 0.86, 0.20), vec3(0.30, 0.86, 0.42),
+  vec3(0.20, 0.80, 0.95), vec3(0.25, 0.42, 1.00), vec3(0.62, 0.32, 1.00));
+float hashL(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * .1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+// Light at doc-space p: rgb + level (0 = unlit). seed is stable per pixel.
+vec4 lightAt(vec2 p, vec2 seed) {
+  float I = 0.0, k = 0.0;
+  for (int i = 0; i < ${PULSES}; i++) {
+    if (i >= u_pulseN) break;
+    vec4 P = u_pulse[i];
+    float age = u_time - P.z;
+    if (age < 0.0) continue;
+    float r = distance(p, P.xy);
+    float u = (age * u_pulseSpeed - r) / u_pulseWidth; // 0 leading edge .. 1 trailing edge
+    if (u <= 0.0 || u >= 1.0) continue;
+    float v = sin(3.14159265 * u) * P.w * exp(-r / 700.0) * (1.0 - smoothstep(0.8, 1.5, age));
+    if (v > I) { I = v; k = u; }
+  }
+  if (I <= 0.0) return vec4(0.0);
+  float level = floor(min(I, 1.0) * 4.0 + hashL(seed)) / 4.0;
+  int band = int(clamp(floor(k * 7.0 + (hashL(seed + 17.31) - 0.5) * 0.9), 0.0, 6.0));
+  return vec4(SPECTRUM[band], level);
+}
+`;
+
 const VS_BLOCK = `#version 300 es
 precision highp float;
 precision highp int;
@@ -118,7 +158,9 @@ out vec2 v_half;
 out float v_round;
 out float v_tone;
 out float v_clip;
+flat out vec4 v_light;
 ${PUSH_GLSL}
+${LIGHT_GLSL}
 const float PI = 3.14159265;
 const float SA = 0.3;
 const float SB = 0.7;
@@ -191,6 +233,7 @@ void main() {
   v_round = rnd;
   v_tone = tone;
   v_clip = fixed_ ? -1e6 : u_navClip;
+  v_light = u_pulseN > 0 ? lightAt(fixed_ ? c + vec2(0.0, u_scroll) : c, a_to.xy) : vec4(0.0);
 }`;
 
 const FS_BLOCK = `#version 300 es
@@ -200,6 +243,7 @@ in vec2 v_half;
 in float v_round;
 in float v_tone;
 in float v_clip;
+flat in vec4 v_light;
 out vec4 o;
 ${THEME_GLSL}
 void main() {
@@ -214,7 +258,7 @@ void main() {
   float t = themeK();
   vec3 bg = mix(u_bgA, u_bgB, t);
   vec3 fg = mix(u_fgA, u_fgB, t);
-  o = vec4(mix(bg, fg, v_tone), 1.0);
+  o = vec4(mix(mix(bg, fg, v_tone), v_light.rgb, v_light.a), 1.0);
 }`;
 
 const VS_BG = `#version 300 es
@@ -252,7 +296,9 @@ out vec2 v_half;
 out float v_round;
 out float v_tone;
 out float v_clip;
+flat out vec4 v_light;
 ${PUSH_GLSL}
+${LIGHT_GLSL}
 void main() {
   int col = gl_InstanceID % u_cols;
   int row = gl_InstanceID / u_cols;
@@ -267,18 +313,21 @@ void main() {
     vec3 ps = pushAt(c, 0.6);
     if (length(ps.xy) > 0.05) { c += ps.xy; ang = ps.z; rest = false; }
   }
-  vec2 lp = a_corner - 0.5;
-  lp *= 2.0;
+  // Lit dots swell from 2px to up to 8px (even sizes stay pixel-aligned).
+  vec4 L = u_pulseN > 0 ? lightAt(c, vec2(float(col), y0 + float(row) * st)) : vec4(0.0);
+  float ds = 2.0 + 2.0 * floor(L.a * 3.0 + 0.5);
+  vec2 lp = (a_corner - 0.5) * ds;
   float cs = cos(ang), sn = sin(ang);
   vec2 pos = c + vec2(cs * lp.x - sn * lp.y, sn * lp.x + cs * lp.y);
   pos.y -= u_scroll;
   if (rest) pos = floor(pos * u_dpr + 0.5) / u_dpr;
   gl_Position = vec4(pos.x / u_view.x * 2.0 - 1.0, 1.0 - pos.y / u_view.y * 2.0, 0.9, 1.0);
   v_uv = a_corner * 2.0 - 1.0;
-  v_half = vec2(u_dpr);
+  v_half = vec2(ds * 0.5 * u_dpr);
   v_round = 0.0;
   v_tone = u_dotAlpha + near * 0.22;
   v_clip = -1e6;
+  v_light = L;
 }`;
 
 function compile(gl, type, src) {
@@ -404,6 +453,16 @@ export class Renderer {
       gl.uniform1f(u.u_pushGain, f.pushGain);
     };
 
+    const setLight = (u) => {
+      const P = f.pulses;
+      const n = P ? P.n : 0;
+      gl.uniform1i(u.u_pulseN, n);
+      if (!n) return;
+      gl.uniform4fv(u.u_pulse, P.data, 0, n * 4);
+      gl.uniform1f(u.u_pulseSpeed, f.pulseSpeed);
+      gl.uniform1f(u.u_pulseWidth, f.pulseWidth);
+    };
+
     let { u, p } = this.bg;
     gl.useProgram(p);
     setTheme(u);
@@ -418,6 +477,7 @@ export class Renderer {
     gl.useProgram(p);
     setTheme(u);
     setPush(u);
+    setLight(u);
     gl.uniform2f(u.u_view, this.w, this.h);
     gl.uniform1f(u.u_scroll, f.scroll);
     gl.uniform1f(u.u_time, f.time);
@@ -436,6 +496,7 @@ export class Renderer {
     gl.useProgram(p);
     setTheme(u);
     setPush(u);
+    setLight(u);
     gl.uniform2f(u.u_view, this.w, this.h);
     gl.uniform1f(u.u_scroll, f.scroll);
     gl.uniform1f(u.u_time, f.time);
