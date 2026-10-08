@@ -263,7 +263,7 @@ const dom = new DomMirror(docEl, fixedEl, {
     if (action) { e.preventDefault(); runAction(action, node); return; }
     const href = node.getAttribute('href') || '';
     // Internal links navigate in place (and morph); modified clicks open tabs.
-    if (!href.startsWith('/') || href.startsWith('//') || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (!href.startsWith('/') || href.startsWith('//') || node.hasAttribute('download') || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
     const route = parseRoute(new URL(href, location.href).pathname);
     if (route.path !== state.route.path) { navigate(route, true); return; }

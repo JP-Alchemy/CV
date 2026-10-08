@@ -6,6 +6,7 @@ import path from 'node:path';
 import { allRoutes, headTags, pageHTML } from '../src/seo.js';
 import { parseRoute } from '../src/router.js';
 import { site } from '../src/content.js';
+import { gpxFiles } from '../src/roadbook.js';
 import { typeset } from '../src/engine/typeset.js';
 import { imageBlocks } from '../src/engine/images.js';
 import { iconFrames } from '../src/icons.js';
@@ -39,6 +40,8 @@ write(path.join(dist, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
 ${routes.map((r) => `  <url><loc>${base}${r.path}</loc><lastmod>${today}</lastmod><priority>${r.path === '/' ? '1.0' : r.name === 'project' ? '0.6' : '0.8'}</priority></url>`).join('\n')}
 </urlset>
 `);
+for (const [file, xml] of gpxFiles()) write(path.join(dist, file), xml);
+
 write(path.join(dist, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${base}/sitemap.xml\n`);
 
 // ---------------------------------------------------------------- share images
@@ -83,4 +86,4 @@ function touchIcon() {
 write(path.join(dist, 'og-image.png'), ogImage());
 write(path.join(dist, 'apple-touch-icon.png'), touchIcon());
 
-console.log(`prerendered ${routes.length} pages + 404, sitemap.xml, robots.txt, og-image.png, apple-touch-icon.png`);
+console.log(`prerendered ${routes.length} pages + 404, ${gpxFiles().length} GPX files, sitemap.xml, robots.txt, og-image.png, apple-touch-icon.png`);

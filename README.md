@@ -39,7 +39,11 @@ The site uses real paths (`/work/`, `/work/interfarm/`, `/services/`, `/about/`,
 
 It also writes `404.html` (noindex), `sitemap.xml`, `robots.txt`, a pixel-style `og-image.png` share card and `apple-touch-icon.png`, all generated from the same font and halftone code. The Google Search Console verification tag from the previous site is kept in `index.html`.
 
-`dist/` works on any static host (Vercel, Netlify, Cloudflare Pages, GitHub Pages) with no rewrite rules: each route is a real file and unknown paths fall back to `404.html`.
+`dist/` works on any static host with no rewrite rules: each route is a real file and unknown paths fall back to `404.html`. This repo deploys to GitHub Pages on every push to `main` ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)), served at **jpbothma.com** (`public/CNAME`).
+
+### The roadbook
+
+[`/projects/moto-tour/`](src/roadbook.js) keeps the address it had on the old site. It is drawn from [`src/data/roadbook.js`](src/data/roadbook.js): the route map is projected from the days' via points, each day expands to its elevation profile and stay, and the build writes the GPX files (all routes plus one per riding day) to `dist/projects/moto-tour/gpx/`.
 
 ## How it works
 

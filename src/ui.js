@@ -130,7 +130,7 @@ export function button(o) {
     }
     els.push(ctx.el({
       key: o.key, w: W, h: H,
-      hit: { href: o.href, action: o.action, label: o.aria || o.label, external: o.external, current: o.active, pressed: o.pressed },
+      hit: { href: o.href, action: o.action, label: o.aria || o.label, external: o.external, download: o.download, current: o.active, pressed: o.pressed },
     }));
     return { w: W, h: H, els };
   }, o);
@@ -151,7 +151,7 @@ export function link(o) {
     });
     u.y = uy;
     els.push(u);
-    els.push(ctx.el({ key: o.key, w: ts.width, h: uy + st.size, hit: { href: o.href, action: o.action, label: o.aria || o.label, external: o.external } }));
+    els.push(ctx.el({ key: o.key, w: ts.width, h: uy + st.size, hit: { href: o.href, action: o.action, label: o.aria || o.label, external: o.external, download: o.download } }));
     return { w: ts.width, h: uy + st.size, els };
   }, o);
 }
@@ -227,3 +227,10 @@ export function pressRow(o) {
   }, o);
 }
 
+/** Section heading: a ■ label and a dotted rule. Returns two nodes. */
+export function section(S, key, title, o = {}) {
+  return [
+    label(title, { key: `sec-${key}`, tag: 'h2', mt: o.mt ?? S.sp(10) }),
+    { ...rule({ key: `sec-${key}-rule` }), mt: S.sp(2) },
+  ];
+}

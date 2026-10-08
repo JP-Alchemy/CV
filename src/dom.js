@@ -46,6 +46,7 @@ export class DomMirror {
           if (node.getAttribute('href') !== h.href) node.setAttribute('href', h.href);
           if (h.external || /^https?:/.test(h.href)) { node.target = '_blank'; node.rel = 'noopener'; }
           else { node.removeAttribute('target'); node.removeAttribute('rel'); }
+          if (h.download) node.setAttribute('download', ''); else node.removeAttribute('download');
           if (h.current) node.setAttribute('aria-current', 'page'); else node.removeAttribute('aria-current');
         }
         if (h.expanded !== undefined) node.setAttribute('aria-expanded', String(!!h.expanded));

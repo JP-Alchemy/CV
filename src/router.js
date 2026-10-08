@@ -5,6 +5,7 @@
 //   /work/           project index
 //   /work/:slug/     project
 //   /services/, /about/, /cv/, /contact/
+//   /projects/moto-tour/  the motorcycle roadbook (address kept from the old site)
 
 export const PAGES = ['work', 'services', 'about', 'cv', 'contact'];
 
@@ -12,6 +13,7 @@ export function parseRoute(pathname = location.pathname) {
   const parts = pathname.split('/').filter(Boolean);
   if (parts.length === 0) return { name: 'home', path: '/' };
   if (parts[0] === 'work' && parts.length === 2) return { name: 'project', slug: parts[1], path: `/work/${parts[1]}/` };
+  if (parts[0] === 'projects' && parts[1] === 'moto-tour' && parts.length === 2) return { name: 'roadbook', path: '/projects/moto-tour/' };
   if (PAGES.includes(parts[0]) && parts.length === 1) return { name: parts[0], path: `/${parts[0]}/` };
   return { name: 'notFound', path: `/${parts.join('/')}/` };
 }

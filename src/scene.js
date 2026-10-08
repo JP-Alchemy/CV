@@ -1,6 +1,7 @@
 import { Ctx, layout, resolve, shift, text, col, row, grid, space, custom, maxw, even } from './engine/layout.js';
-import { tokens, label, rule, button, link, image, icon, hitArea, pressRow, frameBlocks } from './ui.js';
+import { tokens, label, rule, button, link, image, icon, hitArea, pressRow, frameBlocks, section } from './ui.js';
 import { iconFrames } from './icons.js';
+import { roadbookPage } from './roadbook.js';
 import {
   site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills,
 } from './content.js';
@@ -11,7 +12,7 @@ const UP = (s) => s.toUpperCase();
 // ---------------------------------------------------------------- navigation
 
 export const NAV = [
-  { label: 'WORK', href: '/work/', match: ['work', 'project'] },
+  { label: 'WORK', href: '/work/', match: ['work', 'project', 'roadbook'] },
   { label: 'SERVICES', href: '/services/', match: ['services'] },
   { label: 'ABOUT', href: '/about/', match: ['about'] },
   { label: 'CV', href: '/cv/', match: ['cv'] },
@@ -73,13 +74,6 @@ function pageHead(S, eyebrow, title, o = {}) {
     text(title, S.h1, { key: o.titleKey || 'page-title', tag: 'h1', label: o.h1, mt: S.sp(2) }),
     o.intro ? maxw(640, text(o.intro, S.body, { key: 'page-intro', mt: S.sp(2) })) : null,
   ]);
-}
-
-function section(S, key, title, o = {}) {
-  return [
-    label(title, { key: `sec-${key}`, tag: 'h2', mt: o.mt ?? S.sp(10) }),
-    { ...rule({ key: `sec-${key}-rule` }), mt: S.sp(2) },
-  ];
 }
 
 function projectRow(p, i, state, S) {
@@ -145,8 +139,11 @@ function work(state, S) {
     const on = state.hover === key;
     return hitArea({ key, href: `/work/${p.slug}/`, label: `${p.name} — ${p.summary}` }, col([
       image({
-        key: `img:${p.slug}`, spec: p.image, aspect: 0.62, dark: state.theme === 'dark',
-        style: on ? 'dither' : 'halftone', cell: on ? 4 : 8, motion: 'hover', alt: `${p.name} — cover image`,
+        key: `img:${p.slug}`, spec: p.image, aspect: 0.62, dark: state.theme === 'dark', motion: 'hover', alt: `${p.name} — cover image`,
+        // hover re-samples the image: halftone <-> dither (photos set their own resting style)
+        ...(p.image.style === 'dither'
+          ? { style: on ? 'halftone' : 'dither', cell: on ? 6 : p.image.cell || 3, gamma: on ? 1 : p.image.gamma }
+          : { style: on ? 'dither' : 'halftone', cell: on ? 4 : 8 }),
       }),
       row([
         text(p.title + (on ? ' →' : ''), S.h3, { key: `title:${p.slug}`, a11y: false, motion: 'hover' }),
@@ -222,11 +219,17 @@ function project(state, S, slug) {
     text(p.title, S.h1, { key: `title:${p.slug}`, tag: 'h1', label: p.name, mt: S.sp(4) }),
     maxw(720, text(p.summary, S.h2, { key: 'page-intro', mt: S.sp(2) })),
     { ...grid(meta, { cols: S.mobile ? 1 : 3, gap: S.sp(2), rowGap: S.sp(2) }), mt: S.sp(4) },
-    { ...image({ key: `img:${p.slug}`, spec: p.image, aspect: S.mobile ? 0.8 : 0.5, cell: S.mobile ? 6 : 8, dark: state.theme === 'dark', alt: `${p.name} — cover image` }), mt: S.sp(5) },
+    { ...image({
+      key: `img:${p.slug}`, spec: p.image, dark: state.theme === 'dark', alt: `${p.name} — cover image`,
+      aspect: p.imageAspect ?? (S.mobile ? 0.8 : 0.5), w: p.imageMaxW,
+      style: p.image.style, cell: p.image.cell || (S.mobile ? 6 : 8), gamma: p.image.gamma,
+    }), mt: S.sp(5) },
     maxw(680, col(p.body.map((para, j) => text(para, S.body, { key: `body-${j}`, mt: j ? S.sp(2) : 0 })), { mt: S.sp(5) })),
     ...caseSections(p, state, S),
     text(p.tags.join(' · '), S.label, { key: 'tags', mt: S.sp(p.sections ? 8 : 4) }),
-    p.url ? row([button({ key: 'visit', label: `VISIT ${UP(p.name)}`, arrow: '↗', href: p.url, external: true, hover: hv('visit') })], { mt: S.sp(4) }) : null,
+    p.url ? row([button(p.url.startsWith('/')
+      ? { key: 'visit', label: p.cta || 'OPEN', arrow: '→', href: p.url, hover: hv('visit') }
+      : { key: 'visit', label: `VISIT ${UP(p.name)}`, arrow: '↗', href: p.url, external: true, hover: hv('visit') })], { mt: S.sp(4) }) : null,
     { ...rule({ key: 'proj-rule' }), mt: S.sp(6) },
     row([
       button({ key: 'prev', label: prev.title, arrow: '←', href: `/work/${prev.slug}/`, hover: hv('prev'), aria: `Previous project: ${prev.name}` }),
@@ -438,7 +441,7 @@ function notFound(state, S) {
   ]);
 }
 
-const PAGES = { home, work, project, services: servicesPage, about: aboutPage, cv: cvPage, contact, notFound };
+const PAGES = { home, work, project, services: servicesPage, about: aboutPage, cv: cvPage, contact, notFound, roadbook: roadbookPage };
 
 export function buildScene(state, vp) {
   const S = tokens(vp.w);

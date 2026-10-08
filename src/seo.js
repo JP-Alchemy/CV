@@ -7,6 +7,7 @@ import {
   site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills,
 } from './content.js';
 import { parseRoute } from './router.js';
+import { book, tripStats, gpxFile, eur, ROADBOOK_PATH } from './roadbook.js';
 
 const BASE = site.url.replace(/\/$/, '');
 const OG_IMAGE = `${BASE}/og-image.png`;
@@ -26,6 +27,7 @@ export const allRoutes = () => [
   parseRoute('/'),
   ...['work', 'services', 'about', 'cv', 'contact'].map((p) => parseRoute(`/${p}/`)),
   ...projects.map((p) => parseRoute(`/work/${p.slug}/`)),
+  parseRoute(ROADBOOK_PATH),
 ];
 
 // ---------------------------------------------------------------- meta
@@ -65,6 +67,16 @@ export function pageMeta(route) {
       title: 'Contact JP Bothma — Projects, Partnerships & Roles',
       description: 'A project, a partnership or a thoughtful question? Say hello. Based in Leiden (CET), working with teams across the EU and beyond.',
     };
+    case 'roadbook': {
+      const st = tripStats();
+      return {
+        ...base,
+        type: 'article',
+        title: 'Roadbook — Leiden to the Alps by Motorcycle, 24 Aug – 4 Sep 2026 | JP Bothma',
+        description: `A twelve-day solo motorcycle roadbook: Leiden to the Alps and back. Eleven nights, ${st.km.toLocaleString('en-GB')} km, ${st.passes} passes, every bed and euro accounted for, with GPX routes.`,
+        image: `${BASE}/images/dolomites.jpg`, imageW: 552, imageH: 420,
+      };
+    }
     case 'project':
       if (p) {
         const by = p.role === 'Maker' ? 'Designed and built by JP Bothma.' : `JP Bothma — ${p.role}.`;
@@ -148,6 +160,22 @@ export function jsonLd(route) {
   const meta = pageMeta(route);
   if (route.name === 'home' || route.name === 'services') graph.push(business);
   if (route.name === 'about') graph.push({ '@type': 'ProfilePage', url: meta.url, mainEntity: { '@id': `${BASE}/#person` } });
+  if (route.name === 'roadbook') {
+    graph.push({
+      '@type': 'TouristTrip',
+      name: 'Leiden to the Alps and back by motorcycle',
+      description: meta.description,
+      url: meta.url,
+      author: { '@id': `${BASE}/#person` },
+      itinerary: {
+        '@type': 'ItemList',
+        itemListElement: book.hotels.map((h, i) => ({
+          '@type': 'ListItem', position: i + 1,
+          item: { '@type': 'Place', name: `${h.name}, ${h.town}`, geo: { '@type': 'GeoCoordinates', latitude: h.lat, longitude: h.lon } },
+        })),
+      },
+    });
+  }
   const p = route.name === 'project' && projects.find((x) => x.slug === route.slug);
   if (p) {
     graph.push({
@@ -277,7 +305,43 @@ const BODIES = {
     ${p.image?.src ? `<img src="${esc(p.image.src)}" alt="${esc(p.name)} — cover image" width="1200" height="675" />` : ''}
     ${p.body.map((b) => `<p>${esc(b)}</p>`).join('')}
     ${(p.sections || []).map(sectionHTML).join('')}
-    ${p.url ? `<p>${a(p.url, `Visit ${p.name} ↗`, true)}</p>` : ''}`;
+    ${p.url ? `<p>${p.url.startsWith('/') ? a(p.url, `${sentence(p.cta || 'Open')} →`) : a(p.url, `Visit ${p.name} ↗`, true)}</p>` : ''}`;
+  },
+
+  roadbook: () => {
+    const st = tripStats();
+    const b = book.budget;
+    return `
+    <p>${a('/work/motorcycle-tour/', '← Motorcycle tour framework')}</p>
+    <p class="eyebrow">Roadbook · 24 Aug – 4 Sep 2026 · solo</p>
+    <h1>Leiden → the Alps → Leiden</h1>
+    <p class="lead">Eleven nights, ${st.km.toLocaleString('en-GB')} km. Back roads throughout, bar the transit across Germany.</p>
+    <ul class="stats">
+      <li><strong>${eur(st.total)}</strong> total, solo</li><li><strong>${eur(st.perDay)}</strong> per day</li>
+      <li><strong>${st.km.toLocaleString('en-GB')} km</strong> distance</li><li><strong>${st.nights}</strong> nights</li>
+      <li><strong>${st.passes}</strong> named passes</li><li><strong>${st.top.alt.toLocaleString('en-GB')} m</strong> highest point</li>
+    </ul>
+    <p>${a(gpxFile(0), 'Download all routes (GPX)')}</p>
+    <h2>Day by day</h2>
+    ${book.days.map((d) => `
+    <section>
+      <h3>Day ${d.n} · ${esc(d.date)} — ${esc(d.title)}</h3>
+      <p class="muted">${esc(d.frm)} → ${esc(d.to)}${d.km ? ` · ${d.km} km · ${esc(d.hrs)}` : ' · rest day'}</p>
+      <p>${esc(d.roads)}</p>
+      ${d.why ? `<p class="muted">${esc(d.why)}</p>` : ''}
+      ${(d.foot || []).map((f) => `<p><strong>${esc(f.t)} ${esc(f.h)}.</strong> ${esc(f.d)}</p>`).join('')}
+      ${d.kind !== 'rest' ? `<p>${a(gpxFile(d.n), `Day ${d.n} route (GPX)`)}</p>` : ''}
+    </section>`).join('')}
+    <h2>Where you sleep</h2>
+    <ul class="list">${book.hotels.map((h) => `<li>Night ${esc(h.days.join(' & '))}: ${a(h.url, h.name, true)}, ${esc(h.town)} — ${esc(h.checkin)} to ${esc(h.checkout)}, ${eur(h.price, 2)}</li>`).join('')}</ul>
+    <h2>What it costs</h2>
+    <dl>${b.rows.map((r) => `<dt>${esc(r.item)} — ${eur(r.amount)}</dt><dd>${esc(r.note)}</dd>`).join('')}
+      <dt>Subtotal — ${eur(b.subtotal)}</dt><dd></dd><dt>Contingency at 10% — ${eur(b.contingency)}</dt><dd></dd><dt>Total — ${eur(b.total)}</dt><dd>${eur(b.per_day)} a day.</dd></dl>
+    <ul>${b.basis.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
+    <h2>Worth knowing</h2>
+    ${book.warnings.map((x) => `<h3>${esc(x.h)}</h3><p>${esc(x.d)}</p>`).join('')}
+    <h2>Before you go</h2>
+    ${book.practical.map((x) => `<h3>${esc(x.h)}</h3><p>${esc(x.d)}</p>`).join('')}`;
   },
 
   services: () => `

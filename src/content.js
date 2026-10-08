@@ -244,8 +244,12 @@ export const projects = [
     stack: 'Leaflet · OpenStreetMap',
     tags: ['TRAVEL', 'MAPS', 'FREE'],
     summary: 'A free, self-guided touring kit. The first roadbook: Leiden to the Alps, every pass, bed and euro accounted for.',
-    url: 'https://jpbothma.com/projects/moto-tour/',
-    image: { kind: 'switchbacks' },
+    url: '/projects/moto-tour/',
+    cta: 'OPEN THE ROADBOOK',
+    // Chairlift selfie in the Dolomites, as a 1-bit dither.
+    image: { src: '/images/dolomites.jpg', style: 'dither', cell: 3, gamma: 1.4, levels: [0.15, 0.85] },
+    imageAspect: 0.72,
+    imageMaxW: 760,
     body: [
       'A free, self-guided touring kit for riders who want the planning done properly: the route, every pass, every bed and every euro, laid out day by day.',
       'The first roadbook runs from Leiden to the Alps and back — eleven nights, 3,615 km and 25 named passes, with the budget, the tolls and the early alarms worked out in advance. The framework around it is still in the making: book, download the route, go.',
