@@ -43,7 +43,7 @@ export function pageMeta(route) {
     case 'work': return {
       ...base,
       title: 'Work — Interactive, Data & Sustainability Projects | JP Bothma',
-      description: "Selected projects by JP Bothma: Interfood's Interfarm CO₂-reduction platform, nezen.io, What The Duck, Cyberspace Central and more.",
+      description: "Selected projects by JP Bothma: Interfood's Interfarm CO₂-reduction platform, the Where does my food come from? globe, SwarmFort.io, nezen.io and more.",
     };
     case 'services': return {
       ...base,

@@ -232,6 +232,61 @@ export const GENERATORS = {
     return 0;
   },
 
+  swarm(x, y, ar, s, dark) {
+    // A little fort under a swirling swarm of flies.
+    const px = (x - 0.5) * ar;
+    for (let i = 0; i < 90; i++) {
+      const a = i * 2.399 + Math.sin(i * 0.7) * 0.4;
+      const r = 0.05 + 0.2 * Math.sqrt(i / 90) + hash2(i, 3, 7) * 0.03;
+      const fx = 0.2 + Math.cos(a) * r * 1.35, fy = 0.3 + Math.sin(a) * r * 0.75;
+      if (Math.hypot(px - fx, y - fy) < 0.011 + hash2(i, 9, 2) * 0.006) return 0.95;
+    }
+    if (Math.abs(y - 0.88) < 0.006) return Math.floor(px * 60) % 2 === 0 ? 0.7 : 0;
+    const inWall = Math.abs(px + 0.12) < 0.2 && y > 0.6 && y < 0.88;
+    const merlon = Math.abs(px + 0.12) < 0.2 && y > 0.54 && y <= 0.6 && Math.floor((px + 0.32) / 0.06) % 2 === 0;
+    const tower = Math.abs(px + 0.12) < 0.07 && y > 0.42 && y < 0.6;
+    const towerTop = Math.abs(px + 0.12) < 0.09 && y > 0.38 && y <= 0.42 && Math.floor((px + 0.21) / 0.045) % 2 === 0;
+    const door = Math.abs(px + 0.12) < 0.045 && y > 0.74 && (y > 0.78 || Math.hypot(px + 0.12, y - 0.78) < 0.045);
+    const flag = (Math.abs(px + 0.12) < 0.005 && y > 0.27 && y < 0.38) || (px > -0.12 && px < -0.05 && y > 0.27 && y < 0.31);
+    if (door) return 0;
+    if (inWall || merlon || tower || towerTop || flag) {
+      const side = clamp(0.55 + (px + 0.12) * 1.4);
+      return dark ? clamp(1 - side * 0.6) : clamp(0.35 + side * 0.6);
+    }
+    return 0;
+  },
+
+  earth(x, y, ar, s, dark) {
+    // The globe with supply routes arcing across it.
+    const px = (x - 0.5) * ar, py = y - 0.5;
+    const arcs = [[-0.28, 0.12, 0.05, -0.1, 0.22], [0.25, 0.2, 0.05, -0.1, 0.16], [-0.1, -0.28, 0.05, -0.1, 0.12]];
+    for (const [ax, ay, bx, by, lift] of arcs) {
+      const mx = (ax + bx) / 2, my = (ay + by) / 2 - lift;
+      let best = 9, prev = [ax, ay];
+      for (let i = 1; i <= 24; i++) {
+        const t = i / 24, u = 1 - t;
+        const cx = u * u * ax + 2 * u * t * mx + t * t * bx, cy = u * u * ay + 2 * u * t * my + t * t * by;
+        const vx = cx - prev[0], vy = cy - prev[1];
+        const k = clamp(((px - prev[0]) * vx + (py - prev[1]) * vy) / (vx * vx + vy * vy));
+        best = Math.min(best, Math.hypot(px - prev[0] - vx * k, py - prev[1] - vy * k));
+        prev = [cx, cy];
+      }
+      if (best < 0.015) return 0.98;
+      if (best < 0.03) return 0;
+      if (Math.hypot(px - ax, py - ay) < 0.026) return 0.98;
+    }
+    if (Math.hypot(px - 0.05, py + 0.1) < 0.03) return 0.98;
+    // Plain shaded planet with landmasses, so the routes stay legible.
+    const r = 0.42, d = Math.hypot(px, py);
+    if (d > r) return Math.abs(d - r - 0.03) < 0.004 ? 0.4 : 0;
+    const z = Math.sqrt(r * r - d * d);
+    const lam = lambert(px / r, py / r, z / r);
+    const lat = Math.asin(-py / r), lon = Math.atan2(px, z) + 0.6;
+    const land = fbm(lon * 2 + 4, lat * 2 + 4, 21, 4) > 0.5;
+    const base = land ? 0.5 : 0.1;
+    return dark ? clamp(base * (0.35 + lam * 0.9)) : clamp(base + (1 - lam) * 0.3);
+  },
+
   globe(x, y, ar, s, dark) {
     const px = (x - 0.5) * ar, py = y - 0.5;
     const r = 0.4;
