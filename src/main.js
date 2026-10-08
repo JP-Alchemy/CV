@@ -204,7 +204,7 @@ window.addEventListener('hashchange', () => {
 
 document.addEventListener('pointerdown', (e) => { lastOrigin = [e.clientX, e.clientY]; }, { capture: true });
 document.addEventListener('pointermove', (e) => { mouse = [e.clientX, e.clientY]; kick(); }, { passive: true });
-document.addEventListener('pointerleave', () => { mouse = [-1e4, -1e4]; kick(); });
+document.documentElement.addEventListener('pointerleave', () => { mouse = [-1e4, -1e4]; kick(); });
 window.addEventListener('scroll', () => { engine.reveal(window.scrollY); kick(); }, { passive: true });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && state.menuOpen) runAction('menu', fixedEl);
