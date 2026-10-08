@@ -1,4 +1,4 @@
-import { Renderer } from './engine/renderer.js';
+import { Renderer, TRAIL } from './engine/renderer.js';
 import { Engine, SHRINK } from './engine/engine.js';
 import { buildScene, pageTitle } from './scene.js';
 import { DomMirror } from './dom.js';
@@ -78,11 +78,53 @@ function render(mode = 'local', o = {}) {
   engine.vh = vp.h;
   engine.gridX = scene.S.left;
   engine.morphTo(scene, { mode, scrollFrom, scrollTo, origin: o.origin });
+  for (const s of impulses) s.y += scrollTo - scrollFrom; // keep pushes where they were on screen
   docEl.style.height = `${scene.height}px`;
   dom.sync(scene);
   if (Math.abs(window.scrollY - scrollTo) > 0.5) window.scrollTo(0, scrollTo);
   engine.reveal(scrollTo);
   kick();
+}
+
+// ---------------------------------------------------------------- pointer push
+//
+// The pointer's path is kept as short-lived impulses (doc-space position +
+// how far it moved). The vertex shader turns them into spring offsets, so
+// blocks near a moving cursor get shoved and settle back. Mouse/pen only:
+// on touch, dragging means scrolling.
+
+const PUSH_LIFE = 1.3; // seconds an impulse keeps ringing (matches the shader)
+const trail = { pos: new Float32Array(TRAIL * 4), meta: new Float32Array(TRAIL * 2), n: 0 };
+const impulses = [];
+let pointer = null; // last screen position of a mouse/pen pointer
+let pending = [0, 0]; // motion since the last impulse
+let lastImpulse = -1;
+
+function onPointer(e) {
+  if (e.pointerType === 'touch') return;
+  if (pointer) { pending[0] += e.clientX - pointer[0]; pending[1] += e.clientY - pointer[1]; }
+  pointer = [e.clientX, e.clientY];
+}
+
+function burst(e) {
+  if (e.pointerType === 'touch' || engine.calm) return;
+  impulses.push({ x: e.clientX, y: e.clientY + window.scrollY, dx: 0, dy: 0, t: engine.now(), burst: 34 });
+  kick();
+}
+
+function updateTrail(t) {
+  if (pointer && !engine.calm && Math.abs(pending[0]) + Math.abs(pending[1]) > 0.5 && t - lastImpulse >= 1 / 90) {
+    impulses.push({ x: pointer[0], y: pointer[1] + window.scrollY, dx: pending[0], dy: pending[1], t, burst: 0 });
+    pending = [0, 0];
+    lastImpulse = t;
+  }
+  while (impulses.length && (t - impulses[0].t > PUSH_LIFE || impulses.length > TRAIL)) impulses.shift();
+  impulses.forEach((s, i) => {
+    trail.pos.set([s.x, s.y, s.dx, s.dy], i * 4);
+    trail.meta.set([s.t, s.burst], i * 2);
+  });
+  trail.n = impulses.length;
+  return trail.n > 0;
 }
 
 // ---------------------------------------------------------------- frame loop
@@ -96,6 +138,7 @@ function frame() {
   if (!scene) return;
   const t = engine.now();
   engine.tick(t);
+  const pushing = updateTrail(t);
   const d = renderer.dpr;
   const tt = (t - themeStart) / 0.9;
   renderer.draw({
@@ -111,8 +154,11 @@ function frame() {
     gridStep: 16,
     mouse,
     dotAlpha: 0.075,
+    trail,
+    pushR: scene.S.mobile ? 100 : 130,
+    pushGain: 0.45,
   });
-  if (t < engine.animUntil + 0.05 || tt < 1) { kick(); return; }
+  if (t < engine.animUntil + 0.05 || tt < 1 || pushing) { kick(); return; }
   clearTimeout(timer);
   const next = engine.nextTick();
   if (next < Infinity) timer = setTimeout(kick, Math.max(16, (next - engine.now()) * 1000));
@@ -202,9 +248,9 @@ window.addEventListener('hashchange', () => {
   navByKeyboard = false;
 });
 
-document.addEventListener('pointerdown', (e) => { lastOrigin = [e.clientX, e.clientY]; }, { capture: true });
-document.addEventListener('pointermove', (e) => { mouse = [e.clientX, e.clientY]; kick(); }, { passive: true });
-document.documentElement.addEventListener('pointerleave', () => { mouse = [-1e4, -1e4]; kick(); });
+document.addEventListener('pointerdown', (e) => { lastOrigin = [e.clientX, e.clientY]; burst(e); }, { capture: true });
+document.addEventListener('pointermove', (e) => { mouse = [e.clientX, e.clientY]; onPointer(e); kick(); }, { passive: true });
+document.documentElement.addEventListener('pointerleave', () => { mouse = [-1e4, -1e4]; pointer = null; pending = [0, 0]; kick(); });
 window.addEventListener('scroll', () => { engine.reveal(window.scrollY); kick(); }, { passive: true });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && state.menuOpen) runAction('menu', fixedEl);
@@ -249,4 +295,4 @@ render('intro', { scrollTo: 0 });
 window.addEventListener('photo-loaded', () => render('local'));
 
 // Debug/inspection handle.
-window.__site = { engine, state, render, get scene() { return scene; } };
+window.__site = { engine, state, render, impulses, kick, get scene() { return scene; } };

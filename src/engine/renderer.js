@@ -19,6 +19,7 @@ export const STRIDE = 24;
 export const FIXED = 1; // ignores scroll (nav)
 export const FLAT = 2; // no tumble/rounding while moving (large fills)
 export const MOSAIC = 4; // three-step path through grid cells
+export const TRAIL = 48; // pointer samples kept for the push field
 
 const THEME_GLSL = `
 uniform vec3 u_bgA, u_fgA, u_bgB, u_fgB;
@@ -39,6 +40,60 @@ float themeK() {
   vec2 c = floor(sp / cell);
   float d = distance((c + 0.5) * cell, u_themeOrigin) / length(u_viewDev / u_dpr);
   return step(d * 0.75 + hash12(c) * 0.25, u_themeT);
+}
+`;
+
+// The pointer's recent path pushes blocks around. Each sample is an impulse
+// (where the pointer was, how far it moved, when); a block's offset is the
+// sum of damped-spring responses to the impulses near it, so blocks get
+// shoved along and sideways, overshoot a little and settle back. Stateless:
+// it is a pure function of the samples, so re-packing instances or starting
+// a morph never interrupts it.
+const PUSH_GLSL = `
+uniform vec4 u_trail[${TRAIL}];  // doc-space x, y; pointer motion dx, dy (px)
+uniform vec2 u_trailM[${TRAIL}]; // time, click-burst strength
+uniform int u_trailN;
+uniform float u_pushR;
+uniform float u_pushGain;
+float springResp(float a) {
+  return (1.0 - exp(-a * 45.0)) * exp(-a * 6.5) * (cos(a * 15.0) + 0.43 * sin(a * 15.0));
+}
+// Offset (xy) and spin (z) for a block centred at doc-space p.
+vec3 pushAt(vec2 p, float mass) {
+  vec3 acc = vec3(0.0);
+  for (int i = 0; i < ${TRAIL}; i++) {
+    if (i >= u_trailN) break;
+    vec4 s = u_trail[i];
+    vec2 m = u_trailM[i];
+    float age = u_time - m.x;
+    if (age < 0.0 || age > 1.3) continue;
+    float R = m.y > 0.0 ? u_pushR * 2.2 : u_pushR;
+    vec2 d = p - s.xy;
+    float r = length(d);
+    if (r >= R) continue;
+    vec2 rd = r > 0.001 ? d / r : vec2(0.0, -1.0);
+    float fall = 1.0 - (r * r) / (R * R);
+    fall *= fall;
+    float resp = springResp(age);
+    if (m.y > 0.0) { // click: radial burst
+      acc.xy += rd * fall * m.y * resp;
+      continue;
+    }
+    float imp = length(s.zw);
+    if (imp < 0.001) continue;
+    vec2 vd = s.zw / imp;
+    vec2 dv = rd + vd * 0.7; // forward and outward, like wading through sand
+    float dl = length(dv);
+    float w = fall * min(imp, 60.0) * resp;
+    acc.xy += (dl > 0.001 ? dv / dl : vd) * w;
+    acc.z += (rd.x * vd.y - rd.y * vd.x) * w; // either side of the path spins opposite ways
+  }
+  acc.xy *= u_pushGain * mass;
+  float L = length(acc.xy);
+  float M = 30.0 * mass;
+  if (L > 0.0001) acc.xy *= M * tanh(L / M) / L;
+  acc.z = clamp(acc.z * u_pushGain * 0.025, -0.8, 0.8);
+  return acc;
 }
 `;
 
@@ -63,6 +118,7 @@ out vec2 v_half;
 out float v_round;
 out float v_tone;
 out float v_clip;
+${PUSH_GLSL}
 const float PI = 3.14159265;
 const float SA = 0.3;
 const float SB = 0.7;
@@ -110,10 +166,23 @@ void main() {
     rnd = flat_ ? 0.0 : b * 0.55;
     tone = mix(a_meta.x, a_meta.y, e);
   }
+  bool fixed_ = (flags & 1) != 0;
+  if (u_trailN > 0) {
+    // Heavier (bigger) blocks travel further; body-text pixels barely budge.
+    float mass = clamp(sqrt(max(sz.x, sz.y) / 8.0), 0.5, 1.2);
+    vec3 ps = pushAt(fixed_ ? c + vec2(0.0, u_scroll) : c, mass);
+    float pl = length(ps.xy);
+    if (pl > 0.05) {
+      c += ps.xy;
+      ang += ps.z;
+      sz *= 1.0 - min(pl / 70.0, 0.18); // detach from neighbours while displaced
+      rnd = max(rnd, min(pl / 45.0, 0.3));
+      rest = false;
+    }
+  }
   vec2 lp = (a_corner - 0.5) * sz;
   float cs = cos(ang), sn = sin(ang);
   vec2 pos = c + vec2(cs * lp.x - sn * lp.y, sn * lp.x + cs * lp.y);
-  bool fixed_ = (flags & 1) != 0;
   if (!fixed_) pos.y -= u_scroll;
   if (rest) pos = floor(pos * u_dpr + 0.5) / u_dpr;
   gl_Position = vec4(pos.x / u_view.x * 2.0 - 1.0, 1.0 - pos.y / u_view.y * 2.0, 0.5 - a_meta.z * 0.04, 1.0);
@@ -156,22 +225,60 @@ void main() {
 
 const FS_BG = `#version 300 es
 precision highp float;
-uniform float u_scroll;
-uniform vec2 u_gridOrigin;
-uniform float u_gridStep;
-uniform vec2 u_mouse;
-uniform float u_dotAlpha;
 out vec4 o;
 ${THEME_GLSL}
 void main() {
-  float t = themeK();
-  vec3 bg = mix(u_bgA, u_bgB, t);
-  vec3 fg = mix(u_fgA, u_fgB, t);
-  vec2 sp = vec2(gl_FragCoord.x, u_viewDev.y - gl_FragCoord.y) / u_dpr;
-  vec2 m = mod(sp + vec2(0.0, u_scroll) - u_gridOrigin, u_gridStep);
-  float near = smoothstep(240.0, 0.0, distance(sp, u_mouse));
-  float a = (m.x < 2.0 && m.y < 2.0) ? u_dotAlpha + near * 0.22 : 0.0;
-  o = vec4(mix(bg, fg, a), 1.0);
+  o = vec4(mix(u_bgA, u_bgB, themeK()), 1.0);
+}`;
+
+// The background dot grid is drawn as tiny blocks too, so the empty "space"
+// can be pushed around like everything else. One instance per visible dot,
+// positioned from gl_InstanceID; no instance buffer needed.
+const VS_DOTS = `#version 300 es
+precision highp float;
+precision highp int;
+layout(location=0) in vec2 a_corner;
+uniform vec2 u_view;
+uniform float u_dpr;
+uniform float u_scroll;
+uniform float u_time;
+uniform vec2 u_gridOrigin;
+uniform float u_gridStep;
+uniform int u_cols;
+uniform vec2 u_mouse;
+uniform float u_dotAlpha;
+out vec2 v_uv;
+out vec2 v_half;
+out float v_round;
+out float v_tone;
+out float v_clip;
+${PUSH_GLSL}
+void main() {
+  int col = gl_InstanceID % u_cols;
+  int row = gl_InstanceID / u_cols;
+  float st = u_gridStep;
+  float x0 = u_gridOrigin.x - ceil(u_gridOrigin.x / st) * st;
+  float y0 = u_scroll - mod(u_scroll, st) - st;
+  vec2 c = vec2(x0 + float(col) * st, y0 + float(row) * st) + 1.0;
+  float near = smoothstep(240.0, 0.0, distance(c - vec2(0.0, u_scroll), u_mouse));
+  float ang = 0.0;
+  bool rest = true;
+  if (u_trailN > 0) {
+    vec3 ps = pushAt(c, 0.6);
+    if (length(ps.xy) > 0.05) { c += ps.xy; ang = ps.z; rest = false; }
+  }
+  vec2 lp = a_corner - 0.5;
+  lp *= 2.0;
+  float cs = cos(ang), sn = sin(ang);
+  vec2 pos = c + vec2(cs * lp.x - sn * lp.y, sn * lp.x + cs * lp.y);
+  pos.y -= u_scroll;
+  if (rest) pos = floor(pos * u_dpr + 0.5) / u_dpr;
+  gl_Position = vec4(pos.x / u_view.x * 2.0 - 1.0, 1.0 - pos.y / u_view.y * 2.0, 0.9, 1.0);
+  v_uv = a_corner * 2.0 - 1.0;
+  v_half = vec2(u_dpr);
+  v_round = 0.0;
+  v_tone = u_dotAlpha + near * 0.22;
+  v_clip = -1e6;
 }`;
 
 function compile(gl, type, src) {
@@ -194,7 +301,7 @@ function program(gl, vs, fs) {
   const u = {};
   for (let i = 0; i < n; i++) {
     const info = gl.getActiveUniform(p, i);
-    u[info.name] = gl.getUniformLocation(p, info.name);
+    u[info.name.replace(/\[0\]$/, '')] = gl.getUniformLocation(p, info.name);
   }
   return { p, u };
 }
@@ -210,6 +317,7 @@ export class Renderer {
     this.gl = gl;
     this.blocks = program(gl, VS_BLOCK, FS_BLOCK);
     this.bg = program(gl, VS_BG, FS_BG);
+    this.dots = program(gl, VS_DOTS, FS_BLOCK);
 
     this.vao = gl.createVertexArray();
     gl.bindVertexArray(this.vao);
@@ -227,6 +335,12 @@ export class Renderer {
     }
     gl.bindVertexArray(null);
     this.bgVao = gl.createVertexArray();
+    this.dotVao = gl.createVertexArray();
+    gl.bindVertexArray(this.dotVao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.bindVertexArray(null);
 
     this.capacity = 0;
     this.count = 0;
@@ -279,16 +393,41 @@ export class Renderer {
     gl.clearDepth(1);
     gl.clear(gl.DEPTH_BUFFER_BIT);
 
+    const setPush = (u) => {
+      const T = f.trail;
+      const n = T ? T.n : 0;
+      gl.uniform1i(u.u_trailN, n);
+      if (!n) return;
+      gl.uniform4fv(u.u_trail, T.pos, 0, n * 4);
+      gl.uniform2fv(u.u_trailM, T.meta, 0, n * 2);
+      gl.uniform1f(u.u_pushR, f.pushR);
+      gl.uniform1f(u.u_pushGain, f.pushGain);
+    };
+
     let { u, p } = this.bg;
     gl.useProgram(p);
     setTheme(u);
-    gl.uniform1f(u.u_scroll, f.scroll);
-    gl.uniform2f(u.u_gridOrigin, f.gridOrigin[0], f.gridOrigin[1]);
-    gl.uniform1f(u.u_gridStep, f.gridStep);
-    gl.uniform2f(u.u_mouse, f.mouse[0], f.mouse[1]);
-    gl.uniform1f(u.u_dotAlpha, f.dotAlpha);
     gl.bindVertexArray(this.bgVao);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    const st = f.gridStep;
+    const x0 = f.gridOrigin[0] - Math.ceil(f.gridOrigin[0] / st) * st;
+    const cols = Math.ceil((this.w - x0) / st) + 1;
+    const rows = Math.ceil(this.h / st) + 3;
+    ({ u, p } = this.dots);
+    gl.useProgram(p);
+    setTheme(u);
+    setPush(u);
+    gl.uniform2f(u.u_view, this.w, this.h);
+    gl.uniform1f(u.u_scroll, f.scroll);
+    gl.uniform1f(u.u_time, f.time);
+    gl.uniform2f(u.u_gridOrigin, f.gridOrigin[0], f.gridOrigin[1]);
+    gl.uniform1f(u.u_gridStep, st);
+    gl.uniform1i(u.u_cols, cols);
+    gl.uniform2f(u.u_mouse, f.mouse[0], f.mouse[1]);
+    gl.uniform1f(u.u_dotAlpha, f.dotAlpha);
+    gl.bindVertexArray(this.dotVao);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, cols * rows);
 
     if (!this.count) return;
     gl.enable(gl.DEPTH_TEST);
@@ -296,6 +435,7 @@ export class Renderer {
     ({ u, p } = this.blocks);
     gl.useProgram(p);
     setTheme(u);
+    setPush(u);
     gl.uniform2f(u.u_view, this.w, this.h);
     gl.uniform1f(u.u_scroll, f.scroll);
     gl.uniform1f(u.u_time, f.time);

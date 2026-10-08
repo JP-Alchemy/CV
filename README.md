@@ -47,6 +47,12 @@ Every re-render produces a full scene, and the engine diffs it against what is o
 
 Content that is off screen after a page change assembles from grid squares as it scrolls into view.
 
+### Pushing blocks with the cursor
+
+The mouse (or pen) leaves a short trail of impulses — where it was, how far it moved, and when. In the vertex shader every block (and every dot of the background grid, which is drawn as tiny blocks too) sums damped-spring responses to the nearby impulses: blocks are shoved forward and outward, spin a little depending on which side of the path they are on, overshoot, and settle within ~0.6s. Clicking sends a radial burst. Bigger blocks move further than body-text pixels, and slow, aiming movements barely disturb anything, so buttons stay readable.
+
+It is stateless — a pure function of the impulses — so it composes with morphs and re-renders without any bookkeeping. Tuning: `pushR` / `pushGain` in `src/main.js`, the spring constants in `PUSH_GLSL` in `src/engine/renderer.js`. Disabled for touch input and `prefers-reduced-motion`.
+
 ## Accessibility
 
 - The canvas is `aria-hidden`; the DOM mirror carries the real content in reading order, with real `<a>`/`<button>` elements positioned over their blocks.
