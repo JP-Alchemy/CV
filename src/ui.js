@@ -74,7 +74,7 @@ function cornerMarks(w, h, len = 12, b = 2) {
 // ---------------------------------------------------------------- components
 
 export function label(str, o = {}) {
-  return text(`■ ${str}`, { size: 2, lh: 11 }, { tone: 1, tag: 'p', ...o });
+  return text(`■ ${str}`, { size: 2, lh: 11 }, { tone: 1, tag: 'p', label: str, ...o });
 }
 
 export function rule(o = {}) {

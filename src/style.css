@@ -74,13 +74,117 @@ body {
   outline: none;
 }
 
-/* No WebGL2: show the mirrored content as plain text. */
-.no-gl .m {
+/* ------------------------------------------------------------------
+   Plain copy of the page (#static): what crawlers, no-JS and no-WebGL
+   visitors see, and what prints. Hidden while the canvas is running. */
+#static {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 32px 16px 64px;
+  font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   color: var(--fg);
-  font: 13px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
-  white-space: normal;
-  overflow: visible;
 }
-.no-gl .hit {
-  text-decoration: underline;
+.js #static {
+  display: none;
+}
+.js.no-gl #static {
+  display: block;
+}
+.no-gl #gl,
+.no-gl #doc,
+.no-gl #fixed {
+  display: none;
+}
+#static a {
+  color: inherit;
+}
+#static h1 {
+  font-size: 1.9rem;
+  line-height: 1.2;
+  margin: 0.4em 0 0.6em;
+}
+#static h2 {
+  font-size: 1.15rem;
+  margin: 2em 0 0.5em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+#static h3 {
+  font-size: 1rem;
+  margin: 1.4em 0 0.2em;
+}
+#static .eyebrow,
+#static .muted {
+  opacity: 0.65;
+}
+#static .eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+}
+#static .lead {
+  font-size: 1.15rem;
+}
+#static .static-nav a {
+  margin-right: 1em;
+}
+#static dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25em 1em;
+}
+#static dt {
+  font-weight: 600;
+}
+#static dd {
+  margin: 0;
+}
+#static blockquote {
+  margin: 2em 0;
+  font-size: 1.2rem;
+}
+#static .stats {
+  padding-left: 1.1em;
+}
+
+@media print {
+  @page {
+    margin: 16mm 14mm;
+  }
+  html,
+  body {
+    background: #fff;
+    color: #000;
+  }
+  #gl,
+  #doc,
+  #fixed,
+  #static .static-nav {
+    display: none !important;
+  }
+  .js #static {
+    display: block;
+  }
+  #static {
+    max-width: none;
+    padding: 0;
+    color: #000;
+    font-size: 10.5pt;
+    line-height: 1.45;
+  }
+  #static h1 {
+    font-size: 20pt;
+    margin-top: 0;
+  }
+  #static h2 {
+    font-size: 11pt;
+    margin-top: 1.4em;
+    border-bottom: 1px solid #000;
+  }
+  #static .job {
+    break-inside: avoid;
+  }
+  #static a {
+    text-decoration: none;
+  }
 }

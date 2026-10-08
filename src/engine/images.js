@@ -124,6 +124,114 @@ export const GENERATORS = {
     return Math.abs(y * 10 - Math.round(y * 10)) < 0.015 ? 0.22 : 0;
   },
 
+  moon(x, y, ar, s, dark) {
+    // A cratered moon over still water, with its broken reflection below.
+    const px = (x - 0.5) * ar, horizon = 0.66;
+    if (y < horizon) {
+      const py = y - 0.32, r = 0.2;
+      const d2 = px * px + py * py;
+      if (d2 > r * r) return 0;
+      const nz = Math.sqrt(r * r - d2) / r;
+      const crater = smooth(0.55, 0.75, fbm(px * 9 + 3, py * 9 + 7, 31, 4)) * 0.35;
+      const lam = clamp(lambert(px / r, py / r, nz) - crater);
+      return lit(lam, dark);
+    }
+    if (y < horizon + 0.006) return 0.75;
+    const depth = (y - horizon) / (1 - horizon);
+    const half = 0.2 * (1 + depth * 0.9) + Math.sin(y * 90) * 0.02;
+    const ripple = Math.sin(y * 150 + Math.sin(px * 18) * 1.4);
+    if (Math.abs(px) < half && ripple > 0.35 - depth * 0.6) {
+      const v = (1 - Math.abs(px) / half) * (1 - depth * 0.55);
+      return dark ? clamp(0.3 + v * 0.7) : clamp(0.2 + v * 0.6);
+    }
+    return Math.sin(y * 150 + px * 3) > 0.96 ? 0.25 : 0;
+  },
+
+  duck(x, y, ar, s, dark) {
+    // A rubber duck bobbing on a little water.
+    const px = (x - 0.5) * ar;
+    const water = 0.78 + Math.sin(px * 26) * 0.012;
+    if (y > water) return Math.sin(px * 40 + y * 70) > 0.6 ? 0.55 : 0.12;
+    const eye = Math.hypot(px + 0.15, y - 0.3);
+    if (eye < 0.022) return dark ? 0.05 : 0.98;
+    let dx = (px + 0.33) / 0.11, dy = (y - 0.36) / 0.045; // beak
+    if (dx * dx + dy * dy < 1) return lit(lambert(-0.4, dy * 0.5, 0.8) * 0.55, dark);
+    dx = (px + 0.11) / 0.15; dy = (y - 0.33) / 0.15; // head
+    let d2 = dx * dx + dy * dy;
+    if (d2 < 1) return lit(lambert(dx, dy, Math.sqrt(1 - d2)), dark);
+    dx = (px - 0.06) / 0.33; dy = (y - 0.62) / 0.19; // body
+    d2 = dx * dx + dy * dy;
+    if (d2 < 1) return lit(lambert(dx, dy, Math.sqrt(1 - d2)), dark);
+    dx = (px - 0.36) / 0.1; dy = (y - 0.47) / 0.1; // tail
+    d2 = dx * dx + dy * dy;
+    if (d2 < 1 && px > 0.3) return lit(lambert(dx, dy, Math.sqrt(1 - d2)) * 0.8, dark);
+    return 0;
+  },
+
+  cyber(x, y, ar, s, dark) {
+    // Synthwave: a striped sun sinking behind a perspective grid.
+    const px = (x - 0.5) * ar, horizon = 0.58;
+    if (y < horizon) {
+      const sy = y - 0.4, r = 0.26;
+      if (px * px + sy * sy < r * r) {
+        const band = (y - 0.32) / (horizon - 0.32);
+        if (band > 0 && Math.sin(band * band * 34) > 0.15) return 0;
+        return dark ? 0.35 + 0.6 * (1 - y / horizon) : 0.3 + 0.65 * (y / horizon);
+      }
+      return 0;
+    }
+    if (y < horizon + 0.008) return 0.9;
+    const z = 0.05 / (y - horizon);
+    const gx = px * z * 6;
+    const lineZ = Math.abs(((z * 3) % 1) - 0.5) > 0.5 - 0.08 / (1 + z * 3);
+    const lineX = Math.abs(((gx + 100.5) % 1) - 0.5) > 0.5 - 0.06 * (1 + z * 0.2);
+    return lineZ || lineX ? 0.85 : 0;
+  },
+
+  switchbacks(x, y, ar, s = 5) {
+    // An alpine pass: hairpins climbing a contour-lined slope.
+    const px = x * ar;
+    const road = (t) => [(0.5 + 0.36 * Math.sin(t * Math.PI * 5.5) * (0.5 + t * 0.5)) * ar, 0.93 - t * 0.84];
+    let best = 9;
+    let [ax, ay] = road(0);
+    for (let i = 1; i <= 160; i++) {
+      const [bx, by] = road(i / 160);
+      const vx = bx - ax, vy = by - ay;
+      const k = clamp(((px - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy));
+      const d = Math.hypot(px - ax - vx * k, y - ay - vy * k);
+      if (d < best) best = d;
+      ax = bx; ay = by;
+    }
+    if (best < 0.024) return 0.95;
+    if (best < 0.04) return 0;
+    const h = fbm(px * 2.4 + 1, y * 2.4 + 4, s, 4) + (1 - y) * 0.6;
+    const fr = (h * 9) % 1;
+    return Math.min(fr, 1 - fr) < 0.06 ? 0.4 : 0;
+  },
+
+  pose(x, y, ar) {
+    // Pose-estimation skeleton: joints, bones and a tracking box.
+    const px = (x - 0.5) * ar, py = y;
+    const J = {
+      head: [0.02, 0.17], neck: [0, 0.27], ls: [-0.12, 0.3], rs: [0.12, 0.29], le: [-0.24, 0.2], re: [0.2, 0.42],
+      lh: [-0.27, 0.08], rh: [0.13, 0.52], hip: [0.01, 0.55], lhip: [-0.08, 0.56], rhip: [0.09, 0.55],
+      lk: [-0.17, 0.71], rk: [0.15, 0.7], la: [-0.13, 0.88], ra: [0.27, 0.8],
+    };
+    const bones = [['neck', 'ls'], ['neck', 'rs'], ['ls', 'le'], ['le', 'lh'], ['rs', 're'], ['re', 'rh'], ['neck', 'hip'],
+      ['hip', 'lhip'], ['hip', 'rhip'], ['lhip', 'lk'], ['lk', 'la'], ['rhip', 'rk'], ['rk', 'ra'], ['neck', 'head']];
+    for (const k in J) if (Math.hypot(px - J[k][0], py - J[k][1]) < (k === 'head' ? 0.06 : 0.026)) return 0.95;
+    for (const [a, b] of bones) {
+      const [ax, ay] = J[a], [bx, by] = J[b];
+      const vx = bx - ax, vy = by - ay;
+      const t = clamp(((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy));
+      if (Math.hypot(px - ax - vx * t, py - ay - vy * t) < 0.009) return 0.75;
+    }
+    const bx = Math.abs(px) - 0.36, by = Math.abs(py - 0.5) - 0.44;
+    const edge = Math.max(bx, by);
+    if (Math.abs(edge) < 0.006 && (Math.floor((px + py) * 40) % 2 === 0)) return 0.55;
+    return 0;
+  },
+
   globe(x, y, ar, s, dark) {
     const px = (x - 0.5) * ar, py = y - 0.5;
     const r = 0.4;

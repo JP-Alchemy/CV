@@ -9,21 +9,35 @@ The motion language is borrowed from the Isomorphic Labs animated marks: a coars
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm run build      # static site in dist/
+npm run build      # static site in dist/ (vite build + prerender)
+npm run preview    # serve dist/ locally
 ```
-
-Routes are hash-based (`#/work`, `#/cv`, …), so `dist/` works on any static host (GitHub Pages, Netlify, S3) without rewrite rules.
 
 Debug: append `?slow=5` to the URL to run every animation 5× slower.
 
 ## Make it yours
 
-- **Copy, projects, CV, links** — all in [`src/content.js`](src/content.js). Everything there is placeholder.
-- **Images** — each project has `image: { kind: 'terrain' }` (procedural: `orb`, `portrait`, `terrain`, `waves`, `cubes`, `rings`, `bars`, `globe`). For real images, put files in `public/images/` and use `image: { src: '/images/photo.jpg' }`; they are halftoned into blocks automatically (and re-toned for dark mode).
-- **CV PDF** — the "Download PDF" button links to `/cv.pdf`; drop the file in `public/`.
-- **Pages / layout** — [`src/scene.js`](src/scene.js) builds each page from small layout nodes (`text`, `col`, `row`, `grid`, `button`, `image`, `icon` …).
-- **Icons** — the looping pixel icons (including the nav logo) are ASCII frames in [`src/icons.js`](src/icons.js).
-- **Colors** — `THEMES` in [`src/main.js`](src/main.js) and the matching CSS variables in [`src/style.css`](src/style.css).
+- **Copy, projects, services, CV, links**: all in [`src/content.js`](src/content.js). Display copy is upper-case (it's set in the pixel font); body copy is normal sentence case.
+- **Email**: `site.email` is `null`, so the contact page leads with LinkedIn. Set it to an address to show it with a copy button.
+- **Images**: each project has `image: { kind: 'terrain' }` (procedural: `moon`, `terrain`, `waves`, `duck`, `cyber`, `switchbacks`, `pose`, `cubes`, `rings`, `bars`, `globe`, `portrait`, `orb`). For real images, put files in `public/images/` and use `image: { src: '/images/photo.jpg' }`; they are halftoned into blocks automatically (and re-toned for dark mode).
+- **Pages / layout**: [`src/scene.js`](src/scene.js) builds each page from small layout nodes (`text`, `col`, `row`, `grid`, `button`, `image`, `icon` …).
+- **Titles, descriptions, structured data**: [`src/seo.js`](src/seo.js).
+- **Icons**: the looping pixel icons (including the nav logo) are ASCII frames in [`src/icons.js`](src/icons.js).
+- **Colours**: `THEMES` in [`src/main.js`](src/main.js) and the matching CSS variables in [`src/style.css`](src/style.css).
+
+## SEO and deploying
+
+The site uses real paths (`/work/`, `/work/interfarm/`, `/services/`, `/about/`, `/cv/`, `/contact/`). Old `#/…` links redirect to them.
+
+`npm run build` runs [`scripts/prerender.mjs`](scripts/prerender.mjs) after Vite, which writes for every route a real `dist/<path>/index.html` with:
+
+- its own `<title>`, meta description, canonical URL, Open Graph and Twitter tags,
+- JSON-LD (`WebSite` + `Person` everywhere; `ProfessionalService` with rates on home/services; `ProfilePage` on about; `CreativeWork` + breadcrumbs on projects),
+- a plain semantic-HTML copy of the page, which is what crawlers and link previews read and what no-JS / no-WebGL visitors see. It's also what prints, so the CV's "Print / save as PDF" produces a clean document.
+
+It also writes `404.html` (noindex), `sitemap.xml`, `robots.txt`, a pixel-style `og-image.png` share card and `apple-touch-icon.png`, all generated from the same font and halftone code. The Google Search Console verification tag from the previous site is kept in `index.html`.
+
+`dist/` works on any static host (Vercel, Netlify, Cloudflare Pages, GitHub Pages) with no rewrite rules: each route is a real file and unknown paths fall back to `404.html`.
 
 ## How it works
 

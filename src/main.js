@@ -1,8 +1,9 @@
 import { Renderer, TRAIL, PULSES } from './engine/renderer.js';
 import { Engine, SHRINK } from './engine/engine.js';
-import { buildScene, pageTitle } from './scene.js';
+import { buildScene } from './scene.js';
 import { DomMirror } from './dom.js';
-import { parseRoute } from './router.js';
+import { parseRoute, fromHash } from './router.js';
+import { applyMeta, pageHTML } from './seo.js';
 import { site, experience } from './content.js';
 import './style.css';
 
@@ -20,6 +21,11 @@ const store = {
 const canvas = document.getElementById('gl');
 const docEl = document.getElementById('doc');
 const fixedEl = document.getElementById('fixed');
+const staticEl = document.getElementById('static');
+
+// Links from the first version of this site used hash routes (#/work).
+const legacy = fromHash();
+if (legacy) history.replaceState(null, '', legacy + location.search);
 
 let renderer;
 try {
@@ -52,7 +58,6 @@ let layoutH = vp.h;
 let scene = null;
 let mouse = [-1e4, -1e4];
 let lastOrigin = null;
-let navByClick = false;
 let navByKeyboard = false;
 let menuReturnScroll = 0;
 const scrollMemory = new Map();
@@ -227,6 +232,8 @@ function runAction(action, node) {
     state.copied = true;
     render('local');
     setTimeout(() => { state.copied = false; render('local'); }, 2200);
+  } else if (action === 'print') {
+    window.print();
   } else if (action.startsWith('toggle:')) {
     const id = action.slice(7);
     if (state.expanded.has(id)) state.expanded.delete(id); else state.expanded.add(id);
@@ -248,32 +255,46 @@ const dom = new DomMirror(docEl, fixedEl, {
     const action = node.dataset.action;
     if (action) { e.preventDefault(); runAction(action, node); return; }
     const href = node.getAttribute('href') || '';
-    if (href.startsWith('#')) {
-      const same = parseRoute(href).path === state.route.path && !state.menuOpen;
-      if (same) { e.preventDefault(); window.scrollTo({ top: 0, behavior: engine.calm ? 'auto' : 'smooth' }); return; }
-      navByClick = true;
-      if (state.menuOpen && parseRoute(href).path === state.route.path) {
-        e.preventDefault();
-        state.menuOpen = false;
-        state.hover = null;
-        render('page', { scrollTo: 0, origin: lastOrigin });
-      }
+    // Internal links navigate in place (and morph); modified clicks open tabs.
+    if (!href.startsWith('/') || href.startsWith('//') || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    const route = parseRoute(new URL(href, location.href).pathname);
+    if (route.path !== state.route.path) { navigate(route, true); return; }
+    if (state.menuOpen) {
+      state.menuOpen = false;
+      state.hover = null;
+      render('page', { scrollTo: 0, origin: lastOrigin });
+    } else {
+      window.scrollTo({ top: 0, behavior: engine.calm ? 'auto' : 'smooth' });
     }
   },
 });
 
-window.addEventListener('hashchange', () => {
+/** The canvas is decorative; this plain copy serves no-JS, no-WebGL and print. */
+function syncStatic() {
+  staticEl.innerHTML = pageHTML(state.route);
+}
+
+function navigate(route, push) {
   scrollMemory.set(state.route.path, state.menuOpen ? menuReturnScroll : window.scrollY);
-  const route = parseRoute();
-  const target = navByClick ? 0 : scrollMemory.get(route.path) ?? 0;
-  navByClick = false;
+  if (push) history.pushState(null, '', route.path + location.search);
+  const target = push ? 0 : scrollMemory.get(route.path) ?? 0;
   state.route = route;
   state.menuOpen = false;
   state.hover = null;
-  document.title = pageTitle(route);
+  applyMeta(route);
+  syncStatic();
   render('page', { scrollTo: target, origin: lastOrigin || [vp.w / 2, vp.h / 2] });
   if (navByKeyboard) docEl.querySelector('h1')?.focus({ preventScroll: true });
   navByKeyboard = false;
+}
+
+window.addEventListener('popstate', () => navigate(parseRoute(), false));
+window.addEventListener('hashchange', () => {
+  const path = fromHash();
+  if (!path) return;
+  history.replaceState(null, '', path + location.search);
+  navigate(parseRoute(), false);
 });
 
 document.addEventListener('pointerdown', (e) => {
@@ -321,7 +342,8 @@ window.addEventListener('resize', onResize); // DPR changes (moving between scre
 history.scrollRestoration = 'manual';
 window.scrollTo(0, 0);
 applyThemeCss();
-document.title = pageTitle(state.route);
+applyMeta(state.route);
+syncStatic();
 renderer.resize(vp.w, vp.h, dpr());
 render('intro', { scrollTo: 0 });
 
