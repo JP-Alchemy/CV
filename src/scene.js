@@ -90,7 +90,7 @@ function projectRow(p, i, state, S) {
     content: (tone, z) => row([
       text(pad2(i), S.small, { key: `${key}:n`, tone: tone ? 0.55 : 0, z, a11y: false, basis: 40 }),
       { ...text(p.title, S.h3, { key: `title:${p.slug}`, tone, z, a11y: false }), basis: S.mobile ? 150 : 250 },
-      S.mobile ? { ...space(0), grow: true } : { ...text(p.summary, S.body, { key: `${key}:s`, tone: tone ? 0.55 : 0, z, a11y: false }), grow: true },
+      S.mobile ? { ...space(0), grow: true } : { ...text(p.line || p.summary, S.body, { key: `${key}:s`, tone: tone ? 0.55 : 0, z, a11y: false }), grow: true },
       S.mobile ? null : { ...text(p.when, S.small, { key: `${key}:y`, tone: tone ? 0.55 : 0, z, a11y: false, align: 'right' }), basis: 120 },
       text('→', S.body, { key: `${key}:a`, tone, z, a11y: false }),
     ], { gap: S.sp(2), valign: 'center' }),
@@ -165,6 +165,47 @@ function work(state, S) {
   ]);
 }
 
+/**
+ * Case-study sections under a project: a paragraph (`text`, `note`), a grid
+ * of headed points (`items`), big numbers (`stats`), a numbered story
+ * (`steps`) and halftone screenshots (`gallery`).
+ */
+function caseSections(p, state, S) {
+  const dark = state.theme === 'dark';
+  return (p.sections || []).flatMap((sec, si) => {
+    const k = `cs-${si}`;
+    const para = (str, key) => maxw(720, text(str, S.body, { key, mt: S.sp(3) }));
+    const out = [...section(S, k, sec.title, { mt: S.sp(8) })];
+    if (sec.text) out.push(para(sec.text, `${k}-text`));
+    if (sec.items) {
+      out.push({ ...grid(sec.items.map((it, i) => col([
+        text(UP(it.lead), S.h3, { key: `${k}-${i}-l`, tag: 'h3', label: it.lead }),
+        text(it.text, S.body, { key: `${k}-${i}-t`, mt: S.sp(1) }),
+      ])), { cols: S.mobile ? 1 : sec.cols || 2, gap: S.sp(4), rowGap: S.sp(4) }), mt: S.sp(3) });
+    }
+    if (sec.stats) {
+      out.push({ ...grid(sec.stats.map((st, i) => col([
+        text(st.value, S.h1, { key: `${k}-${i}-v`, label: `${st.value} ${st.label.toLowerCase()}` }),
+        text(st.label, S.small, { key: `${k}-${i}-sl`, mt: S.sp(1), a11y: false }),
+      ])), { cols: S.mobile ? 2 : 3, gap: S.sp(3), rowGap: S.sp(4) }), mt: S.sp(3) });
+    }
+    if (sec.steps) {
+      out.push(col(sec.steps.map((st, i) => row([
+        text(pad2(i), S.small, { key: `${k}-${i}-n`, a11y: false, basis: 40 }),
+        { ...maxw(720, text(st, S.body, { key: `${k}-${i}-s` })), grow: true },
+      ], { mt: i ? S.sp(2) : 0 })), { mt: S.sp(3) }));
+    }
+    if (sec.gallery) {
+      out.push({ ...grid(sec.gallery.map((g, i) => col([
+        image({ key: `${k}-${i}-img`, spec: { src: g.src, lumaInk: g.lumaInk, levels: g.levels }, aspect: g.aspect ?? 0.5625, style: 'dither', cell: 4, dark, alt: g.alt }),
+        g.caption ? text(g.caption, S.small, { key: `${k}-${i}-c`, mt: 12, a11y: false }) : null,
+      ])), { cols: S.mobile ? 1 : 2, gap: S.sp(3), rowGap: S.sp(4) }), mt: S.sp(3) });
+    }
+    if (sec.note) out.push(para(sec.note, `${k}-note`));
+    return out;
+  });
+}
+
 function project(state, S, slug) {
   const hv = (k) => state.hover === k;
   const i = projects.findIndex((p) => p.slug === slug);
@@ -183,7 +224,8 @@ function project(state, S, slug) {
     { ...grid(meta, { cols: S.mobile ? 1 : 3, gap: S.sp(2), rowGap: S.sp(2) }), mt: S.sp(4) },
     { ...image({ key: `img:${p.slug}`, spec: p.image, aspect: S.mobile ? 0.8 : 0.5, cell: S.mobile ? 6 : 8, dark: state.theme === 'dark', alt: `${p.name} — cover image` }), mt: S.sp(5) },
     maxw(680, col(p.body.map((para, j) => text(para, S.body, { key: `body-${j}`, mt: j ? S.sp(2) : 0 })), { mt: S.sp(5) })),
-    text(p.tags.join(' · '), S.label, { key: 'tags', mt: S.sp(4) }),
+    ...caseSections(p, state, S),
+    text(p.tags.join(' · '), S.label, { key: 'tags', mt: S.sp(p.sections ? 8 : 4) }),
     p.url ? row([button({ key: 'visit', label: `VISIT ${UP(p.name)}`, arrow: '↗', href: p.url, external: true, hover: hv('visit') })], { mt: S.sp(4) }) : null,
     { ...rule({ key: 'proj-rule' }), mt: S.sp(6) },
     row([
@@ -234,7 +276,8 @@ function aboutPage(state, S) {
     ...about.bio.map((b, i) => text(b, S.body, { key: `about-${i}`, mt: i ? S.sp(2) : 0 })),
     row([button({ key: 'about-cv', label: 'READ MY CV', arrow: '→', href: '/cv/', hover: hv('about-cv') })], { mt: S.sp(3) }),
   ]);
-  const portrait = image({ key: 'hero-image', spec: { kind: 'portrait' }, aspect: 1.2, cell: S.mobile ? 6 : 8, dark: state.theme === 'dark', alt: 'Abstract halftone bust' });
+  const { alt, style, cell, gamma, ...spec } = site.portrait;
+  const portrait = image({ key: 'hero-image', spec, style, cell, gamma, aspect: 1.3, dark: state.theme === 'dark', alt });
   const top = S.mobile
     ? col([bio, { ...portrait, mt: S.sp(4) }])
     : row([{ ...maxw(600, bio), grow: true }, { ...portrait, basis: S.tablet ? 260 : 360 }], { gap: S.sp(5) });

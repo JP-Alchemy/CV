@@ -100,7 +100,7 @@ function render(mode = 'local', o = {}) {
 // on touch, dragging means scrolling.
 
 const PUSH_LIFE = 1.3; // seconds an impulse keeps ringing (matches the shader)
-const trail = { pos: new Float32Array(TRAIL * 4), meta: new Float32Array(TRAIL * 2), n: 0 };
+const trail = { pos: new Float32Array(TRAIL * 4), meta: new Float32Array(TRAIL * 2), n: 0, box: [0, 0, 0, 0] };
 const impulses = [];
 let pointer = null; // last screen position of a mouse/pen pointer
 let pending = [0, 0]; // motion since the last impulse
@@ -125,10 +125,17 @@ function updateTrail(t) {
     lastImpulse = t;
   }
   while (impulses.length && (t - impulses[0].t > PUSH_LIFE || impulses.length > TRAIL)) impulses.shift();
+  // Bounds of everything the samples can reach, so the shader can skip
+  // blocks nowhere near the pointer's path.
+  const reach = (scene ? (scene.S.mobile ? 100 : 130) : 130) * 2.2;
+  const box = [Infinity, Infinity, -Infinity, -Infinity];
   impulses.forEach((s, i) => {
     trail.pos.set([s.x, s.y, s.dx, s.dy], i * 4);
     trail.meta.set([s.t, s.burst], i * 2);
+    box[0] = Math.min(box[0], s.x - reach); box[1] = Math.min(box[1], s.y - reach);
+    box[2] = Math.max(box[2], s.x + reach); box[3] = Math.max(box[3], s.y + reach);
   });
+  trail.box = box;
   trail.n = impulses.length;
   return trail.n > 0;
 }

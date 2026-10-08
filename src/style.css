@@ -146,6 +146,17 @@ body {
 #static .stats {
   padding-left: 1.1em;
 }
+#static img {
+  max-width: 100%;
+  height: auto;
+}
+#static figure {
+  margin: 1.5em 0;
+}
+#static figcaption {
+  opacity: 0.65;
+  font-size: 0.9rem;
+}
 
 @media print {
   @page {

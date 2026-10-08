@@ -327,7 +327,8 @@ const sampleCache = new Map();
 
 /** Darkness grid (cols x rows), supersampled. */
 export function sample(spec, cols, rows, ar, dark = false) {
-  const id = `${spec.kind || spec.src}|${spec.seed || 0}|${cols}|${rows}|${ar.toFixed(3)}|${dark ? 1 : 0}`;
+  const treat = JSON.stringify([spec.lumaInk, spec.cutout, spec.levels, spec.minInk, spec.darkMaxInk]);
+  const id = `${spec.kind || spec.src}|${spec.seed || 0}|${treat}|${cols}|${rows}|${ar.toFixed(3)}|${dark ? 1 : 0}`;
   const hit = sampleCache.get(id);
   if (hit) return hit;
   const out = new Float32Array(cols * rows);
@@ -344,9 +345,36 @@ export function sample(spec, cols, rows, ar, dark = false) {
     g.imageSmoothingQuality = 'high';
     g.drawImage(entry.img, (cols - dw) / 2, (rows - dh) / 2, dw, dh);
     const d = g.getImageData(0, 0, cols, rows).data;
+    // Optional cut-out: keep warm pixels (skin, hair, clothes) and drop a
+    // neutral grey backdrop, then clean the mask with a 3x3 majority vote.
+    let mask = null;
+    if (spec.cutout) {
+      const raw = new Uint8Array(cols * rows);
+      for (let i = 0; i < cols * rows; i++) raw[i] = (d[i * 4] - d[i * 4 + 2]) / 255 > (spec.cutout.warm ?? 0.05) ? 1 : 0;
+      mask = new Uint8Array(cols * rows);
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          let votes = 0, n = 0;
+          for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++) {
+            const yy = y + j, xx = x + k;
+            if (yy < 0 || xx < 0 || yy >= rows || xx >= cols) continue;
+            votes += raw[yy * cols + xx]; n++;
+          }
+          mask[y * cols + x] = votes * 2 > n ? 1 : 0;
+        }
+      }
+    }
+    const [lo, hi] = spec.levels || [0, 1];
     for (let i = 0; i < cols * rows; i++) {
-      const l = (0.2126 * d[i * 4] + 0.7152 * d[i * 4 + 1] + 0.0722 * d[i * 4 + 2]) / 255;
-      out[i] = dark ? l : 1 - l; // ink is light in dark mode
+      if (mask && !mask[i]) { out[i] = 0; continue; }
+      const l = clamp(((0.2126 * d[i * 4] + 0.7152 * d[i * 4 + 1] + 0.0722 * d[i * 4 + 2]) / 255 - lo) / (hi - lo));
+      // Ink is light in dark mode. Images with a dark background (game
+      // screenshots) set lumaInk so their bright subjects become the blocks
+      // in both themes instead of a solid slab.
+      let ink = dark || spec.lumaInk ? l : 1 - l;
+      if (mask) ink = Math.max(ink, spec.minInk ?? 0);
+      if (dark && spec.darkMaxInk) ink = Math.min(ink, spec.darkMaxInk); // keep bright clothes from going solid
+      out[i] = ink;
     }
   } else {
     const fn = GENERATORS[spec.kind] || GENERATORS.orb;
@@ -386,9 +414,11 @@ export function imageBlocks(spec, w, h, { style = 'halftone', cell = 8, dark = f
       if (style === 'dither') {
         if (v > BAYER4[(j % 4) * 4 + (i % 4)]) out.push(ox + i * cell, oy + j * cell, cell, cell, 1);
       } else {
-        const s = Math.round((cell * Math.sqrt(v)) / 2) * 2;
+        // Square side follows darkness in 1px steps (more tones than 2px
+        // steps); integer offsets keep every edge on the pixel grid.
+        const s = Math.round(cell * Math.sqrt(v));
         if (s < 2) continue;
-        const o = (cell - s) / 2;
+        const o = Math.floor((cell - s) / 2);
         out.push(ox + i * cell + o, oy + j * cell + o, s, s, 1);
       }
     }

@@ -66,12 +66,16 @@ export function pageMeta(route) {
       description: 'A project, a partnership or a thoughtful question? Say hello. Based in Leiden (CET), working with teams across the EU and beyond.',
     };
     case 'project':
-      if (p) return {
-        ...base,
-        type: 'article',
-        title: `${p.name} — ${p.tags.slice(0, 2).map(sentence).join(' & ')} | JP Bothma`,
-        description: `${p.summary} ${p.role === 'Maker' ? 'Designed and built by JP Bothma.' : `JP Bothma — ${p.role}.`}`,
-      };
+      if (p) {
+        const by = p.role === 'Maker' ? 'Designed and built by JP Bothma.' : `JP Bothma — ${p.role}.`;
+        return {
+          ...base,
+          type: 'article',
+          title: p.seoTitle || `${p.name} — ${p.tags.slice(0, 2).map(sentence).join(' & ')} | JP Bothma`,
+          description: p.summary.length + by.length < 158 ? `${p.summary} ${by}` : p.summary,
+          ...(p.ogImage ? { image: `${BASE}${p.ogImage.src}`, imageW: p.ogImage.w, imageH: p.ogImage.h } : {}),
+        };
+      }
     // fall through
     default: return {
       ...base,
@@ -94,7 +98,7 @@ const person = {
   jobTitle: 'Creative Technologist & Tech Lead',
   description: 'Creative technologist building interactive experiences, data visualisation, AI agents and orchestrated workflows, and sustainability-minded software. Based in Leiden, the Netherlands.',
   url: `${BASE}/`,
-  image: OG_IMAGE,
+  image: `${BASE}${site.portrait.src}`,
   sameAs: [site.linkedin, site.github],
   nationality: 'South African',
   address: { '@type': 'PostalAddress', addressLocality: 'Leiden', addressRegion: 'Zuid-Holland', addressCountry: 'NL' },
@@ -152,8 +156,10 @@ export function jsonLd(route) {
       description: p.summary,
       url: meta.url,
       ...(p.url ? { sameAs: p.url } : {}),
+      ...(p.image?.src ? { image: `${BASE}${p.image.src}` } : {}),
       author: { '@id': `${BASE}/#person` },
       keywords: p.tags.map(sentence).join(', '),
+      ...(p.schema || {}),
     });
     graph.push({
       '@type': 'BreadcrumbList',
@@ -170,6 +176,7 @@ export function jsonLd(route) {
 /** <head> tags for a prerendered page. */
 export function headTags(route) {
   const m = pageMeta(route);
+  const img = m.image || OG_IMAGE;
   const tags = [
     `<title>${esc(m.title)}</title>`,
     `<meta name="description" content="${esc(m.description)}" />`,
@@ -179,16 +186,16 @@ export function headTags(route) {
     `<meta property="og:title" content="${esc(m.title)}" />`,
     `<meta property="og:description" content="${esc(m.description)}" />`,
     `<meta property="og:url" content="${m.url}" />`,
-    `<meta property="og:image" content="${OG_IMAGE}" />`,
-    '<meta property="og:image:width" content="1200" />',
-    '<meta property="og:image:height" content="630" />',
+    `<meta property="og:image" content="${img}" />`,
+    `<meta property="og:image:width" content="${m.imageW || 1200}" />`,
+    `<meta property="og:image:height" content="${m.imageH || 630}" />`,
     `<meta property="og:image:alt" content="${esc(site.fullName)} — creative technologist" />`,
     '<meta property="og:locale" content="en_GB" />',
     '<meta name="twitter:card" content="summary_large_image" />',
     `<meta name="twitter:creator" content="${site.twitter}" />`,
     `<meta name="twitter:title" content="${esc(m.title)}" />`,
     `<meta name="twitter:description" content="${esc(m.description)}" />`,
-    `<meta name="twitter:image" content="${OG_IMAGE}" />`,
+    `<meta name="twitter:image" content="${img}" />`,
     `<script type="application/ld+json">${JSON.stringify(jsonLd(route)).replace(/</g, '\\u003c')}</script>`,
   ];
   return tags.join('\n    ');
@@ -206,6 +213,8 @@ export function applyMeta(route) {
   set('meta[property="og:url"]', 'content', m.url);
   set('meta[name="twitter:title"]', 'content', m.title);
   set('meta[name="twitter:description"]', 'content', m.description);
+  set('meta[property="og:image"]', 'content', m.image || OG_IMAGE);
+  set('meta[name="twitter:image"]', 'content', m.image || OG_IMAGE);
   const ld = document.head.querySelector('script[type="application/ld+json"]');
   if (ld) ld.textContent = JSON.stringify(jsonLd(route));
 }
@@ -216,6 +225,17 @@ const a = (href, label, ext) => `<a href="${esc(href)}"${ext ? ' rel="noopener"'
 
 function projectList(list) {
   return `<ul class="list">${list.map((p) => `<li>${a(`/work/${p.slug}/`, p.name)} — ${esc(p.summary)} <span class="muted">${esc(p.when.toLowerCase())}</span></li>`).join('')}</ul>`;
+}
+
+function sectionHTML(sec) {
+  return `
+    <h2>${esc(sentence(sec.title))}</h2>
+    ${sec.text ? `<p>${esc(sec.text)}</p>` : ''}
+    ${sec.items ? `<ul>${sec.items.map((it) => `<li><strong>${esc(it.lead)}.</strong> ${esc(it.text)}</li>`).join('')}</ul>` : ''}
+    ${sec.stats ? `<ul class="stats">${sec.stats.map((st) => `<li><strong>${esc(st.value)}</strong> ${esc(sentence(st.label))}</li>`).join('')}</ul>` : ''}
+    ${sec.steps ? `<ol>${sec.steps.map((st) => `<li>${esc(st)}</li>`).join('')}</ol>` : ''}
+    ${sec.gallery ? sec.gallery.map((g) => `<figure><img src="${esc(g.src)}" alt="${esc(g.alt)}" loading="lazy" width="1200" height="675" />${g.caption ? `<figcaption>${esc(g.caption)}</figcaption>` : ''}</figure>`).join('') : ''}
+    ${sec.note ? `<p>${esc(sec.note)}</p>` : ''}`;
 }
 
 const BODIES = {
@@ -254,7 +274,9 @@ const BODIES = {
       <dt>Role</dt><dd>${esc(p.role)}</dd>
       <dt>Stack</dt><dd>${esc(p.stack)}</dd>
     </dl>
+    ${p.image?.src ? `<img src="${esc(p.image.src)}" alt="${esc(p.name)} — cover image" width="1200" height="675" />` : ''}
     ${p.body.map((b) => `<p>${esc(b)}</p>`).join('')}
+    ${(p.sections || []).map(sectionHTML).join('')}
     ${p.url ? `<p>${a(p.url, `Visit ${p.name} ↗`, true)}</p>` : ''}`;
   },
 
@@ -273,6 +295,7 @@ const BODIES = {
   about: () => `
     <p class="eyebrow">About</p>
     <h1>About ${esc(site.fullName)} — where creativity meets impact</h1>
+    <img src="${esc(site.portrait.src)}" alt="Portrait of ${esc(site.fullName)}" width="550" height="720" />
     ${about.bio.map((b) => `<p>${esc(b)}</p>`).join('')}
     <ul class="stats">${stats.map((s) => `<li><strong>${esc(s.value)}</strong> ${esc(sentence(s.label))}</li>`).join('')}</ul>
     <blockquote>${esc(sentence(about.quote))}</blockquote>

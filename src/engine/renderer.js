@@ -56,12 +56,14 @@ uniform vec2 u_trailM[${TRAIL}]; // time, click-burst strength
 uniform int u_trailN;
 uniform float u_pushR;
 uniform float u_pushGain;
+uniform vec4 u_trailBox; // doc-space bounds of every sample's reach (cheap early-out)
 float springResp(float a) {
   return (1.0 - exp(-a * 45.0)) * exp(-a * 6.5) * (cos(a * 15.0) + 0.43 * sin(a * 15.0));
 }
 // Offset (xy) and spin (z) for a block centred at doc-space p.
 vec3 pushAt(vec2 p, float mass) {
   vec3 acc = vec3(0.0);
+  if (p.x < u_trailBox.x || p.y < u_trailBox.y || p.x > u_trailBox.z || p.y > u_trailBox.w) return acc;
   for (int i = 0; i < ${TRAIL}; i++) {
     if (i >= u_trailN) break;
     vec4 s = u_trail[i];
@@ -451,6 +453,8 @@ export class Renderer {
       gl.uniform2fv(u.u_trailM, T.meta, 0, n * 2);
       gl.uniform1f(u.u_pushR, f.pushR);
       gl.uniform1f(u.u_pushGain, f.pushGain);
+      const b = T.box;
+      gl.uniform4f(u.u_trailBox, b[0], b[1], b[2], b[3]);
     };
 
     const setLight = (u) => {
