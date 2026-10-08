@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "site",
+      "name": "cv-site",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "--port", "5179", "--strictPort"],
-      "port": 5179
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
     }
   ]
 }
