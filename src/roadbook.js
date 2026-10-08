@@ -81,44 +81,84 @@ function routeMap(S) {
       ctx.el({ key: 'rb-map-passes', sig: `passes|${W}|${H}`, w: W, h: H, blocks: Float32Array.from(passes) }),
     ];
 
-    // Markers: an inked box with the night numbers knocked out, plus the town.
-    const boxes = [];
-    const overlaps = (r) => boxes.some((b) => r.x < b.x + b.w && r.x + r.w > b.x && r.y < b.y + b.h && r.y + r.h > b.y);
-    const place = (key, lat, lon, num, town) => {
+    // Markers first: an inked box with the night numbers knocked out. Stays
+    // that sit almost on top of each other (Cochem / Boppard) step aside.
+    const hits = (r, b) => r.x < b.x + b.w && r.x + r.w > b.x && r.y < b.y + b.h && r.y + r.h > b.y;
+    const home = book.days[0].vias[0];
+    const marks = [];
+    for (const [key, lat, lon, num, town] of [
+      ['rb-mk-home', home[0], home[1], 'H', 'Leiden'],
+      ...book.hotels.map((h, i) => [`rb-mk-${i}`, h.lat, h.lon, h.days.join('·'), h.town]),
+    ]) {
       const [cx, cy] = P(lat, lon);
       const t = typeset(num, { size: 2, tone: 0 });
       const bw = Math.ceil((t.width + 8) / 2) * 2, bh = 20;
       let bx = even(cx - bw / 2), by = even(cy - bh / 2);
-      // Stays that sit almost on top of each other (Cochem / Boppard) step aside.
       for (const [dx, dy] of [[0, 0], [bw + 4, 0], [-(bw + 4), 0], [0, -(bh + 4)], [0, bh + 4]]) {
-        if (!overlaps({ x: bx + dx, y: by + dy, w: bw, h: bh })) { bx += dx; by += dy; break; }
+        const r = { x: bx + dx, y: by + dy, w: bw, h: bh };
+        if (!marks.some((m) => hits(r, m))) { bx = r.x; by = r.y; break; }
       }
-      boxes.push({ x: bx, y: by, w: bw, h: bh });
-      const fill = ctx.el({ key: `${key}:box`, sig: `mk|${bw}`, w: bw, h: bh, blocks: fillBlocks(bw, bh, 2, 0), z: 1 });
-      fill.x = bx; fill.y = by;
-      const num_ = ctx.el({ key: `${key}:n`, sig: `mkn|${num}`, w: t.width, h: 14, blocks: t.blocks, z: 2 });
-      num_.x = bx + 4; num_.y = by + 3;
-      els.push(fill, num_);
-      if (!town) return;
-      const tl = typeset(UP(town), { size: 2, tone: 0.55 });
-      const cands = [
-        { x: bx + bw + 6, y: by + 3 }, { x: bx - tl.width - 6, y: by + 3 },
-        { x: even(cx - tl.width / 2), y: by - 20 }, { x: even(cx - tl.width / 2), y: by + bh + 6 },
-      ];
-      const pick = cands.find((c) => c.x >= 0 && c.x + tl.width <= W && !overlaps({ x: c.x, y: c.y, w: tl.width, h: 14 })) || cands[0];
-      boxes.push({ x: pick.x, y: pick.y, w: tl.width, h: 14 });
-      // A paper-coloured knock-out keeps the name readable over the route.
-      const halo = ctx.el({ key: `${key}:h`, sig: `mkh|${tl.width}`, w: tl.width + 8, h: 20, blocks: fillBlocks(tl.width + 8, 20, 2, 0, 0), z: 1 });
-      halo.x = even(pick.x) - 4; halo.y = even(pick.y) - 4;
-      const lab = ctx.el({ key: `${key}:l`, sig: `mkl|${town}`, w: tl.width, h: 14, blocks: tl.blocks, z: 2 });
-      lab.x = even(pick.x); lab.y = even(pick.y);
-      els.push(halo, lab);
-    };
-    const home = book.days[0].vias[0];
-    place('rb-mk-home', home[0], home[1], 'H', 'Leiden');
-    book.hotels.forEach((h, i) => place(`rb-mk-${i}`, h.lat, h.lon, h.days.join('·'), h.town));
+      marks.push({ key, num, town, t, cx, x: bx, y: by, w: bw, h: bh });
+    }
+
+    // Then the town names: beside the box if there's room, otherwise above or
+    // below it, inside the frame and clear of every box and name. If one won't
+    // fit cleanly (the Alps get crowded on a phone), the names move to a key
+    // under the map instead.
+    const taken = marks.map((m) => ({ x: m.x - 2, y: m.y - 2, w: m.w + 4, h: m.h + 4 }));
+    const free = (r) => r.x >= 2 && r.x + r.w <= W - 2 && r.y >= 2 && r.y + r.h <= H - 2 && !taken.some((b) => hits(r, b));
+    const names = [];
+    for (const m of marks) {
+      const tl = typeset(UP(m.town), { size: 2, tone: 0.55 });
+      const lw = tl.width;
+      const midX = Math.max(8, Math.min(W - 8 - lw, m.cx - lw / 2));
+      // Each spot is the name plus its 4px paper-coloured halo.
+      const spot = [
+        [m.x + m.w + 6, m.y + 3], [m.x - lw - 6, m.y + 3], [midX, m.y - 20], [midX, m.y + m.h + 6],
+      ].map(([x, y]) => ({ x: even(x), y: even(y) })).find((c) => free({ x: c.x - 4, y: c.y - 4, w: lw + 8, h: 20 }));
+      if (!spot) break;
+      taken.push({ x: spot.x - 4, y: spot.y - 4, w: lw + 8, h: 20 });
+      names.push({ m, tl, ...spot });
+    }
+    const onMap = names.length === marks.length;
+
+    for (const m of marks) {
+      const fill = ctx.el({ key: `${m.key}:box`, sig: `mk|${m.w}`, w: m.w, h: m.h, blocks: fillBlocks(m.w, m.h, 2, 0), z: 1 });
+      fill.x = m.x; fill.y = m.y;
+      const num = ctx.el({ key: `${m.key}:n`, sig: `mkn|${m.num}`, w: m.t.width, h: 14, blocks: m.t.blocks, z: 2 });
+      num.x = m.x + 4; num.y = m.y + 3;
+      els.push(fill, num);
+    }
+    if (onMap) {
+      for (const { m, tl, x, y } of names) {
+        // The halo keeps the name readable where it crosses the route.
+        const halo = ctx.el({ key: `${m.key}:h`, sig: `mkh|${tl.width}`, w: tl.width + 8, h: 20, blocks: fillBlocks(tl.width + 8, 20, 2, 0, 0), z: 1 });
+        halo.x = x - 4; halo.y = y - 4;
+        const lab = ctx.el({ key: `${m.key}:l`, sig: `mkl|${m.town}`, w: tl.width, h: 14, blocks: tl.blocks, z: 2 });
+        lab.x = x; lab.y = y;
+        els.push(halo, lab);
+      }
+    }
     els.push(ctx.el({ key: 'rb-map-frame', sig: `frame|${W}|${H}`, w: W, h: H, blocks: frameBlocks(W, H) }));
-    return { w: W, h: H, els };
+    if (onMap) return { w: W, h: H, els };
+
+    // Key: the same boxes, each followed by its town, flowing like a line of text.
+    const nights = (num) => (num === 'H' ? 'Home' : `${num.includes('·') ? 'Nights' : 'Night'} ${num.replace('·', ' and ')}`);
+    let x = 0, y = H + 12;
+    marks.forEach((m, i) => {
+      const tl = typeset(UP(m.town), { size: 2, tone: 0.55 });
+      const iw = m.w + 6 + tl.width;
+      if (x && x + iw > W) { x = 0; y += 26; }
+      const fill = ctx.el({ key: `rb-key-${i}:box`, sig: `mk|${m.w}`, w: m.w, h: m.h, blocks: fillBlocks(m.w, m.h, 2, 0), z: 1 });
+      fill.x = x; fill.y = y;
+      const num = ctx.el({ key: `rb-key-${i}:n`, sig: `mkn|${m.num}`, w: m.t.width, h: 14, blocks: m.t.blocks, z: 2 });
+      num.x = x + 4; num.y = y + 3;
+      const town = ctx.el({ key: `rb-key-${i}:t`, sig: `mkl|${m.town}`, w: tl.width, h: 14, blocks: tl.blocks, a11y: { tag: 'p', text: `${nights(m.num)}: ${m.town}` } });
+      town.x = x + m.w + 6; town.y = y + 4;
+      els.push(fill, num, town);
+      x += iw + 18;
+    });
+    return { w: W, h: y + 20, els };
   });
 }
 
@@ -275,10 +315,10 @@ export function roadbookPage(state, S) {
       { ...text(UP(item), S.h3, { key: `${key}:i` }), basis: S.mobile ? 150 : 280 },
       S.mobile ? { ...space(0), grow: true } : { ...maxw(620, text(note || '', S.body, { key: `${key}:n`, tone: 0.55 })), grow: true },
       { ...text(amount, strong ? S.h3 : S.body, { key: `${key}:a`, align: 'right' }), basis: 110 },
-    ], { gap: S.sp(2), mt: S.sp(2) }),
+    ], { gap: S.sp(2) }),
     S.mobile && note ? text(note, S.body, { key: `${key}:nm`, tone: 0.55, mt: 8 }) : null,
     { ...rule({ key: `${key}:rule` }), mt: S.sp(2) },
-  ]);
+  ], { mt: S.sp(2) });
   const b = book.budget;
 
   return col([
@@ -299,7 +339,6 @@ export function roadbookPage(state, S) {
     ...section(S, 'costs', 'WHAT IT COSTS', { mt: S.sp(8) }),
     { ...spendBars(S), mt: S.sp(3) },
     text('SPEND PER DAY, INCLUDING THE BED', S.small, { key: 'rb-bars-l', mt: 8, a11y: false }),
-    { ...space(0), mt: S.sp(2) },
     ...b.rows.map((r, i) => money(`rb-cost-${i}`, r.item, r.note, eur(r.amount))),
     money('rb-sub', 'Subtotal', '', eur(b.subtotal)),
     money('rb-cont', 'Contingency at 10%', 'There are no spare days in this schedule.', eur(b.contingency)),
