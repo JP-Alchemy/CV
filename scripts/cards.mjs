@@ -17,7 +17,6 @@ const T = THEMES.light;
 const PHOTOS = {
   '/images/jp-portrait.jpg': 'brand/source/jp-portrait.png',
   '/images/swarmfort-cover.jpg': 'brand/source/swarmfort-cover.png',
-  '/images/dolomites.jpg': 'brand/source/dolomites.png',
 };
 for (const [src, file] of Object.entries(PHOTOS)) setPhoto(src, decodePNG(fs.readFileSync(file)));
 

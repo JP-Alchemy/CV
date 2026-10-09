@@ -2,9 +2,9 @@
 // the pixel font; `seo` strings are what search engines and link previews see.
 //
 // Images: each project has `image: { kind }` (a procedural render: moon,
-// terrain, waves, duck, cyber, switchbacks, pose, cubes, rings, bars, globe,
-// portrait, orb). To use a real image, drop it in /public/images and use
-// `image: { src: '/images/name.jpg' }`.
+// terrain, waves, duck, cyber, earth, motorcycle, switchbacks, pose, cubes,
+// rings, bars, globe, portrait, orb). To use a real image, drop it in
+// /public/images and use `image: { src: '/images/name.jpg' }`.
 
 import { FONT } from './brand.js';
 
@@ -247,10 +247,7 @@ export const projects = [
     summary: 'A free, self-guided touring kit. The first roadbook: Leiden to the Alps, every pass, bed and euro accounted for.',
     url: '/projects/moto-tour/',
     cta: 'OPEN THE ROADBOOK',
-    // Chairlift selfie in the Dolomites, as a 1-bit dither.
-    image: { src: '/images/dolomites.jpg', style: 'dither', cell: 3, gamma: 1.4, levels: [0.15, 0.85] },
-    imageAspect: 0.72,
-    imageMaxW: 760,
+    image: { kind: 'motorcycle' },
     body: [
       'A free, self-guided touring kit for riders who want the planning done properly: the route, every pass, every bed and every euro, laid out day by day.',
       'The first roadbook runs from Leiden to the Alps and back — eleven nights, 3,615 km and 25 named passes, with the budget, the tolls and the early alarms worked out in advance. The framework around it is still in the making: book, download the route, go.',

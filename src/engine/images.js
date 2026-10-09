@@ -31,6 +31,85 @@ const LIGHT = (() => { const l = [-0.55, -0.6, 0.58]; const m = Math.hypot(...l)
 const lambert = (nx, ny, nz) => clamp(nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]);
 const lit = (lam, dark, spec = 0) => (dark ? clamp(0.08 + lam * 0.92 + spec) : clamp(0.97 - lam * 0.92 - spec));
 
+// 2D distances for drawn shapes: negative inside.
+function segDist(px, py, ax, ay, bx, by) {
+  const vx = bx - ax, vy = by - ay;
+  const t = clamp(((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy));
+  return Math.hypot(px - ax - vx * t, py - ay - vy * t);
+}
+function boxDist(px, py, cx, cy, hw, hh, r) {
+  const qx = Math.abs(px - cx) - hw + r, qy = Math.abs(py - cy) - hh + r;
+  return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r;
+}
+function polyDist(px, py, pts) {
+  let d = Infinity, inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i, i++) {
+    const [ax, ay] = pts[i], [bx, by] = pts[j];
+    const ex = bx - ax, ey = by - ay, wx = px - ax, wy = py - ay;
+    const t = clamp((wx * ex + wy * ey) / (ex * ex + ey * ey));
+    d = Math.min(d, Math.hypot(wx - ex * t, wy - ey * t));
+    if ((ay > py) !== (by > py) && px < ax + (ex * (py - ay)) / ey) inside = !inside;
+  }
+  return inside ? -d : d;
+}
+
+// The motorcycle: a rider on a loaded adventure bike, in metres with y up
+// and the origin on the road between the axles. Parts run front to back
+// (the first one a point falls in is drawn); parts of different groups keep
+// a thin gap of paper between them, and alb darkens a material.
+const TYRE = 0.6, PAINT = 0.7;
+function wheel(cx, cy, r, rim) {
+  return {
+    g: `wheel${cx}`,
+    d: (x, y) => Math.hypot(x - cx, y - cy) - r,
+    // The tyre is a torus, then the rim, the hub and six spokes; null
+    // between the spokes, where whatever is behind shows through.
+    fill(x, y) {
+      const dx = x - cx, dy = y - cy, rho = Math.hypot(dx, dy);
+      if (rho > rim) {
+        const o = (rho - (r + rim) / 2) / ((r - rim) / 2);
+        return { n: [(dx / rho) * o, (dy / rho) * o, Math.sqrt(Math.max(0, 1 - o * o))], alb: TYRE };
+      }
+      if (rho > rim - 0.04) return { n: [0, 0, 1] };
+      if (rho < 0.08) return { n: [dx / 0.08, dy / 0.08, Math.sqrt(Math.max(0, 1 - (rho / 0.08) ** 2))] };
+      const a = Math.atan2(dy, dx) - 0.3;
+      for (let k = 0; k < 6; k++) {
+        const t = a - (k * Math.PI) / 3;
+        if (Math.cos(t) > 0 && Math.abs(Math.sin(t)) * rho < 0.02) return { ink: 0.75 };
+      }
+      return null;
+    },
+  };
+}
+const BODY = [[0.94, 0.86], [0.64, 1.12], [0.42, 1.17], [0.1, 1.13], [-0.08, 1.0], [-0.62, 1.02], [-0.98, 1.08],
+  [-0.96, 0.96], [-0.5, 0.86], [-0.12, 0.8], [0.2, 0.74], [0.55, 0.8], [0.86, 0.78]]; // beak, tank, seat and tail
+const MOTORCYCLE = [
+  { g: 'arm', d: (x, y) => segDist(x, y, 0.17, 1.31, 0.4, 1.24) - 0.07, bevel: 0.07 }, // forearm
+  { g: 'arm', d: (x, y) => segDist(x, y, -0.04, 1.5, 0.17, 1.31) - 0.085, bevel: 0.085 }, // upper arm
+  { g: 'head', d: (x, y) => segDist(x, y, 0.1, 1.92, 0.32, 1.86) - 0.035, bevel: 0.035 }, // helmet peak
+  { g: 'head', d: (x, y) => Math.hypot(x - 0.05, y - 1.76) - 0.19, bevel: 0.19, visor: true }, // helmet
+  { g: 'leg', d: (x, y) => boxDist(x, y, 0.12, 0.55, 0.14, 0.075, 0.05), bevel: 0.06, alb: 0.7 }, // boot
+  { g: 'leg', d: (x, y) => segDist(x, y, 0.22, 1.02, 0.07, 0.62) - 0.09, bevel: 0.09 }, // shin
+  { g: 'leg', d: (x, y) => segDist(x, y, -0.24, 1.08, 0.22, 1.04) - 0.115, bevel: 0.115 }, // thigh
+  { g: 'torso', d: (x, y) => segDist(x, y, -0.26, 1.12, -0.08, 1.52) - 0.17, bevel: 0.17 },
+  { g: 'bike', d: (x, y) => segDist(x, y, 0.64, 1.14, 0.5, 1.48) - 0.04, bevel: 0.04, alb: 0.9 }, // windscreen
+  { g: 'bike', d: (x, y) => polyDist(x, y, BODY), bevel: 0.14, alb: PAINT },
+  { g: 'case', d: (x, y) => boxDist(x, y, -0.74, 0.84, 0.26, 0.19, 0.05), bevel: 0.07, alb: 0.85 }, // pannier
+  { g: 'bike', d: (x, y) => boxDist(x, y, 0.08, 0.52, 0.25, 0.2, 0.09), bevel: 0.11, alb: PAINT * 0.85 }, // engine
+  { g: 'bike', d: (x, y) => segDist(x, y, 0.72, 0.4, 0.52, 1.0) - 0.05, bevel: 0.05, alb: PAINT }, // fork
+  wheel(0.72, 0.4, 0.4, 0.25),
+  wheel(-0.7, 0.4, 0.4, 0.25),
+];
+
+// The skyline behind it, left to right in image units (y down): a massif, a
+// jagged peak, a low saddle behind the rider, three towers and a ridge.
+const DOLOMITES = [[-1.2, 0.44], [-1.0, 0.36], [-0.94, 0.3], [-0.9, 0.31], [-0.86, 0.24], [-0.8, 0.22], [-0.76, 0.25],
+  [-0.72, 0.21], [-0.66, 0.2], [-0.62, 0.3], [-0.58, 0.33], [-0.52, 0.29], [-0.47, 0.17], [-0.44, 0.15], [-0.41, 0.21],
+  [-0.38, 0.18], [-0.33, 0.11], [-0.3, 0.12], [-0.24, 0.24], [-0.16, 0.3], [-0.06, 0.35], [0.06, 0.36], [0.16, 0.3],
+  [0.22, 0.24], [0.26, 0.25], [0.3, 0.13], [0.34, 0.12], [0.36, 0.18], [0.39, 0.17], [0.41, 0.14], [0.44, 0.14],
+  [0.46, 0.22], [0.49, 0.2], [0.51, 0.17], [0.54, 0.18], [0.57, 0.3], [0.66, 0.34], [0.72, 0.28], [0.78, 0.24],
+  [0.84, 0.25], [0.9, 0.2], [0.95, 0.22], [1.0, 0.3], [1.2, 0.38]];
+
 export const GENERATORS = {
   orb(x, y, ar, s, dark) {
     const px = (x - 0.5) * ar, py = y - 0.46;
@@ -207,6 +286,58 @@ export const GENERATORS = {
     const h = fbm(px * 2.4 + 1, y * 2.4 + 4, s, 4) + (1 - y) * 0.6;
     const fr = (h * 9) % 1;
     return Math.min(fr, 1 - fr) < 0.06 ? 0.4 : 0;
+  },
+
+  motorcycle(x, y, ar, s, dark) {
+    // A rider on a loaded adventure bike, on a road below the Dolomites.
+    const px = (x - 0.5) * ar, ground = 0.88, k = 0.4 * Math.min(1, ar);
+    const bx = px / k, by = (ground - y) / k; // in the bike's metres
+    const near = {}; // how close each group in front of this part came
+    let halo = 9;
+    // Only points inside the bike's box (with its halo) can touch it.
+    const parts = bx > -1.17 && bx < 1.19 && by > -0.07 && by < 2.02 ? MOTORCYCLE : [];
+    for (const p of parts) {
+      const d = p.d(bx, by);
+      const f = d < 0 && p.fill ? p.fill(bx, by) : null;
+      if (d >= 0 || (p.fill && !f)) {
+        if (d >= 0) { near[p.g] = Math.min(near[p.g] ?? 9, d); halo = Math.min(halo, d); }
+        continue;
+      }
+      for (const g in near) if (g !== p.g && near[g] < 0.04) return 0;
+      if (f?.ink) return f.ink;
+      let n = f?.n;
+      if (!n) {
+        const e = 0.004;
+        const gx = p.d(bx + e, by) - p.d(bx - e, by), gy = p.d(bx, by + e) - p.d(bx, by - e);
+        const g = Math.hypot(gx, gy) || 1, o = 1 - clamp(-d / p.bevel);
+        n = [(gx / g) * o, (gy / g) * o, Math.sqrt(Math.max(0, 1 - o * o))];
+      }
+      let lam = lambert(n[0], -n[1], n[2]) * (f?.alb ?? p.alb ?? 1);
+      if (p.visor && bx > 0.08 && Math.abs(by - 1.75) < 0.06) lam *= 0.2; // a dark band across the front
+      // On paper the bike stays a darker mass than the other renders, so it
+      // holds its shape in front of the range.
+      return dark ? clamp(0.08 + lam * 0.92) : clamp(0.97 - lam * 0.55);
+    }
+    if (halo < 0.06) return 0;
+    // The road: the bike's shadow, the far edge, the centre line and the near edge.
+    if (Math.hypot(px / 0.42, (y - ground - 0.005) / 0.022) < 1) return dark ? 0 : 0.55;
+    if (Math.abs(y - (ground - 0.02)) < 0.006) return 0.6;
+    if (Math.abs(y - (ground + 0.03)) < 0.007) return Math.sin(px * 24) > 0.1 ? 0.75 : 0;
+    if (Math.abs(y - (ground + 0.08)) < 0.009) return 0.85;
+    if (y > ground - 0.03) return 0;
+    // The range: the ridge as a line, and stipple down the faces turned
+    // away from the light.
+    let i = 1;
+    while (i < DOLOMITES.length - 1 && DOLOMITES[i][0] < px) i++;
+    let edge = 9;
+    for (let j = Math.max(1, i - 2); j < Math.min(DOLOMITES.length, i + 3); j++) {
+      edge = Math.min(edge, segDist(px, y, ...DOLOMITES[j - 1], ...DOLOMITES[j]));
+    }
+    if (edge < 0.009) return 0.75;
+    const [ax, ay] = DOLOMITES[i - 1], [cx, cy] = DOLOMITES[i];
+    const top = ay + (cy - ay) * clamp((px - ax) / (cx - ax));
+    if (y < top || cy <= ay) return 0;
+    return clamp((dark ? 0.24 : 0.3) * (1 - smooth(0.04, 0.2, y - top)) * (0.8 + 0.4 * fbm(px * 30, y * 3, 13, 2)));
   },
 
   pose(x, y, ar) {
