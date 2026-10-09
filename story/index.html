@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="JP Bothma" />
+    <title>The Adventurer — A Short Story in Pixel Blocks | JP Bothma</title>
+    <meta name="description" content="An 80-second animated story, drawn and scored in the blocks of jpbothma.com: a d20, a small ship, seven unknown worlds, a dragon, and the colours coming home." />
+    <link rel="canonical" href="https://jpbothma.com/story/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="JP Bothma" />
+    <meta property="og:title" content="The Adventurer — a short story in blocks" />
+    <meta property="og:description" content="A d20, a small ship, seven unknown worlds, a dragon, and the colours coming home. Drawn and scored in the blocks of jpbothma.com." />
+    <meta property="og:url" content="https://jpbothma.com/story/" />
+    <meta property="og:image" content="https://jpbothma.com/og/story.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Adventurer: a short story in blocks" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:creator" content="@jpbothma" />
+    <meta name="twitter:image" content="https://jpbothma.com/og/story.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--fg);
+        font: 20px/24px var(--font), ui-monospace, monospace;
+      }
+      main {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        padding: 24px 16px;
+      }
+      #stage {
+        display: block;
+        width: min(100vw - 32px, (100vh - 140px) * 16 / 9);
+        aspect-ratio: 16 / 9;
+      }
+      #bar {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+      }
+      button,
+      a {
+        font: inherit;
+        color: inherit;
+      }
+      button {
+        background: none;
+        border: 2px solid currentColor;
+        padding: 6px 14px;
+        cursor: pointer;
+      }
+      button:hover,
+      button:focus-visible {
+        background: var(--fg);
+        color: var(--bg);
+        outline: none;
+      }
+      a {
+        text-underline-offset: 6px;
+        text-decoration-thickness: 2px;
+      }
+      #time {
+        opacity: 0.55;
+        min-width: 7em;
+        text-align: center;
+      }
+      #nogl {
+        max-width: 36rem;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <canvas id="stage" aria-label="The Adventurer: a short animated story in pixel blocks"></canvas>
+      <p id="nogl" hidden>This story is drawn with WebGL2, which this browser doesn't have. <a href="/">Back to jpbothma.com</a></p>
+      <noscript><p>This story is drawn with JavaScript and WebGL2. <a href="/">Back to jpbothma.com</a></p></noscript>
+      <div id="bar">
+        <button id="play" type="button">PLAY</button>
+        <button id="top" type="button">FROM THE TOP</button>
+        <button id="sound" type="button" aria-pressed="true">SOUND ON</button>
+        <span id="time">00:00 / 01:20</span>
+        <button id="rec" type="button">RECORD VIDEO</button>
+        <a href="/">JPBOTHMA.COM</a>
+      </div>
+    </main>
+    <script type="module" src="/src/story/main.js"></script>
+  </body>
+</html>

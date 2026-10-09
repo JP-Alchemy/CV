@@ -64,6 +64,10 @@ Press **G** (or the sprout in the nav) on any page and it freezes into terrain f
 
 Unknown addresses land on a small puzzle after *Baba Is You* ([`src/puzzle.js`](src/puzzle.js)). Every word on the board is a block you can push, and a line reading NOUN IS PROPERTY, across or down, is a rule (JP IS YOU, WALL IS STOP, PAGE IS LOST). You start walled in. Break the wall rule, then make any rule end in HOME and the page morphs home. Arrow keys or WASD move, Z undoes, R restarts; on touch, swipe the board. The level is the `LEVEL` grid at the top of the file: capitalised words are text, `j`, `p` and `#` are JP, the page and walls.
 
+### The Adventurer (/story/)
+
+An 80-second animated story told with the site's own renderer and morph engine ([`src/story/`](src/story)): an ink-and-paper world, a d20, a small ship, seven unknown worlds (each gives up a colour), a dragon, and the colours coming home at dawn. Scene cuts are the site's page morph, captions morph letter by letter, and colour only shows up as light, as everywhere else. `story.js` is the script: timed cues that each rebuild the scene, with sprites as ASCII in `art.js`. `main.js` runs the engine on its own clock, so the story can pause, open at any moment (`/story/?t=42`) and record itself (RECORD VIDEO saves a 1920 × 1080 MP4 or WebM, sound included). The sound (`sound.js`) is synthesised in the browser with Web Audio, no files: clicks as blocks land, a dice rattle, a transporter shimmer, a warp, and the seven colours as a pentatonic scale, red to violet, so the light and the gems play their colour's note. It's a second page in the Vite build (`story/index.html`).
+
 ### LinkedIn banner and profile picture
 
 `npm run banner` draws `brand/linkedin-banner-light.png` and `-dark.png` (1584 × 396, LinkedIn's size) from the site's own parts: the pixel font, the logo's five states, the halftone moon and the click light, set off by a pixel cursor that pushes the moon's blocks aside. The lower left stays clear for the profile photo. `node scripts/banner.mjs --preview <dir>` also writes copies with the photo drawn where LinkedIn puts it, on desktop and in the app.

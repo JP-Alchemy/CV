@@ -11,6 +11,7 @@ import { gpxFiles } from '../src/roadbook.js';
 import { iconFrames } from '../src/icons.js';
 import { Raster, THEMES } from './png.mjs';
 import { card } from './cards.mjs';
+import { ADVENTURER, blocks as sprite } from '../src/story/art.js';
 
 const dist = path.resolve('dist');
 const template = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
@@ -38,6 +39,7 @@ const base = site.url.replace(/\/$/, '');
 write(path.join(dist, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${routes.map((r) => `  <url><loc>${base}${r.path}</loc><lastmod>${today}</lastmod><priority>${r.path === '/' ? '1.0' : r.name === 'project' ? '0.6' : '0.8'}</priority></url>`).join('\n')}
+  <url><loc>${base}/story/</loc><lastmod>${today}</lastmod><priority>0.5</priority></url>
 </urlset>
 `);
 for (const [file, xml] of gpxFiles()) write(path.join(dist, file), xml);
@@ -47,6 +49,12 @@ write(path.join(dist, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${base
 // ---------------------------------------------------------------- share images
 
 for (const route of routes) write(path.join(dist, cardPath(route)), card(pageMeta(route).card, route.path));
+// The story (its page is story/index.html, built by Vite): the adventurer, staff raised.
+write(path.join(dist, 'og/story.png'), card({
+  eyebrow: 'A SHORT STORY IN BLOCKS', title: 'THE ADVENTURER',
+  text: 'A d20, a small ship, seven unknown worlds, a dragon, and the colours coming home.',
+  picture: { blocks: sprite(ADVENTURER.cheer, 18, { star: 6 }), w: 12 * 18, h: 16 * 18 },
+}, '/story/'));
 
 // Home screen: the mark in paper on ink.
 function touchIcon() {
@@ -57,4 +65,4 @@ function touchIcon() {
 }
 write(path.join(dist, 'apple-touch-icon.png'), touchIcon());
 
-console.log(`prerendered ${routes.length} pages + 404, ${gpxFiles().length} GPX files, sitemap.xml, robots.txt, ${routes.length} preview cards, apple-touch-icon.png`);
+console.log(`prerendered ${routes.length} pages + 404, ${gpxFiles().length} GPX files, sitemap.xml, robots.txt, ${routes.length + 1} preview cards, apple-touch-icon.png`);

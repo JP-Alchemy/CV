@@ -51,6 +51,7 @@ function picture(pic) {
   const shift = (b, dx, dy) => { for (let i = 0; i < b.length; i += 5) { b[i] += dx; b[i + 1] += dy; } return b; };
   const inner = P - 16;
   if (pic.image) return shift(fit(pic.image, inner, inner, pic), 8, 8);
+  if (pic.blocks) return shift(Float32Array.from(pic.blocks), Math.round((P - pic.w) / 2), Math.round((P - pic.h) / 2));
   if (pic.mosaic) {
     // Four pictures, two by two.
     const g = 16, s = (inner - g) / 2;
@@ -89,8 +90,8 @@ export function card(c, path) {
   const blocks = (b, ox, oy, lit) => {
     for (let i = 0; i < b.length; i += 5) {
       const x = ox + b[i], y = oy + b[i + 1], w = b[i + 2], h = b[i + 3];
-      const L = lit && light(x + w / 2, y + h / 2);
-      r.rect(x, y, w, h, L ? L.rgb : ink(b[i + 4]));
+      const L = lit && light(x + w / 2, y + h / 2), t = b[i + 4];
+      r.rect(x, y, w, h, L ? L.rgb : t >= 1.5 ? SPECTRUM[Math.round(t) - 2] : ink(t));
     }
   };
   const words = (t, x, y) => blocks(t.blocks, x, y, false);
