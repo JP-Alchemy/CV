@@ -41,6 +41,16 @@ It also writes `404.html` (noindex), `sitemap.xml`, `robots.txt`, a pixel-style 
 
 `dist/` works on any static host with no rewrite rules: each route is a real file and unknown paths fall back to `404.html`. This repo deploys to GitHub Pages on every push to `main` ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)), served at **jpbothma.com** (`public/CNAME`).
 
+### Garden mode
+
+Press **G** (or the sprout in the nav) on any page and it freezes into terrain for a falling-sand garden ([`src/garden/`](src/garden)). Sand piles on your headings, water runs between the letters and soaks in. A seed buried in damp soil sprouts and blooms in one of the seven spectrum colours. Light comes from lights you hang: each shines a cone downward (soil, stone and machines cast shadows below them, and lit soil dries faster), plus a little daylight where the sky is open. The goal is to grow all seven:
+
+- **Needs.** Each colour wants different water and light, from red (dry, a light right above it) to violet (wet, shade). Unhappy plants wilt or rot over tens of seconds, and the hint line says why.
+- **Breeding.** Harvest a flower with the seed tool. If another colour bloomed nearby, its seeds are a cross, halfway round the spectrum: red + yellow = orange, yellow + blue = green, blue + red = violet, green + blue = cyan. Red, yellow and blue seeds never run out.
+- **Automation.** The first bloom unlocks a sprinkler, the first crossed colour a planter (it sows and buries a colour of your choice, from your seeds), and five colours an agent that walks and climbs the garden harvesting for you. Together they can run a farm: the agents' harvests feed the planters. Click a light or machine with its own tool to take it away.
+
+`sim.js` is the world as plain logic (grid, plants, machines); `mode.js` handles entering and leaving, tools, hints and saved progress (localStorage). The renderer draws the whole grid in one pass from a small texture, so the theme dissolve and the click light reach the garden too. When you leave, every grain flies back into the page. Blocks with a tone of 2 to 8 render as spectrum colours anywhere on the site (the toolbar's swatches use them).
+
 ### The 404 puzzle
 
 Unknown addresses land on a small puzzle after *Baba Is You* ([`src/puzzle.js`](src/puzzle.js)). Every word on the board is a block you can push, and a line reading NOUN IS PROPERTY, across or down, is a rule (JP IS YOU, WALL IS STOP, PAGE IS LOST). You start walled in. Break the wall rule, then make any rule end in HOME and the page morphs home. Arrow keys or WASD move, Z undoes, R restarts; on touch, swipe the board. The level is the `LEVEL` grid at the top of the file: capitalised words are text, `j`, `p` and `#` are JP, the page and walls.

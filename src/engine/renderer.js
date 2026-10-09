@@ -236,6 +236,12 @@ void main() {
   v_tone = tone;
   v_clip = fixed_ ? -1e6 : u_navClip;
   v_light = u_pulseN > 0 ? lightAt(fixed_ ? c + vec2(0.0, u_scroll) : c, a_to.xy) : vec4(0.0);
+  // Tones of 2 and up are spectrum colours (2 = red ... 8 = violet), for swatches.
+  float ct = a_meta.y >= 1.5 ? a_meta.y : (a_meta.x >= 1.5 && p < 1.0 ? a_meta.x : 0.0);
+  if (ct >= 1.5) {
+    v_light = vec4(SPECTRUM[int(clamp(floor(ct - 1.5), 0.0, 6.0))], 1.0);
+    v_tone = 1.0;
+  }
 }`;
 
 const FS_BLOCK = `#version 300 es
@@ -332,6 +338,90 @@ void main() {
   v_light = L;
 }`;
 
+// The garden (garden/sim.js): one texel per 4px cell, drawn in one pass.
+// R kind, G colour or moisture, B per-grain random, A plant health.
+const FS_GARDEN = `#version 300 es
+precision highp float;
+precision highp int;
+uniform sampler2D u_grid;
+uniform vec2 u_gOrigin;
+uniform float u_gCell;
+uniform vec2 u_gSize;
+uniform float u_scroll;
+uniform float u_time;
+out vec4 o;
+${THEME_GLSL}
+${LIGHT_GLSL}
+void main() {
+  vec2 sp = vec2(gl_FragCoord.x, u_viewDev.y - gl_FragCoord.y) / u_dpr;
+  vec2 g = (sp - u_gOrigin) / u_gCell;
+  if (g.x < 0.0 || g.y < 0.0 || g.x >= u_gSize.x || g.y >= u_gSize.y) discard;
+  ivec2 c = ivec2(g);
+  vec4 t = texelFetch(u_grid, c, 0);
+  int k = int(t.r * 255.0 + 0.5);
+  int d = int(t.g * 255.0 + 0.5);
+  if (k == 0 && d < 10) discard;
+  float grain = t.b, health = t.a;
+  vec2 f = g - vec2(c);
+  float tk = themeK();
+  vec3 bg = mix(u_bgA, u_bgB, tk), fg = mix(u_fgA, u_fgB, tk);
+  bool core = f.x < 0.75 && f.y < 0.75;                        // a grain: 3 of 4px, with a gap
+  bool thin = abs(f.x - 0.5) < 0.26;                            // a 2px stalk
+  bool speck = thin && abs(f.y - 0.5) < 0.26;                   // a 2px speck
+  vec3 col = fg;
+  bool on = true;
+  int cd = clamp(d, 0, 6);
+  bool paper = dot(bg, vec3(0.299, 0.587, 0.114)) > 0.5;      // light theme: warmer, darker colours read better
+  if (k == 0) {                 // empty, in a light's beam: dust that twinkles, warmest near the light
+    float I = float(d) / 255.0;
+    if (!speck || hash12(vec2(c) + floor(u_time * 3.0) * 17.0) > I * 0.5) discard;
+    int band = I > 0.55 ? 0 : I > 0.3 ? 1 : 2;
+    col = paper ? (band == 0 ? SPECTRUM[1] : band == 1 ? SPECTRUM[0] : SPECTRUM[6]) : SPECTRUM[2 - band];
+  } else if (k == 12) {         // a hung light: a bright core that breathes, outlined in ink
+    bool left = (d & 1) == 0, top = d < 2;
+    bool edge = (left ? f.x < 0.25 : f.x > 0.75) || (top ? f.y < 0.25 : f.y > 0.75);
+    float b = 0.5 + 0.5 * sin(u_time * 3.0 + float(d));
+    col = edge ? fg : paper ? mix(SPECTRUM[1], SPECTRUM[2], b) : mix(SPECTRUM[2], vec3(1.0), 0.25 + 0.3 * b);
+  } else if (k == 1) {          // sand: darker (denser) when wet
+    float wet = float(d) / 255.0;
+    col = mix(bg, fg, mix(0.32, 0.56, grain) + wet * 0.36);
+    on = wet > 0.45 || core;
+  } else if (k == 2) {          // water: the cool end of the spectrum, shimmering
+    float s = 0.5 + 0.5 * sin(u_time * 2.4 + grain * 6.283 + float(c.x) * 0.4);
+    col = mix(SPECTRUM[4], SPECTRUM[5], s * 0.85);
+  } else if (k == 3) {          // seed: its colour inside a dark husk
+    col = speck ? SPECTRUM[cd] : fg;
+  } else if (k == 4) {          // root
+    col = mix(bg, fg, 0.6 * mix(0.45, 1.0, health));
+    on = speck || (core && grain > 0.55);
+  } else if (k == 5) {          // stem: greys as the plant fails
+    col = mix(bg, fg, mix(0.3, 0.95, health));
+    on = thin;
+  } else if (k == 6) {          // leaf
+    col = mix(bg, fg, mix(0.28, 0.9, health));
+    on = core;
+  } else if (k == 7) {          // bud: ink with a hint of its colour
+    col = mix(fg, SPECTRUM[cd], 0.5);
+    on = core;
+  } else if (k == 8) {          // petal
+    col = mix(mix(bg, fg, 0.35), SPECTRUM[cd], mix(0.35, 1.0, health));
+  } else if (k == 9) {          // dead plant matter
+    col = mix(bg, fg, 0.22 + grain * 0.14);
+    on = core;
+  } else if (k == 10) {         // machine ink (255 = paper inside the machine)
+    col = d == 255 ? bg : fg;
+  } else if (k == 11) {         // machine accent
+    col = SPECTRUM[cd];
+  }
+  if (!on) discard;
+  if (u_pulseN > 0 && k > 0 && k != 8 && k != 11 && k != 12) {
+    vec2 docP = u_gOrigin + (vec2(c) + 0.5) * u_gCell + vec2(0.0, u_scroll);
+    vec4 L = lightAt(docP, vec2(c));
+    col = mix(col, L.rgb, L.a);
+  }
+  o = vec4(col, 1.0);
+}`;
+
 function compile(gl, type, src) {
   const s = gl.createShader(type);
   gl.shaderSource(s, src);
@@ -369,6 +459,8 @@ export class Renderer {
     this.blocks = program(gl, VS_BLOCK, FS_BLOCK);
     this.bg = program(gl, VS_BG, FS_BG);
     this.dots = program(gl, VS_DOTS, FS_BLOCK);
+    this.gardenProg = program(gl, VS_BG, FS_GARDEN);
+    this.garden = null;
 
     this.vao = gl.createVertexArray();
     gl.bindVertexArray(this.vao);
@@ -424,6 +516,26 @@ export class Renderer {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.ibuf);
     gl.bufferSubData(gl.ARRAY_BUFFER, dstInstance * STRIDE * 4, data, srcOffset, count * STRIDE);
   }
+
+  /** Show the garden: a cols × rows RGBA grid of 4px cells at (x0, y0) on screen. */
+  setGarden(g) {
+    const gl = this.gl;
+    if (!this.gtex) this.gtex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.gtex);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    if (!this.garden || this.garden.cols !== g.cols || this.garden.rows !== g.rows) {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, g.cols, g.rows, 0, gl.RGBA, gl.UNSIGNED_BYTE, g.buf);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    } else {
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, g.cols, g.rows, gl.RGBA, gl.UNSIGNED_BYTE, g.buf);
+    }
+    this.garden = { cols: g.cols, rows: g.rows, x0: g.x0, y0: g.y0, cell: g.cell };
+  }
+
+  clearGarden() { this.garden = null; }
 
   draw(f) {
     const gl = this.gl;
@@ -493,21 +605,41 @@ export class Renderer {
     gl.bindVertexArray(this.dotVao);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, cols * rows);
 
-    if (!this.count) return;
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
-    ({ u, p } = this.blocks);
+    if (this.count) {
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LEQUAL);
+      ({ u, p } = this.blocks);
+      gl.useProgram(p);
+      setTheme(u);
+      setPush(u);
+      setLight(u);
+      gl.uniform2f(u.u_view, this.w, this.h);
+      gl.uniform1f(u.u_scroll, f.scroll);
+      gl.uniform1f(u.u_time, f.time);
+      gl.uniform1f(u.u_shrink, f.shrink);
+      gl.uniform1f(u.u_navClip, f.navClip);
+      gl.bindVertexArray(this.vao);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.count);
+      gl.bindVertexArray(null);
+    }
+
+    const G = this.garden;
+    if (!G) return;
+    gl.disable(gl.DEPTH_TEST);
+    ({ u, p } = this.gardenProg);
     gl.useProgram(p);
     setTheme(u);
-    setPush(u);
     setLight(u);
-    gl.uniform2f(u.u_view, this.w, this.h);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.gtex);
+    gl.uniform1i(u.u_grid, 0);
+    gl.uniform2f(u.u_gOrigin, G.x0, G.y0);
+    gl.uniform1f(u.u_gCell, G.cell);
+    gl.uniform2f(u.u_gSize, G.cols, G.rows);
     gl.uniform1f(u.u_scroll, f.scroll);
     gl.uniform1f(u.u_time, f.time);
-    gl.uniform1f(u.u_shrink, f.shrink);
-    gl.uniform1f(u.u_navClip, f.navClip);
-    gl.bindVertexArray(this.vao);
-    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.count);
+    gl.bindVertexArray(this.bgVao);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindVertexArray(null);
   }
 }

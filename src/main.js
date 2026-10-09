@@ -6,6 +6,7 @@ import { parseRoute, fromHash } from './router.js';
 import { applyMeta, pageHTML } from './seo.js';
 import { site, experience } from './content.js';
 import { puzzle } from './puzzle.js';
+import { Garden } from './garden/mode.js';
 import './style.css';
 
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
@@ -151,8 +152,8 @@ const PULSE_LIFE = 1.6; // seconds (matches the fade in LIGHT_GLSL)
 const pulses = [];
 const pulseData = { data: new Float32Array(PULSES * 4), n: 0 };
 
-function pulse(x, y) {
-  if (engine.calm) return;
+function pulse(x, y, force = false) {
+  if (engine.calm && !force) return;
   pulses.push({ x, y: y + window.scrollY, t: engine.now(), s: 1 });
   if (pulses.length > PULSES) pulses.shift();
   kick();
@@ -178,6 +179,7 @@ function frame() {
   engine.tick(t);
   const pushing = updateTrail(t);
   const lit = updatePulses(t);
+  if (garden.on) garden.frame(t, pulses, { speed: 1100, width: scene.S.mobile ? 110 : 150 });
   const d = renderer.dpr;
   const tt = (t - themeStart) / 0.9;
   renderer.draw({
@@ -200,10 +202,68 @@ function frame() {
     pulseSpeed: 1100,
     pulseWidth: scene.S.mobile ? 110 : 150,
   });
-  if (t < engine.animUntil + 0.05 || tt < 1 || pushing || lit) { kick(); return; }
+  if (garden.on || t < engine.animUntil + 0.05 || tt < 1 || pushing || lit) { kick(); return; }
   clearTimeout(timer);
   const next = engine.nextTick();
   if (next < Infinity) timer = setTimeout(kick, Math.max(16, (next - engine.now()) * 1000));
+}
+
+// ---------------------------------------------------------------- garden mode
+//
+// Any page can turn into a falling-sand garden (src/garden). While it's on,
+// the page can't scroll, and a layer over it takes the pointer for the tools.
+
+const garden = new Garden({
+  renderer,
+  engine,
+  now: () => engine.now(),
+  pulse: (x, y) => pulse(x, y, true),
+  changed: () => { if (garden.on) { state.garden = garden.view(); render('local'); } },
+  scene: () => scene,
+});
+// The page holds still while gardening. Hiding overflow would drop the
+// scrollbar and widen the page (a resize), so scrolling is blocked instead.
+let lockY = 0;
+const holdStill = (e) => { if (garden.on) e.preventDefault(); };
+window.addEventListener('wheel', holdStill, { passive: false });
+window.addEventListener('touchmove', holdStill, { passive: false });
+window.addEventListener('scroll', () => { if (garden.on && Math.abs(window.scrollY - lockY) > 0.5) window.scrollTo(0, lockY); });
+const SCROLL_KEYS = new Set([' ', 'PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown']);
+
+const capture = document.createElement('div');
+capture.id = 'garden';
+capture.setAttribute('aria-hidden', 'true');
+document.body.appendChild(capture);
+capture.addEventListener('pointerdown', (e) => {
+  try { capture.setPointerCapture(e.pointerId); } catch { /* not a live pointer */ }
+  garden.down(e.clientX, e.clientY);
+  kick();
+});
+capture.addEventListener('pointermove', (e) => { mouse = [e.clientX, e.clientY]; garden.move(e.clientX, e.clientY); });
+capture.addEventListener('pointerup', () => garden.up());
+capture.addEventListener('pointercancel', () => garden.up());
+
+function toggleGarden() {
+  const root = document.documentElement;
+  if (garden.on) {
+    garden.leave();
+    state.garden = null;
+    root.classList.remove('gardening');
+    render('local');
+    return;
+  }
+  if (state.menuOpen) { state.menuOpen = false; render('page', { scrollTo: menuReturnScroll }); }
+  state.hover = null;
+  lockY = window.scrollY;
+  garden.open();
+  state.garden = garden.view();
+  root.classList.add('gardening');
+  render('local');
+  garden.enter({ top: scene.S.navClip, bottom: scene.gardenTop, width: vp.w });
+  state.garden = garden.view();
+  capture.style.top = `${garden.y0}px`;
+  capture.style.height = `${garden.rows * 4}px`;
+  kick();
 }
 
 // ---------------------------------------------------------------- 404 puzzle
@@ -281,6 +341,10 @@ function runAction(action, node) {
     setTimeout(() => { state.copied = false; render('local'); }, 2200);
   } else if (action === 'print') {
     window.print();
+  } else if (action === 'garden') {
+    toggleGarden();
+  } else if (action.startsWith('gd:')) {
+    garden.select(action);
   } else if (action === 'pz:undo') {
     play(() => puzzle.undo());
   } else if (action === 'pz:restart') {
@@ -327,6 +391,7 @@ function syncStatic() {
 }
 
 function navigate(route, push) {
+  if (garden.on) toggleGarden();
   scrollMemory.set(state.route.path, state.menuOpen ? menuReturnScroll : window.scrollY);
   if (push) history.pushState(null, '', route.path + location.search);
   const target = push ? 0 : scrollMemory.get(route.path) ?? 0;
@@ -349,17 +414,25 @@ window.addEventListener('hashchange', () => {
 });
 
 document.addEventListener('pointerdown', (e) => {
+  if (e.target === capture) return; // the garden's own tools handle it
   lastOrigin = [e.clientX, e.clientY];
   burst(e);
   if (e.pointerType !== 'touch' && e.button === 0) pulse(e.clientX, e.clientY);
 }, { capture: true });
 // Touch: pulse on tap (click), not on touch-down, which also starts scrolls.
-document.addEventListener('click', (e) => { if (e.pointerType === 'touch') pulse(e.clientX, e.clientY); }, { capture: true });
+document.addEventListener('click', (e) => { if (e.pointerType === 'touch' && e.target !== capture) pulse(e.clientX, e.clientY); }, { capture: true });
 document.addEventListener('pointermove', (e) => { mouse = [e.clientX, e.clientY]; onPointer(e); kick(); }, { passive: true });
 document.documentElement.addEventListener('pointerleave', () => { mouse = [-1e4, -1e4]; pointer = null; pending = [0, 0]; kick(); });
 window.addEventListener('scroll', () => { engine.reveal(window.scrollY); kick(); }, { passive: true });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && state.menuOpen) runAction('menu', fixedEl);
+  // Garden mode: G toggles it on any page, Escape leaves; keys don't scroll it.
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && ((e.key === 'g' || e.key === 'G') || (e.key === 'Escape' && garden.on))) {
+    e.preventDefault();
+    if (!e.repeat) toggleGarden();
+    return;
+  }
+  if (garden.on && SCROLL_KEYS.has(e.key) && !(e.key === ' ' && e.target.closest?.('a, button'))) e.preventDefault();
   // The 404 puzzle: arrows or WASD move, Z undoes, R restarts.
   if (state.route.name !== 'notFound' || state.menuOpen || e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
@@ -385,10 +458,17 @@ function onResize() {
   rz = setTimeout(() => {
     const [w2, h2] = size();
     const widthChanged = w2 !== vp.w;
+    // A garden is laid on the page as it was, so a new width starts it again.
+    const regarden = widthChanged && garden.on;
+    if (regarden) toggleGarden();
     vp.w = w2;
     if (widthChanged || Math.abs(h2 - layoutH) > 160) {
       layoutH = h2;
       render('resize');
+    }
+    if (regarden) {
+      toggleGarden();
+      garden.say('THE WINDOW CHANGED SIZE, SO THE GARDEN STARTED AGAIN.', 5);
     }
   }, 140);
 }
@@ -409,4 +489,4 @@ render('intro', { scrollTo: 0 });
 window.addEventListener('photo-loaded', () => render('local'));
 
 // Debug/inspection handle.
-window.__site = { engine, state, render, impulses, pulses, kick, puzzle, get scene() { return scene; } };
+window.__site = { engine, state, render, impulses, pulses, kick, frame, puzzle, garden, get scene() { return scene; } };

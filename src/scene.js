@@ -1,8 +1,10 @@
 import { Ctx, layout, resolve, shift, text, col, row, grid, space, custom, maxw, even } from './engine/layout.js';
-import { tokens, label, rule, button, link, image, icon, hitArea, pressRow, frameBlocks, section } from './ui.js';
+import { tokens, label, rule, button, link, image, icon, hitArea, pressRow, frameBlocks, fillBlocks, solidLine, section } from './ui.js';
 import { iconFrames } from './icons.js';
+import { typeset } from './engine/typeset.js';
 import { roadbookPage } from './roadbook.js';
 import { puzzle, board, boardWidth } from './puzzle.js';
+import { COLOURS, PRIMARY } from './garden/sim.js';
 import {
   site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills,
 } from './content.js';
@@ -47,9 +49,13 @@ function navBar(state, S) {
     key: 'nav-theme', label: 'THEME', icon: state.theme === 'dark' ? 'dark' : 'light', small: true, width: 36,
     action: 'theme', hover: false, aria: state.theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme',
   });
+  const garden = button({
+    key: 'nav-garden', label: 'GARDEN', icon: 'garden', small: true, width: 36, action: 'garden', hover: false, active: !!state.garden,
+    aria: state.garden ? 'Leave garden mode (G)' : 'Garden mode: grow the spectrum (G)', period: 1.6,
+  });
   const right = S.mobile
-    ? [button({ key: 'nav-menu', label: state.menuOpen ? 'CLOSE' : 'MENU', action: 'menu', small: true, hover: hv('nav-menu'), active: state.menuOpen, aria: state.menuOpen ? 'Close menu' : 'Open menu' }), theme]
-    : [...NAV.map((n) => button({ key: `nav-${n.label}`, label: n.label, href: n.href, small: true, hover: hv(`nav-${n.label}`), active: n.match.includes(name) })), theme];
+    ? [button({ key: 'nav-menu', label: state.menuOpen ? 'CLOSE' : 'MENU', action: 'menu', small: true, hover: hv('nav-menu'), active: state.menuOpen, aria: state.menuOpen ? 'Close menu' : 'Open menu' }), garden, theme]
+    : [...NAV.map((n) => button({ key: `nav-${n.label}`, label: n.label, href: n.href, small: true, hover: hv(`nav-${n.label}`), active: n.match.includes(name) })), garden, theme];
   return row([row(left, { gap: 4 }), row(right, { gap: 4 })], { justify: 'between' });
 }
 
@@ -64,6 +70,56 @@ function footer(state, S, count) {
   return col([
     rule({ key: 'foot-rule' }),
     S.mobile ? col(items, { gap: 14, mt: 20 }) : row(items, { justify: 'between', mt: 20 }),
+  ]);
+}
+
+// ---------------------------------------------------------------- garden mode
+
+/** One colour of the spectrum: a swatch to pick its seeds, with how many you hold. */
+function seedChip(v, k, hv) {
+  return custom((w, ctx) => {
+    const size = 28, key = `gd-seed-${k}`;
+    // Unknown: a "?". Seeds in hand: a small square, like a seed. Bloomed: full colour.
+    const n = v.seeds[k], have = n === Infinity || n > 0;
+    const known = v.found[k] || have;
+    const sel = v.tool === 'seed' && v.seed === k;
+    const els = [ctx.el({ key: `${key}:frame`, sig: `chipf|${sel}`, w: size, h: size, blocks: frameBlocks(size, size, sel ? 4 : 2), motion: 'hover' })];
+    if (known) {
+      els.push(ctx.el({ key: `${key}:fill`, sig: `chip|${k}|${v.found[k]}`, w: size, h: size, blocks: fillBlocks(size, size, 4, v.found[k] ? 6 : 10, 2 + k), motion: 'grow' }));
+    } else {
+      const q = typeset('?', { size: 2, tone: 0.45 });
+      const el = ctx.el({ key: `${key}:q`, sig: 'chipq', w: q.width, h: 14, blocks: q.blocks });
+      el.x = even((size - q.width) / 2); el.y = 7;
+      els.push(el);
+    }
+    const count = n === Infinity ? '' : n > 0 ? String(n) : '';
+    if (count) {
+      const t = typeset(count, { size: 2, tone: 0.55 });
+      const el = ctx.el({ key: `${key}:n`, sig: `chipn|${count}`, w: t.width, h: 14, blocks: t.blocks });
+      el.x = even((size - t.width) / 2); el.y = size + 6;
+      els.push(el);
+    }
+    const name = COLOURS[k].toLowerCase();
+    const aria = !known ? `${name}: not found yet` : `${name}${v.found[k] ? ' (bloomed)' : ''}: ${n === Infinity ? 'seeds always in stock' : `${n} seeds`}`;
+    els.push(ctx.el({ key, w: size, h: size, hit: { action: `gd:seed:${k}`, label: aria, pressed: sel } }));
+    return { w: size, h: size + 20, els };
+  });
+}
+
+/** Garden mode's toolbar: tools, the spectrum's seeds, and what to do next. */
+function gardenBar(state, S) {
+  const v = state.garden;
+  const hv = (k) => state.hover === k;
+  const tools = v.tools.map((t) => button({ key: `gd-tool-${t}`, label: t.toUpperCase(), small: true, action: `gd:tool:${t}`, active: v.tool === t, pressed: v.tool === t, hover: hv(`gd-tool-${t}`) }));
+  const done = button({ key: 'gd-done', label: 'LEAVE', arrow: '→', small: true, action: 'garden', hover: hv('gd-done'), aria: 'Leave garden mode' });
+  const chips = row(COLOURS.map((_, k) => seedChip(v, k, hv)), { gap: S.mobile ? 4 : 6 });
+  const hint = text(v.hint, S.small, { key: 'gd-hint', tone: 1, attrs: { 'aria-live': 'polite' } });
+  if (S.mobile) {
+    return col([row([...tools, done], { gap: 4, wrap: true, rowGap: 4 }), { ...chips, mt: 10 }, { ...hint, mt: 2 }]);
+  }
+  return col([
+    row([row(tools, { gap: 4 }), done], { justify: 'between' }),
+    { ...row([chips, { ...hint, grow: true }], { gap: 20 }), mt: 12 },
   ]);
 }
 
@@ -478,6 +534,25 @@ export function buildScene(state, vp) {
   const fy = Math.max(top + page.h + S.sp(10), vp.h - foot.h - S.sp(3));
   shift(foot.els, S.left, fy);
 
-  const elements = resolve([...nav.els, ...page.els, ...foot.els]);
-  return { elements, height: fy + foot.h + S.sp(3), S };
+  // Garden mode: a toolbar pinned to the bottom, on a paper-coloured band.
+  const bar = [];
+  let gardenTop = vp.h;
+  if (state.garden) {
+    const b = layout(gardenBar(state, S), S.cw, ctx);
+    const pad = S.mobile ? 12 : 16, bandH = b.h + pad * 2;
+    gardenTop = vp.h - bandH;
+    shift(b.els, S.left, gardenTop + pad);
+    const band = ctx.el({ key: 'gd-band', sig: `gdb|${vp.w}|${bandH}`, w: vp.w, h: bandH, blocks: fillBlocks(vp.w, bandH, 4, 0, 0), flat: true });
+    const edge = ctx.el({ key: 'gd-edge', sig: `gde|${vp.w}`, w: vp.w, h: 2, blocks: solidLine(vp.w) });
+    band.y = gardenTop;
+    edge.y = gardenTop;
+    for (const e of b.els) e.z = (e.z || 0) + 4;
+    band.z = 3;
+    edge.z = 4;
+    bar.push(band, edge, ...b.els);
+    for (const e of bar) e.fixed = true;
+  }
+
+  const elements = resolve([...nav.els, ...page.els, ...foot.els, ...bar]);
+  return { elements, height: fy + foot.h + S.sp(3), S, gardenTop };
 }

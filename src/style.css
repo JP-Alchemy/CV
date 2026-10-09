@@ -74,6 +74,21 @@ body {
   outline: none;
 }
 
+/* Garden mode: a layer over the page takes the pointer (scrolling is held in main.js). */
+#garden {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  display: none;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.gardening #garden {
+  display: block;
+}
+
 /* The 404 puzzle board: swipes move instead of scrolling. */
 .m[data-board] {
   touch-action: none;

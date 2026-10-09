@@ -50,6 +50,7 @@ export class DomMirror {
           if (h.current) node.setAttribute('aria-current', 'page'); else node.removeAttribute('aria-current');
         }
         if (h.expanded !== undefined) node.setAttribute('aria-expanded', String(!!h.expanded));
+        if (h.pressed !== undefined) node.setAttribute('aria-pressed', String(!!h.pressed));
         if (node.textContent !== h.label) node.textContent = h.label;
         node.dataset.action = h.action || '';
       } else if (tag === 'div' && !e.a11y.attrs) {

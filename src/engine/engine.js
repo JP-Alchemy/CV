@@ -702,6 +702,27 @@ export class Engine {
     if (this.dyingCount && t > this.dyingUntil) this.pack();
   }
 
+  /**
+   * Blocks from outside the scene (the garden's grains) fly into the page's
+   * blocks on screen and vanish there. src: flat [x, y, w, h, tone], doc space.
+   */
+  absorb(src, top) {
+    const t = this.now();
+    const land = [];
+    for (const R of this.list) {
+      if (R.fixed || R.hidden || !R.n) continue;
+      const T = R.T;
+      for (let i = 0; i < T.length; i += 5) if (T[i + 1] > top && T[i + 1] < top + this.vh) land.push(T[i] + T[i + 2] / 2, T[i + 1] + T[i + 3] / 2, T[i + 4]);
+    }
+    if (!land.length) return;
+    for (let i = 0; i < src.length; i += 5) {
+      const j = ((Math.random() * land.length) / 3 | 0) * 3;
+      this.pushDying(src[i], src[i + 1], src[i + 2], src[i + 3], src[i + 4], land[j], land[j + 1], 0, 0, Math.min(1, land[j + 2]),
+        t + rnd(0, 0.35), rnd(0.6, 1.05), sgn() * rnd(0.2, 1) * 0.25, sgn() * rnd(0.2, 1) * 0.9, 0, 0);
+    }
+    this.pack();
+  }
+
   /** Make a looping element advance right away (e.g. logo on hover). */
   nudge(key, t = this.now()) {
     const R = this.els.get(key);
