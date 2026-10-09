@@ -5,6 +5,7 @@ import { DomMirror } from './dom.js';
 import { parseRoute, fromHash } from './router.js';
 import { applyMeta, pageHTML } from './seo.js';
 import { site, experience } from './content.js';
+import { puzzle } from './puzzle.js';
 import './style.css';
 
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
@@ -48,6 +49,7 @@ const state = {
   copied: false,
   menuOpen: false,
   theme: store.get('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+  touch: matchMedia('(pointer: coarse)').matches,
 };
 
 // Measure the canvas itself: it tracks every viewport change (rotation,
@@ -204,6 +206,44 @@ function frame() {
   if (next < Infinity) timer = setTimeout(kick, Math.max(16, (next - engine.now()) * 1000));
 }
 
+// ---------------------------------------------------------------- 404 puzzle
+
+const PLAY_KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
+let lastPlay = -1;
+let swipe = null;
+
+/** Apply one puzzle step and redraw; held keys repeat at a readable pace. */
+function play(step, held = false) {
+  const t = engine.now();
+  if (held && t - lastPlay < 0.11) return;
+  if (!step()) return;
+  lastPlay = t;
+  render('local');
+  if (puzzle.won) {
+    // Light goes out from the word that made it true, then the page goes home.
+    const el = scene.elements.find((x) => x.key === `pz:w${puzzle.won.ids[2]}`);
+    const at = el ? [el.x + el.w / 2, el.y + el.h / 2 - window.scrollY] : [vp.w / 2, vp.h / 2];
+    pulse(at[0], at[1]);
+    setTimeout(() => {
+      puzzle.clear();
+      lastOrigin = at;
+      navigate(parseRoute('/'), true);
+    }, engine.calm ? 500 : 1300);
+  }
+}
+
+// Swipes on the board move (touch-action: none on it keeps the page still).
+document.addEventListener('pointerdown', (e) => {
+  swipe = e.target.closest?.('[data-board]') ? { x: e.clientX, y: e.clientY, id: e.pointerId } : null;
+});
+document.addEventListener('pointerup', (e) => {
+  if (!swipe || e.pointerId !== swipe.id) return;
+  const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
+  swipe = null;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+  play(() => puzzle.move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up'));
+});
+
 // ---------------------------------------------------------------- interaction
 
 function centerOf(node) {
@@ -241,6 +281,10 @@ function runAction(action, node) {
     setTimeout(() => { state.copied = false; render('local'); }, 2200);
   } else if (action === 'print') {
     window.print();
+  } else if (action === 'pz:undo') {
+    play(() => puzzle.undo());
+  } else if (action === 'pz:restart') {
+    play(() => puzzle.restart());
   } else if (action.startsWith('toggle:')) {
     const id = action.slice(7);
     if (state.expanded.has(id)) state.expanded.delete(id); else state.expanded.add(id);
@@ -316,6 +360,13 @@ document.documentElement.addEventListener('pointerleave', () => { mouse = [-1e4,
 window.addEventListener('scroll', () => { engine.reveal(window.scrollY); kick(); }, { passive: true });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && state.menuOpen) runAction('menu', fixedEl);
+  // The 404 puzzle: arrows or WASD move, Z undoes, R restarts.
+  if (state.route.name !== 'notFound' || state.menuOpen || e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  const fn = PLAY_KEYS[k] ? () => puzzle.move(PLAY_KEYS[k]) : k === 'z' || k === 'Backspace' ? () => puzzle.undo() : k === 'r' ? () => puzzle.restart() : null;
+  if (!fn) return;
+  e.preventDefault();
+  play(fn, e.repeat);
 });
 
 let rz = 0;
@@ -358,4 +409,4 @@ render('intro', { scrollTo: 0 });
 window.addEventListener('photo-loaded', () => render('local'));
 
 // Debug/inspection handle.
-window.__site = { engine, state, render, impulses, pulses, kick, get scene() { return scene; } };
+window.__site = { engine, state, render, impulses, pulses, kick, puzzle, get scene() { return scene; } };

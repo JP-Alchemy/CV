@@ -41,6 +41,10 @@ It also writes `404.html` (noindex), `sitemap.xml`, `robots.txt`, a pixel-style 
 
 `dist/` works on any static host with no rewrite rules: each route is a real file and unknown paths fall back to `404.html`. This repo deploys to GitHub Pages on every push to `main` ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)), served at **jpbothma.com** (`public/CNAME`).
 
+### The 404 puzzle
+
+Unknown addresses land on a small puzzle after *Baba Is You* ([`src/puzzle.js`](src/puzzle.js)). Every word on the board is a block you can push, and a line reading NOUN IS PROPERTY, across or down, is a rule (JP IS YOU, WALL IS STOP, PAGE IS LOST). You start walled in. Break the wall rule, then make any rule end in HOME and the page morphs home. Arrow keys or WASD move, Z undoes, R restarts; on touch, swipe the board. The level is the `LEVEL` grid at the top of the file: capitalised words are text, `j`, `p` and `#` are JP, the page and walls.
+
 ### LinkedIn banner and profile picture
 
 `npm run banner` draws `brand/linkedin-banner-light.png` and `-dark.png` (1584 × 396, LinkedIn's size) from the site's own parts: the pixel font, the logo's five states, the halftone moon and the click light, set off by a pixel cursor that pushes the moon's blocks aside. The lower left stays clear for the profile photo. `node scripts/banner.mjs --preview <dir>` also writes copies with the photo drawn where LinkedIn puts it, on desktop and in the app.

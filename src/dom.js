@@ -52,12 +52,14 @@ export class DomMirror {
         if (h.expanded !== undefined) node.setAttribute('aria-expanded', String(!!h.expanded));
         if (node.textContent !== h.label) node.textContent = h.label;
         node.dataset.action = h.action || '';
-      } else if (tag === 'div') {
+      } else if (tag === 'div' && !e.a11y.attrs) {
         node.setAttribute('role', 'img');
         node.setAttribute('aria-label', e.a11y.text);
       } else if (node.textContent !== e.a11y.text) {
         node.textContent = e.a11y.text;
       }
+      // Extra attributes, e.g. a live region or the puzzle board's role.
+      if (e.a11y?.attrs) for (const [k, v] of Object.entries(e.a11y.attrs)) if (node.getAttribute(k) !== v) node.setAttribute(k, v);
       const p = h ? 4 : 0;
       const st = node.style;
       st.left = `${e.x - p}px`;

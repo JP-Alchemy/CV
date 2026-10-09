@@ -60,6 +60,7 @@ export const PROFILES = {
   hover: { dur: [0.2, 0.34], wave: 0, jitter: 0.12, arc: 0.08, tumble: 0.55 },
   icon: { dur: [0.3, 0.48], wave: 0, jitter: 0.12, arc: 0.18, tumble: 0.9 },
   grow: { dur: [0.22, 0.4], wave: 0, jitter: 0.28, arc: 0, tumble: 0.7 },
+  step: { dur: [0.13, 0.17], wave: 0, jitter: 0.03, arc: 0.03, tumble: 0.15 }, // puzzle moves: snappy
 };
 
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -221,8 +222,8 @@ export class Engine {
         // Same shape, new place: slide.
         const C = curArr(O);
         rec.inst = new Float32Array(n * STRIDE);
-        const P = PROFILES[mode === 'page' ? 'shared' : 'move'];
-        const stagger = mode === 'resize' ? 0.15 : 0.05;
+        const P = PROFILES[E.motion === 'step' ? 'step' : mode === 'page' ? 'shared' : 'move'];
+        const stagger = E.motion === 'step' ? 0 : mode === 'resize' ? 0.15 : 0.05;
         for (let i = 0; i < n; i++) {
           const b = i * 5;
           const d = Math.min(1, Math.max(0, (T[b + 1] - top) / this.vh));

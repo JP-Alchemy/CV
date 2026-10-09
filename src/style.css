@@ -74,6 +74,16 @@ body {
   outline: none;
 }
 
+/* The 404 puzzle board: swipes move instead of scrolling. */
+.m[data-board] {
+  touch-action: none;
+}
+
+.m[data-board]:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 4px;
+}
+
 /* ------------------------------------------------------------------
    Plain copy of the page (#static): what crawlers, no-JS and no-WebGL
    visitors see, and what prints. Hidden while the canvas is running. */

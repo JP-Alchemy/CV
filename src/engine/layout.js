@@ -73,7 +73,7 @@ export function layout(n, w, ctx) {
         key: n.key,
         sig: `t|${n.str}|${st.size}|${st.bold ? 1 : 0}|${st.lh}|${tone}|${n.align || ''}|${ts.width}|${ts.lines}`,
         w: ts.width, h: ts.height, blocks: ts.blocks, z: n.z, motion: n.motion,
-        a11y: n.a11y === false ? null : { tag: n.tag || 'p', text: n.label ?? n.str },
+        a11y: n.a11y === false ? null : { tag: n.tag || 'p', text: n.label ?? n.str, attrs: n.attrs },
       });
       return { w: ts.width, h: ts.height, els: [el] };
     }

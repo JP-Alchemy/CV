@@ -2,6 +2,7 @@ import { Ctx, layout, resolve, shift, text, col, row, grid, space, custom, maxw,
 import { tokens, label, rule, button, link, image, icon, hitArea, pressRow, frameBlocks, section } from './ui.js';
 import { iconFrames } from './icons.js';
 import { roadbookPage } from './roadbook.js';
+import { puzzle, board, boardWidth } from './puzzle.js';
 import {
   site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills,
 } from './content.js';
@@ -430,15 +431,30 @@ function menu(state, S) {
   ]);
 }
 
+// 404: a small Baba Is You-style puzzle (src/puzzle.js), with a plain way out.
 function notFound(state, S) {
   const hv = (k) => state.hover === k;
-  return col([
+  const st = puzzle.status();
+  const intro = [
     label('LOST ON THE PATH', { key: 'page-eyebrow' }),
     text('404', S.display, { key: 'page-title', tag: 'h1', label: 'Page not found', mt: S.sp(2) }),
-    text('THESE BLOCKS DID NOT ASSEMBLE INTO ANYTHING.', S.h2, { key: 'page-intro', mt: S.sp(3) }),
-    text('“Where does the path go after the gate?” — “It goes where you do.”', S.body, { key: 'koan', tone: 0.55, mt: S.sp(3) }),
-    row([button({ key: 'home', label: 'BACK HOME', arrow: '→', href: '/', hover: hv('home') })], { mt: S.sp(4) }),
+    text('THIS PAGE GOT LOST.', S.h2, { key: 'page-intro', mt: S.sp(3) }),
+    maxw(480, text('Everything on this site is made of blocks, the rules included. Push the words around until the page finds its way home.', S.body, { key: 'pz-how', mt: S.sp(3) })),
+  ];
+  const help = [
+    text(state.touch ? 'SWIPE ON THE BOARD TO MOVE' : 'ARROW KEYS OR WASD TO MOVE · Z UNDO · R RESTART', S.small, { key: 'pz-keys', mt: S.sp(3) }),
+    row([
+      button({ key: 'pz-undo', label: 'UNDO', small: true, action: 'pz:undo', hover: hv('pz-undo') }),
+      button({ key: 'pz-restart', label: 'RESTART', small: true, action: 'pz:restart', hover: hv('pz-restart') }),
+    ], { gap: 8, mt: S.sp(2) }),
+    row([button({ key: 'home', label: 'OR JUST GO HOME', arrow: '→', href: '/', hover: hv('home') })], { mt: S.sp(4) }),
+  ];
+  const play = col([
+    board({ key: 'pz', label: 'Puzzle board. You are JP. Arrow keys move you and push the words; a line of words such as PAGE IS LOST is a rule.' }),
+    text(st.text, S.small, { key: 'pz-status', tone: st.tone, attrs: { 'aria-live': 'polite' }, mt: S.sp(2) }),
   ]);
+  if (S.mobile || S.tablet) return col([...intro, { ...play, mt: S.sp(4) }, ...help]);
+  return row([{ ...col([...intro, ...help]), grow: true }, { ...play, basis: boardWidth(1e4) }], { gap: S.sp(6) });
 }
 
 const PAGES = { home, work, project, services: servicesPage, about: aboutPage, cv: cvPage, contact, notFound, roadbook: roadbookPage };
