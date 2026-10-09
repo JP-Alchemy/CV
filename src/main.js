@@ -7,13 +7,10 @@ import { applyMeta, pageHTML } from './seo.js';
 import { site, experience } from './content.js';
 import { puzzle } from './puzzle.js';
 import { Garden } from './garden/mode.js';
+import { THEMES as BRAND, unit } from './brand.js';
 import './style.css';
 
-const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
-const THEMES = {
-  light: { bg: hex('#f0f0eb'), fg: hex('#0e0e0e'), css: '#f0f0eb' },
-  dark: { bg: hex('#0c0c0c'), fg: hex('#ebebe4'), css: '#0c0c0c' },
-};
+const THEMES = Object.fromEntries(Object.entries(BRAND).map(([k, t]) => [k, { bg: unit(t.bg), fg: unit(t.fg), css: t.bg }]));
 
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch { return null; } },

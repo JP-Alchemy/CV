@@ -5,8 +5,9 @@ import { typeset } from './engine/typeset.js';
 import { roadbookPage } from './roadbook.js';
 import { puzzle, board, boardWidth } from './puzzle.js';
 import { COLOURS, PRIMARY } from './garden/sim.js';
+import { THEMES, SPECTRUM } from './brand.js';
 import {
-  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills,
+  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills, colophon,
 } from './content.js';
 
 const pad2 = (i) => String(i + 1).padStart(2, '0');
@@ -64,7 +65,7 @@ function footer(state, S, count) {
   const made = `THIS PAGE IS MADE OF ${count.toLocaleString('en-US')} BLOCKS`;
   const items = [
     text(`© 2026 ${UP(site.fullName)} · LEIDEN, NL`, S.small, { key: 'foot-copy' }),
-    text(made, S.small, { key: 'foot-count', a11y: false }),
+    link({ key: 'foot-count', label: made, href: '/colophon/', hover: hv('foot-count'), aria: 'How this site is made' }),
     link({ key: 'foot-top', label: 'BACK TO TOP ↑', action: 'top', hover: hv('foot-top'), aria: 'Back to top' }),
   ];
   return col([
@@ -487,6 +488,92 @@ function menu(state, S) {
   ]);
 }
 
+// ---------------------------------------------------------------- colophon
+
+/** A colour sample: paper is an empty frame, ink and the light are solid blocks. */
+function swatch(key, tone, size) {
+  return custom((w, ctx) => {
+    const q = Math.min(size, Math.floor(w / 4) * 4);
+    const blocks = tone === 0 ? frameBlocks(q, q) : fillBlocks(q, q, 4, 0, tone);
+    return { w: q, h: q, els: [ctx.el({ key, sig: `sw|${tone}|${q}`, w: q, h: q, blocks })] };
+  });
+}
+
+/** One frame of the logo, held still in a box. */
+function markFrame(k, cell) {
+  return custom((w, ctx) => {
+    const f = iconFrames('logo', cell);
+    const pad = cell * 2, W = f.w + pad * 2, H = f.h + pad * 2;
+    const ic = ctx.el({ key: `cf-mark-${k}`, sig: `mark|${k}|${cell}`, w: f.w, h: f.h, blocks: f.frames[k], motion: 'icon' });
+    ic.x = pad; ic.y = pad;
+    return { w: W, h: H, els: [ctx.el({ key: `cf-mark-${k}:frame`, sig: `frame|${W}|${H}`, w: W, h: H, blocks: frameBlocks(W, H) }), ic] };
+  });
+}
+
+function colophonPage(state, S) {
+  const hv = (k) => state.hover === k;
+  const C = colophon;
+  const para = (str, key) => maxw(720, text(str, S.body, { key, mt: S.sp(3) }));
+  const q = S.mobile ? 64 : 88;
+  const sample = (key, tone, name, lines) => col([
+    swatch(key, tone, q),
+    text(name, S.label, { key: `${key}:n`, mt: S.sp(1) }),
+    text(lines.join('\n'), S.small, { key: `${key}:h`, mt: 6 }),
+  ]);
+  const D = THEMES.dark;
+  const scale = S.mobile ? [2, 3, 4, 6] : [2, 4, 6, 8];
+  const files = C.downloads.map((d, i) => {
+    const key = `dl-${i}`;
+    return pressRow({
+      key, href: d.href, download: true, hover: hv(key), label: `Download ${d.label.toLowerCase()} (${d.kind})`,
+      content: (tone, z) => row([
+        { ...text(d.label, S.h3, { key: `${key}:l`, tone, z, a11y: false }), grow: true },
+        S.mobile ? null : text(d.kind, S.small, { key: `${key}:k`, tone: tone ? 0.55 : 0, z, a11y: false }),
+        text('↓', S.body, { key: `${key}:a`, tone, z, a11y: false }),
+      ], { gap: S.sp(2), valign: 'center' }),
+    });
+  });
+  return col([
+    pageHead(S, 'COLOPHON', 'HOW THIS SITE IS MADE.', { h1: 'Colophon — how this site is made', intro: C.intro }),
+
+    ...section(S, 'colour', 'COLOUR'),
+    para(C.colour, 'cf-colour'),
+    { ...grid([
+      sample('sw-paper', 0, 'PAPER', [UP(THEMES.light.bg), `DARK ${UP(D.bg)}`]),
+      sample('sw-ink', 1, 'INK', [UP(THEMES.light.fg), `DARK ${UP(D.fg)}`]),
+    ], { cols: S.mobile ? 2 : 7, gap: S.sp(2) }), mt: S.sp(4) },
+    { ...grid(SPECTRUM.map((h, k) => sample(`sw-${k}`, 2 + k, COLOURS[k], [UP(h)])), { cols: S.mobile ? 3 : 7, gap: S.sp(2), rowGap: S.sp(3) }), mt: S.sp(4) },
+
+    ...section(S, 'type', 'TYPE'),
+    para(C.type, 'cf-type'),
+    col(C.specimen.map((l, i) => text(l, S.mobile ? S.body : S.h2, { key: `cf-spec-${i}`, mt: i ? S.sp(1) : 0 })), { mt: S.sp(4) }),
+    { ...row(scale.map((size) => col([
+      text('Aa', { size, lh: 10 }, { key: `cf-aa-${size}`, a11y: false }),
+      text(`${size * 10}PX`, S.small, { key: `cf-aa-${size}:l`, mt: S.sp(1) }),
+    ])), { gap: S.sp(4), valign: 'bottom', wrap: true, rowGap: S.sp(3) }), mt: S.sp(4) },
+
+    ...section(S, 'mark', 'THE MARK'),
+    para(C.mark, 'cf-mark'),
+    { ...grid(C.frames.map((f, k) => col([
+      markFrame(k, S.mobile ? 6 : 8),
+      text(f.label, S.label, { key: `cf-frame-${k}`, mt: S.sp(2) }),
+      text(f.text, S.body, { key: `cf-frame-${k}:t`, tone: 0.55, mt: 6 }),
+    ])), { cols: S.mobile ? 2 : 5, gap: S.sp(2), rowGap: S.sp(4) }), mt: S.sp(4) },
+
+    ...section(S, 'motion', 'MOTION AND LIGHT'),
+    para(C.motion, 'cf-motion'),
+
+    ...section(S, 'build', "HOW IT'S BUILT"),
+    col(C.build.map((b, i) => row([
+      text('→', S.body, { key: `cf-build-${i}:a`, a11y: false }),
+      { ...maxw(720, text(b, S.body, { key: `cf-build-${i}` })), grow: true },
+    ], { gap: 12, mt: i ? S.sp(2) : 0 })), { mt: S.sp(3) }),
+
+    ...section(S, 'files', 'DOWNLOADS'),
+    ...files,
+  ]);
+}
+
 // 404: a small Baba Is You-style puzzle (src/puzzle.js), with a plain way out.
 function notFound(state, S) {
   const hv = (k) => state.hover === k;
@@ -513,7 +600,7 @@ function notFound(state, S) {
   return row([{ ...col([...intro, ...help]), grow: true }, { ...play, basis: boardWidth(1e4) }], { gap: S.sp(6) });
 }
 
-const PAGES = { home, work, project, services: servicesPage, about: aboutPage, cv: cvPage, contact, notFound, roadbook: roadbookPage };
+const PAGES = { home, work, project, services: servicesPage, about: aboutPage, cv: cvPage, contact, colophon: colophonPage, notFound, roadbook: roadbookPage };
 
 export function buildScene(state, vp) {
   const S = tokens(vp.w);

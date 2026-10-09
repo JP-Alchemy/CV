@@ -6,9 +6,11 @@
 // cast shadows), sprinklers drip, planters sow and agents walk the ground
 // harvesting. Pure logic: garden/mode.js drives and draws it.
 
+import { COLOURS } from '../brand.js';
+
 export const CELL = 4;
 export const K = { EMPTY: 0, SAND: 1, WATER: 2, SEED: 3, ROOT: 4, STEM: 5, LEAF: 6, BUD: 7, PETAL: 8, DEAD: 9, INK: 10, ACCENT: 11, GLOW: 12 };
-export const COLOURS = ['RED', 'ORANGE', 'YELLOW', 'GREEN', 'CYAN', 'BLUE', 'VIOLET'];
+export { COLOURS };
 export const PRIMARY = [0, 2, 5]; // red, yellow and blue: always in stock
 
 // What each colour likes, from dry and sunny (red) to wet and shady (violet).

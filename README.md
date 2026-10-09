@@ -11,6 +11,7 @@ npm install
 npm run dev        # http://localhost:5173
 npm run build      # static site in dist/ (vite build + prerender)
 npm run preview    # serve dist/ locally
+npm run font       # the pixel font as files, in brand/fonts/ (to install on your own machine)
 ```
 
 Debug: append `?slow=5` to the URL to run every animation 5× slower.
@@ -20,24 +21,32 @@ Debug: append `?slow=5` to the URL to run every animation 5× slower.
 - **Copy, projects, services, CV, links**: all in [`src/content.js`](src/content.js). Display copy is upper-case (it's set in the pixel font); body copy is normal sentence case.
 - **Email**: `site.email` is `null`, so the contact page leads with LinkedIn. Set it to an address to show it with a copy button.
 - **Images**: each project has `image: { kind: 'terrain' }` (procedural: `moon`, `terrain`, `waves`, `duck`, `cyber`, `switchbacks`, `pose`, `cubes`, `rings`, `bars`, `globe`, `portrait`, `orb`). For real images, put files in `public/images/` and use `image: { src: '/images/photo.jpg' }`; they are halftoned into blocks automatically (and re-toned for dark mode).
-- **Case studies**: a project can add `sections` under its body. Each section has a `title` and any of `text` (a paragraph), `items` (a grid of `{ lead, text }`; `cols` sets the columns), `stats` (big numbers, `{ value, label }`), `steps` (a numbered story), `gallery` (screenshots, `{ src, alt, caption }`) and `note` (a closing paragraph). Optional `line` (short one-liner for home rows), `seoTitle`, `ogImage` and `schema` (extra JSON-LD, e.g. `VideoGame`).
+- **Case studies**: a project can add `sections` under its body. Each section has a `title` and any of `text` (a paragraph), `items` (a grid of `{ lead, text }`; `cols` sets the columns), `stats` (big numbers, `{ value, label }`), `steps` (a numbered story), `gallery` (screenshots, `{ src, alt, caption }`) and `note` (a closing paragraph). Optional `line` (short one-liner for home rows), `seoTitle` and `schema` (extra JSON-LD, e.g. `VideoGame`).
 - **Photo treatment**: image specs accept `levels: [black, white]` (contrast), `cutout: { warm }` (drop a neutral grey backdrop, keeping warm skin and clothes, as on the About portrait), `minInk` / `darkMaxInk` (tone limits for the subject), and `lumaInk` (for dark-background images such as game art, so bright subjects become the blocks). Pass `style: 'dither'` and a small `cell` for a 1-bit look.
 - **Pages / layout**: [`src/scene.js`](src/scene.js) builds each page from small layout nodes (`text`, `col`, `row`, `grid`, `button`, `image`, `icon` …).
 - **Titles, descriptions, structured data**: [`src/seo.js`](src/seo.js).
 - **Icons**: the looping pixel icons (including the nav logo) are ASCII frames in [`src/icons.js`](src/icons.js).
-- **Colours**: `THEMES` in [`src/main.js`](src/main.js) and the matching CSS variables in [`src/style.css`](src/style.css).
+- **The brand**: paper and ink for both themes, the seven colours of the light, the dot grid and the font's name are all in [`src/brand.js`](src/brand.js), and everything reads them from there: the CSS variables, theme colour, favicon and `@font-face` (written into every page's `<head>` by [`vite.config.js`](vite.config.js)), the shaders, the link preview cards, the font files and the brand kit scripts. The rules themselves are written up at [`/colophon/`](src/scene.js).
 
 ## SEO and deploying
 
-The site uses real paths (`/work/`, `/work/interfarm/`, `/services/`, `/about/`, `/cv/`, `/contact/`). Old `#/…` links redirect to them.
+The site uses real paths (`/work/`, `/work/interfarm/`, `/services/`, `/about/`, `/cv/`, `/contact/`, `/colophon/`). Old `#/…` links redirect to them.
 
 `npm run build` runs [`scripts/prerender.mjs`](scripts/prerender.mjs) after Vite, which writes for every route a real `dist/<path>/index.html` with:
 
 - its own `<title>`, meta description, canonical URL, Open Graph and Twitter tags,
 - JSON-LD (`WebSite` + `Person` everywhere; `ProfessionalService` with rates on home/services; `ProfilePage` on about; `CreativeWork` + breadcrumbs on projects),
-- a plain semantic-HTML copy of the page, which is what crawlers and link previews read and what no-JS / no-WebGL visitors see. It's also what prints, so the CV's "Print / save as PDF" produces a clean document.
+- a plain semantic-HTML copy of the page, which is what crawlers and link previews read and what no-JS / no-WebGL visitors see. It's set in the site's pixel font (below) at whole-pixel sizes, and it's also what prints, so the CV's "Print / save as PDF" produces a clean document in the same type, with the text still selectable.
 
-It also writes `404.html` (noindex), `sitemap.xml`, `robots.txt`, a pixel-style `og-image.png` share card and `apple-touch-icon.png`, all generated from the same font and halftone code. The Google Search Console verification tag from the previous site is kept in `index.html`.
+It also writes `404.html` (noindex), `sitemap.xml`, `robots.txt`, `apple-touch-icon.png` and a link preview card for every page: `og-image.png` for home and `og/<page>.png` for the rest (`og/work-<slug>.png` for projects). [`scripts/cards.mjs`](scripts/cards.mjs) draws each from the `card` in its page's entry in [`src/seo.js`](src/seo.js): the eyebrow and title in the pixel font, a line of text, the page's own picture in blocks (photos come from PNG copies in `brand/source/`, since Node can't decode JPEG), the mark, and the click light crossing one corner. The Google Search Console verification tag from the previous site is kept in `index.html`.
+
+### The font
+
+[`scripts/font.mjs`](scripts/font.mjs) turns the bitmap font in [`src/engine/font.js`](src/engine/font.js) into real font files, JP Pixel Regular and Bold, as TrueType and WOFF. Each lit pixel is a 100-unit square, merged into clean outlines, and an em is 10 pixels, so the type is crisp at 10px, 20px, 30px and so on. Spacing is the typesetter's: one pixel after each letter, four between words. Bold is the site's bold (the glyph again, one pixel to the right), except lowercase m and w, which would close up, so they're drawn wider. The build serves them from `/fonts/` (the plain-HTML copy and print use them) and the colophon offers the TTFs for download; `npm run font` writes them to `brand/fonts/` to install locally.
+
+### Colophon
+
+[`/colophon/`](src/scene.js) writes the brand down, drawn by the engine itself: the colours (as real swatches), the type with a specimen and size scale, the logo's five frames and what they stand for, motion and light, how the site is built, and downloads of the font, the mark (`/brand/jp-mark.svg`), the LinkedIn banner and the profile picture. The copy is `colophon` in [`src/content.js`](src/content.js). The footer's block count on every page links to it.
 
 `dist/` works on any static host with no rewrite rules: each route is a real file and unknown paths fall back to `404.html`. This repo deploys to GitHub Pages on every push to `main` ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)), served at **jpbothma.com** (`public/CNAME`).
 
@@ -59,7 +68,12 @@ Unknown addresses land on a small puzzle after *Baba Is You* ([`src/puzzle.js`](
 
 `npm run banner` draws `brand/linkedin-banner-light.png` and `-dark.png` (1584 × 396, LinkedIn's size) from the site's own parts: the pixel font, the logo's five states, the halftone moon and the click light, set off by a pixel cursor that pushes the moon's blocks aside. The lower left stays clear for the profile photo. `node scripts/banner.mjs --preview <dir>` also writes copies with the photo drawn where LinkedIn puts it, on desktop and in the app.
 
-`npm run profile` draws the matching profile picture, `brand/linkedin-profile-light.png` and `-dark.png` (1200 × 1200). It uses the About portrait's settings (cut-out, levels, 1-bit dither), with the face sharp and the shoulders still assembling in coarser halftone blocks, and the click light crossing one of them. Every block is a multiple of 3px, so LinkedIn's 400px copy matches the site pixel for pixel. Its source is `brand/source/jp-portrait.png`, a lossless copy of the About photo. `--preview <dir>` writes circle-cropped copies.
+`npm run profile` draws the matching profile pictures (1200 × 1200, light and dark), one pair per photo in `PHOTOS` in [`scripts/profile.mjs`](scripts/profile.mjs): the face sharp in a 1-bit dither, the edges still assembling in coarser halftone blocks, and the click light crossing them. Every block is a multiple of 3px, so LinkedIn's 400px copy matches the site pixel for pixel.
+
+- `portrait` → `brand/linkedin-profile-light.png` / `-dark.png`, from `brand/source/jp-portrait.png` (a lossless copy of the About photo), cut out by warmth with the About page's settings.
+- `side` → `brand/linkedin-profile-side-light.png` / `-dark.png`, from `brand/source/jp-side.png`. Its background is as warm as the coat, so it's cut out with `brand/source/jp-side-mask.png`, made by macOS's subject lifting: `swift scripts/mask.swift <photo> <mask>`. Ellipses in `add` patch in anything the mask missed (here, the top knot).
+
+`node scripts/profile.mjs side` draws just one; `--preview <dir>` also writes circle-cropped copies.
 
 ### The roadbook
 
@@ -69,7 +83,8 @@ Unknown addresses land on a small puzzle after *Baba Is You* ([`src/puzzle.js`](
 
 | File | Role |
 | --- | --- |
-| `src/engine/font.js` | Proportional 5×7 bitmap font (with lowercase/descenders). Each lit pixel becomes one block. |
+| `src/brand.js` | The brand's colours, grid and font name, in one place. |
+| `src/engine/font.js` | Proportional 5×7 bitmap font (with lowercase/descenders). Each lit pixel becomes one block; `scripts/font.mjs` makes it a font file. |
 | `src/engine/typeset.js` | Word-wraps strings into blocks. |
 | `src/engine/layout.js` | Tiny layout system: node tree → elements, each with a stable `key`, a content `sig` and its blocks. |
 | `src/engine/images.js` | Procedural images + photo sampling → halftone / ordered-dither blocks. |
@@ -95,7 +110,7 @@ It is stateless — a pure function of the impulses — so it composes with morp
 
 ### Click light
 
-Each click (or tap) sends a ring of light out from the pointer. Blocks and grid dots inside the ring take one flat colour from a 7-step spectrum — red on the leading edge through to violet on the trailing edge — with brightness quantised and dithered per pixel, so it reads as lit pixels rather than a gradient; lit grid dots swell from 2px up to 8px. The ring fades with distance and time (~1.5s). Up to four pulses overlap. Tuning: `pulseSpeed` / `pulseWidth` in `src/main.js`, the palette and falloff in `LIGHT_GLSL` in `src/engine/renderer.js`.
+Each click (or tap) sends a ring of light out from the pointer. Blocks and grid dots inside the ring take one flat colour from a 7-step spectrum — red on the leading edge through to violet on the trailing edge — with brightness quantised and dithered per pixel, so it reads as lit pixels rather than a gradient; lit grid dots swell from 2px up to 8px. The ring fades with distance and time (~1.5s). Up to four pulses overlap. Tuning: `pulseSpeed` / `pulseWidth` in `src/main.js`, the palette in `src/brand.js`, the falloff in `LIGHT_GLSL` in `src/engine/renderer.js`.
 
 ## Accessibility
 

@@ -8,7 +8,8 @@
     "build": "vite build && node scripts/prerender.mjs",
     "preview": "vite preview",
     "banner": "node scripts/banner.mjs",
-    "profile": "node scripts/profile.mjs"
+    "profile": "node scripts/profile.mjs",
+    "font": "node scripts/font.mjs"
   },
   "devDependencies": {
     "vite": "^6.3.5"

@@ -4,10 +4,10 @@
 //   /                home
 //   /work/           project index
 //   /work/:slug/     project
-//   /services/, /about/, /cv/, /contact/
+//   /services/, /about/, /cv/, /contact/, /colophon/
 //   /projects/moto-tour/  the motorcycle roadbook (address kept from the old site)
 
-export const PAGES = ['work', 'services', 'about', 'cv', 'contact'];
+export const PAGES = ['work', 'services', 'about', 'cv', 'contact', 'colophon'];
 
 export function parseRoute(pathname = location.pathname) {
   const parts = pathname.split('/').filter(Boolean);

@@ -4,10 +4,11 @@
 // at runtime it keeps <head> in sync and backs the print view of the CV.
 
 import {
-  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills,
+  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills, colophon,
 } from './content.js';
-import { parseRoute } from './router.js';
+import { parseRoute, PAGES } from './router.js';
 import { book, tripStats, gpxFile, eur, ROADBOOK_PATH } from './roadbook.js';
+import { THEMES, SPECTRUM, COLOURS, FONT } from './brand.js';
 
 const BASE = site.url.replace(/\/$/, '');
 const OG_IMAGE = `${BASE}/og-image.png`;
@@ -15,7 +16,7 @@ const OG_IMAGE = `${BASE}/og-image.png`;
 const months = (s) => s.replace(/[A-Z]{3,}/g, (w) => w[0] + w.slice(1).toLowerCase()); // MAR 2024 — NOW -> Mar 2024 — Now
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 // Upper-case display copy -> readable sentence case, keeping acronyms intact.
-const KEEP = { '3D': '3D', AI: 'AI', XR: 'XR', ESG: 'ESG', CTO: 'CTO', CV: 'CV', EU: 'EU', NL: 'NL', WEBGL: 'WebGL', BSC: 'BSc', 'OT/ICS': 'OT/ICS' };
+const KEEP = { '3D': '3D', AI: 'AI', XR: 'XR', ESG: 'ESG', CTO: 'CTO', CV: 'CV', EU: 'EU', NL: 'NL', WEBGL: 'WebGL', BSC: 'BSc', 'OT/ICS': 'OT/ICS', JP: 'JP', LINKEDIN: 'LinkedIn' };
 const sentence = (s) => s.split(' ').map((w, i) => {
   const k = KEEP[w.replace(/[^\w/]/g, '')];
   if (k) return w.replace(/[\w/]+/, k);
@@ -25,14 +26,27 @@ const sentence = (s) => s.split(' ').map((w, i) => {
 
 export const allRoutes = () => [
   parseRoute('/'),
-  ...['work', 'services', 'about', 'cv', 'contact'].map((p) => parseRoute(`/${p}/`)),
+  ...PAGES.map((p) => parseRoute(`/${p}/`)),
   ...projects.map((p) => parseRoute(`/work/${p.slug}/`)),
   parseRoute(ROADBOOK_PATH),
 ];
 
 // ---------------------------------------------------------------- meta
 
+/** Where a page's link preview lives; scripts/cards.mjs draws them at build time. */
+export const cardPath = (route) => (route.name === 'home' || route.name === 'notFound'
+  ? '/og-image.png'
+  : `/og/${route.name === 'project' ? `work-${route.slug}` : route.name}.png`);
+
+/** Title, description and link preview for a route. `card` is what the preview says. */
 export function pageMeta(route) {
+  return { image: `${BASE}${cardPath(route)}`, imageW: 1200, imageH: 630, ...describe(route) };
+}
+
+// The About portrait as an image spec (the photo and its cut-out and levels).
+const { alt: _alt, style: _style, cell: _cell, gamma: _gamma, ...PORTRAIT } = site.portrait;
+
+function describe(route) {
   const url = `${BASE}${route.path}`;
   const p = route.name === 'project' && projects.find((x) => x.slug === route.slug);
   const base = { url, type: 'website' };
@@ -41,31 +55,67 @@ export function pageMeta(route) {
       ...base,
       title: 'JP Bothma — Creative Technologist in Leiden | 3D, Data & AI',
       description: 'Creative technologist in Leiden, NL. I build interactive 3D experiences, legible data visualisation, AI agents and sustainable software — thoughtfully.',
+      card: {
+        eyebrow: 'CREATIVE TECHNOLOGIST · LEIDEN, NL', title: 'JP BOTHMA', size: 13, text: site.tagline.toUpperCase(), textSize: 5,
+        note: 'INTERACTIVE 3D · DATA · AI AGENTS · SUSTAINABILITY', picture: { image: { kind: 'moon' } },
+      },
     };
     case 'work': return {
       ...base,
       title: 'Work — Interactive, Data & Sustainability Projects | JP Bothma',
       description: "Selected projects by JP Bothma: Interfood's Interfarm CO₂-reduction platform, the Where does my food come from? globe, SwarmFort.io, nezen.io and more.",
+      card: {
+        eyebrow: 'WORK', title: 'SELECTED PROJECTS', text: 'Day-job platforms, client work and small gifts hung along the path.',
+        picture: { mosaic: projects.slice(0, 4).map((x) => x.image) },
+      },
     };
     case 'services': return {
       ...base,
       title: 'Services & Rates — 3D, Data, AI Agents, Fractional CTO | JP Bothma',
       description: 'Interactive 3D and WebGL, data visualisation, AI agents and workflow automation, sustainability engineering and fractional CTO work. Leiden-based, EU and global.',
+      card: {
+        eyebrow: 'SERVICES & RATES', title: "COME IN, LET'S TALK WORK.",
+        text: 'Interactive 3D, data visualisation, AI agents, sustainability engineering and fractional CTO work.',
+        picture: { icons: [...services.map((x) => x.icon), 'shield'] },
+      },
     };
     case 'about': return {
       ...base,
       title: 'About JP Bothma — Creative Technologist & Tech Lead',
       description: 'South African creative technologist in Leiden. 10+ years shipping software across sustainability, AI, FinTech, XR and IoT — less newest thing, more right thing.',
+      card: {
+        eyebrow: 'ABOUT', title: 'WHERE CREATIVITY MEETS IMPACT.',
+        text: 'South African creative technologist in Leiden. Less newest thing, more right thing.',
+        picture: { image: PORTRAIT, style: 'dither', gamma: site.portrait.gamma },
+      },
     };
     case 'cv': return {
       ...base,
       title: 'CV — Tech Lead & Creative Technologist | JP Bothma',
       description: 'Hands-on tech lead with 10+ years shipping products across sustainability, AI, FinTech, XR and IoT. Currently Tech Lead of Sustainability at Interfood.',
+      card: {
+        eyebrow: 'CURRICULUM VITAE', title: cv.title.toUpperCase(),
+        text: 'Hands-on tech lead with 10+ years shipping products across sustainability, AI, FinTech, XR and IoT.',
+        picture: { image: PORTRAIT },
+      },
     };
     case 'contact': return {
       ...base,
       title: 'Contact JP Bothma — Projects, Partnerships & Roles',
       description: 'A project, a partnership or a thoughtful question? Say hello. Based in Leiden (CET), working with teams across the EU and beyond.',
+      card: {
+        eyebrow: 'CONTACT', title: 'PASS THROUGH. SAY HELLO.', text: 'A project, a partnership or a thoughtful question: my inbox is genuinely open.',
+        picture: { mark: 4 },
+      },
+    };
+    case 'colophon': return {
+      ...base,
+      title: 'Colophon — How This Site Is Made, in Pixel Blocks | JP Bothma',
+      description: `How jpbothma.com is made: square pixel blocks, one WebGL2 draw call, the ${FONT.family} font and colour only as light. The rules, the parts and the files.`,
+      card: {
+        eyebrow: 'COLOPHON', title: 'HOW THIS SITE IS MADE.', text: 'One material: square blocks of ink on a dot grid. Colour only shows up as light, when something happens.',
+        picture: { mark: 0 },
+      },
     };
     case 'roadbook': {
       const st = tripStats();
@@ -74,7 +124,11 @@ export function pageMeta(route) {
         type: 'article',
         title: 'Roadbook — Leiden to the Alps by Motorcycle, 24 Aug – 4 Sep 2026 | JP Bothma',
         description: `A twelve-day solo motorcycle roadbook: Leiden to the Alps and back. Eleven nights, ${st.km.toLocaleString('en-GB')} km, ${st.passes} passes, every bed and euro accounted for, with GPX routes.`,
-        image: `${BASE}/images/dolomites.jpg`, imageW: 552, imageH: 420,
+        card: {
+          eyebrow: 'ROADBOOK · 24 AUG – 4 SEP 2026', title: 'LEIDEN → THE ALPS → LEIDEN',
+          text: `Eleven nights, ${st.km.toLocaleString('en-GB')} km and ${st.passes} passes, solo. Every bed and euro accounted for, with GPX routes.`,
+          picture: { image: { kind: 'switchbacks' } },
+        },
       };
     }
     case 'project':
@@ -85,7 +139,10 @@ export function pageMeta(route) {
           type: 'article',
           title: p.seoTitle || `${p.name} — ${p.tags.slice(0, 2).map(sentence).join(' & ')} | JP Bothma`,
           description: p.summary.length + by.length < 158 ? `${p.summary} ${by}` : p.summary,
-          ...(p.ogImage ? { image: `${BASE}${p.ogImage.src}`, imageW: p.ogImage.w, imageH: p.ogImage.h } : {}),
+          card: {
+            eyebrow: `WORK · ${p.tags[0]}`, title: p.title, text: p.summary,
+            picture: { image: p.image, style: p.image.style, gamma: p.image.gamma },
+          },
         };
       }
     // fall through
@@ -217,7 +274,7 @@ export function headTags(route) {
     `<meta property="og:image" content="${img}" />`,
     `<meta property="og:image:width" content="${m.imageW || 1200}" />`,
     `<meta property="og:image:height" content="${m.imageH || 630}" />`,
-    `<meta property="og:image:alt" content="${esc(site.fullName)} — creative technologist" />`,
+    `<meta property="og:image:alt" content="${esc(m.title)}" />`,
     '<meta property="og:locale" content="en_GB" />',
     '<meta name="twitter:card" content="summary_large_image" />',
     `<meta name="twitter:creator" content="${site.twitter}" />`,
@@ -397,6 +454,30 @@ const BODIES = {
     <ul class="list">${links.map((l) => `<li>${a(l.href, `${sentence(l.label)} ↗`, true)}</li>`).join('')}</ul>
     <p class="muted">Based in Leiden (CET) · usually back within a day · EU &amp; global.</p>`,
 
+  colophon: () => `
+    <p class="eyebrow">Colophon</p>
+    <h1>How this site is made</h1>
+    <p class="lead">${esc(colophon.intro)}</p>
+    <h2>Colour</h2>
+    <p>${esc(colophon.colour)}</p>
+    <ul class="list">
+      <li>Paper ${THEMES.light.bg} <span class="muted">· ${THEMES.dark.bg} in the dark</span></li>
+      <li>Ink ${THEMES.light.fg} <span class="muted">· ${THEMES.dark.fg} in the dark</span></li>
+      ${SPECTRUM.map((h, k) => `<li>${sentence(COLOURS[k])} ${h}</li>`).join('')}
+    </ul>
+    <h2>Type</h2>
+    <p>${esc(colophon.type)}</p>
+    ${colophon.specimen.map((l) => `<p>${esc(l)}</p>`).join('')}
+    <h2>The mark</h2>
+    <p>${esc(colophon.mark)}</p>
+    <ul>${colophon.frames.map((f) => `<li><strong>${esc(sentence(f.label))}.</strong> ${esc(f.text)}</li>`).join('')}</ul>
+    <h2>Motion and light</h2>
+    <p>${esc(colophon.motion)}</p>
+    <h2>How it's built</h2>
+    <ul>${colophon.build.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>
+    <h2>Downloads</h2>
+    <ul class="list">${colophon.downloads.map((d) => `<li><a href="${esc(d.href)}" download>${esc(sentence(d.label))}</a> <span class="muted">${esc(d.kind)}</span></li>`).join('')}</ul>`,
+
   notFound: () => `
     <h1>Page not found</h1>
     <p>These blocks did not assemble into anything. ${a('/', 'Back home →')}</p>`,
@@ -411,5 +492,5 @@ export function pageHTML(route) {
   <nav class="static-nav" aria-label="Site">${nav}</nav>
   <main>${body}
   </main>
-  <footer><p class="muted">© 2026 ${esc(site.fullName)} · Leiden, Netherlands · ${links.map((l) => a(l.href, sentence(l.label), true)).join(' · ')}</p></footer>`;
+  <footer><p class="muted">© 2026 ${esc(site.fullName)} · Leiden, Netherlands · ${links.map((l) => a(l.href, sentence(l.label), true)).join(' · ')} · ${a('/colophon/', 'How this site is made')}</p></footer>`;
 }

@@ -82,6 +82,16 @@ export const ICONS = {
 };
 
 /**
+ * The mark: the logo at rest (JP) as an SVG, for the favicon and the brand kit.
+ * With `dark`, it switches colour when the browser around it is dark.
+ */
+export function markSVG({ fill, dark } = {}) {
+  const d = ICONS.logo[0].flatMap((r, y) => [...r].map((c, x) => (c === '#' ? `M${x} ${y}h1v1h-1z` : ''))).join('');
+  const style = dark ? `<style>path{fill:${fill}}@media (prefers-color-scheme:dark){path{fill:${dark}}}</style>` : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7 5" shape-rendering="crispEdges">${style}<path${dark ? '' : ` fill="${fill}"`} d="${d}"/></svg>`;
+}
+
+/**
  * Build equal-length block frames for an icon so frame k -> k+1 maps 1:1.
  * Frames with fewer squares duplicate some (overlapping squares are invisible).
  */

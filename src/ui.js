@@ -222,7 +222,7 @@ export function pressRow(o) {
       r.y = H;
       els.push(r);
     }
-    els.push(ctx.el({ key: o.key, w, h: H, hit: { href: o.href, action: o.action, label: o.label, external: o.external, expanded: o.expanded } }));
+    els.push(ctx.el({ key: o.key, w, h: H, hit: { href: o.href, action: o.action, label: o.label, external: o.external, download: o.download, expanded: o.expanded } }));
     return { w, h: H + 2, els };
   }, o);
 }

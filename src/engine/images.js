@@ -323,6 +323,41 @@ export function loadPhoto(src, onload) {
   return entry;
 }
 
+/** Decoded pixels ({ w, h, px: RGBA }) for a src, for build scripts that have no <img>. */
+export function setPhoto(src, rgba) {
+  photoCache.set(src, { img: null, rgba, ready: true });
+}
+
+/** Cover-fit into cols x rows, as RGBA: averaged pixels, or the browser's resampling. */
+function fitPixels(entry, cols, rows) {
+  const src = entry.rgba;
+  if (!src) {
+    const c = document.createElement('canvas');
+    c.width = cols; c.height = rows;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    const iw = entry.img.naturalWidth, ih = entry.img.naturalHeight;
+    const s = Math.max(cols / iw, rows / ih);
+    const dw = iw * s, dh = ih * s;
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(entry.img, (cols - dw) / 2, (rows - dh) / 2, dw, dh);
+    return g.getImageData(0, 0, cols, rows).data;
+  }
+  const s = Math.max(cols / src.w, rows / src.h);
+  const ox = (src.w - cols / s) / 2, oy = (src.h - rows / s) / 2;
+  const out = new Uint8ClampedArray(cols * rows * 4);
+  for (let j = 0; j < rows; j++) {
+    const y0 = Math.floor(oy + j / s), y1 = Math.max(y0 + 1, Math.floor(oy + (j + 1) / s));
+    for (let i = 0; i < cols; i++) {
+      const x0 = Math.floor(ox + i / s), x1 = Math.max(x0 + 1, Math.floor(ox + (i + 1) / s));
+      const acc = [0, 0, 0, 0];
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) for (let k = 0; k < 4; k++) acc[k] += src.px[(y * src.w + x) * 4 + k];
+      const n = (y1 - y0) * (x1 - x0);
+      for (let k = 0; k < 4; k++) out[(j * cols + i) * 4 + k] = acc[k] / n;
+    }
+  }
+  return out;
+}
+
 const sampleCache = new Map();
 
 /** Darkness grid (cols x rows), supersampled. */
@@ -335,16 +370,7 @@ export function sample(spec, cols, rows, ar, dark = false) {
   if (spec.src) {
     const entry = loadPhoto(spec.src, spec.onload);
     if (!entry.ready) return null;
-    const c = document.createElement('canvas');
-    c.width = cols; c.height = rows;
-    const g = c.getContext('2d', { willReadFrequently: true });
-    // cover-fit
-    const iw = entry.img.naturalWidth, ih = entry.img.naturalHeight;
-    const s = Math.max(cols / iw, rows / ih);
-    const dw = iw * s, dh = ih * s;
-    g.imageSmoothingQuality = 'high';
-    g.drawImage(entry.img, (cols - dw) / 2, (rows - dh) / 2, dw, dh);
-    const d = g.getImageData(0, 0, cols, rows).data;
+    const d = fitPixels(entry, cols, rows);
     // Optional cut-out: keep warm pixels (skin, hair, clothes) and drop a
     // neutral grey backdrop, then clean the mask with a 3x3 majority vote.
     let mask = null;

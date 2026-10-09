@@ -133,9 +133,13 @@ const RAW = {
   '₂': ['...', '...', '...', '...', '##.', '..#', '.#.', '###'],
 };
 
-const ALIAS = {
+// Typographic stand-ins, drawn with the plain glyphs.
+export const ALIAS = {
   '’': "'", '‘': "'", '“': '"', '”': '"', '−': '-', '…': '...',
 };
+
+/** Every character the font draws (scripts/font.mjs turns them into a font file). */
+export const CHARS = Object.keys(RAW);
 
 export const SPACE = 3; // width of a space in font pixels
 export const CAP = 7; // cap height in font pixels

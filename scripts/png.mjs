@@ -1,5 +1,6 @@
 // Tiny RGBA canvas + PNG encoder (no dependencies) for build-time images.
 import zlib from 'node:zlib';
+import * as brand from '../src/brand.js';
 
 const CRC = new Int32Array(256).map((_, n) => {
   let c = n;
@@ -13,6 +14,10 @@ function crc32(buf) {
 }
 
 export const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+
+/** The brand's colours (src/brand.js) as 0-255 triples, for drawing. */
+export const THEMES = Object.fromEntries(Object.entries(brand.THEMES).map(([k, t]) => [k, { bg: hex(t.bg), fg: hex(t.fg), dots: t.dots }]));
+export const SPECTRUM = brand.SPECTRUM.map(hex);
 
 export class Raster {
   constructor(w, h, bg) {

@@ -6,6 +6,8 @@
 // portrait, orb). To use a real image, drop it in /public/images and use
 // `image: { src: '/images/name.jpg' }`.
 
+import { FONT } from './brand.js';
+
 export const site = {
   name: 'JP',
   fullName: 'JP Bothma',
@@ -125,7 +127,6 @@ export const projects = [
     line: 'A multiplayer .io fort battle. Grow a swarm of flies, hold the fort.',
     url: 'https://swarmfort.io/',
     image: { src: '/images/swarmfort-cover.jpg', lumaInk: true, levels: [0.3, 0.9] },
-    ogImage: { src: '/images/swarmfort-cover.jpg', w: 1200, h: 675 },
     schema: { '@type': 'VideoGame', gamePlatform: 'Web browser', playMode: 'MultiPlayer', genre: 'io game' },
     body: [
       'Eight players (people, with bots filling empty seats) each start at a fort on one shared map. Your toy fights the dust-bunny horde automatically, so moving is the main control. Kills drop gems and, sometimes, a fly for your swarm. Carry gems home to bank them, then spend them on levels, turrets, walls and a bigger swarm.',
@@ -484,3 +485,37 @@ export const skills = [
   { group: 'LEADERSHIP', items: ['Tech lead', 'CTO', 'Remote teams', 'Product strategy', 'Mentoring', 'Start-up advisory'] },
   { group: 'DOMAINS', items: ['Sustainability & ESG', 'FinTech & trading', 'Cybersecurity', 'IoT & embedded', 'EdTech & DRM'] },
 ];
+
+// The colophon (/colophon/): how the site is made, and the rules it keeps.
+export const colophon = {
+  intro: 'Everything here is made of one material: square blocks of ink on a dot grid. Colour only shows up as light, when something happens. These are the rules I keep, and the parts, in case you want to borrow any.',
+  colour: "Ink and paper do the work, and swap places in the dark. The seven colours only ever arrive as light: the ring that runs out from a click, a flower in the garden, the light crossing my profile picture. Outside this page, if something is coloured and nothing happened, it's a bug.",
+  type: `${FONT.family}: five blocks by seven, with lowercase, descenders and a bold that is the same letter again, one pixel to the right. Capitals for headings, sentence case for reading. Set it in whole pixels, 20px for text and 40px and up for headings, and it stays sharp. It's a real font file as well now, so print, slides and email can use it.`,
+  specimen: ['ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz', '0123456789 .,:;!?&@#%€ ← → ↑ ↓ ✓ ©'],
+  mark: "JP, seven blocks by five. In the nav it keeps changing its mind, and the frames are the job, more or less. At rest it's always JP: that's the favicon, and the file below.",
+  frames: [
+    { label: 'JP', text: 'Me.' },
+    { label: 'PROMPT', text: 'Build it.' },
+    { label: 'TARGET', text: 'Aim at the right thing, not the newest one.' },
+    { label: 'HEART', text: "Care how it's made." },
+    { label: 'SMILE', text: 'For people.' },
+  ],
+  motion: 'Nothing loads. When you change page, the blocks on both pages travel to their new places and the rest dissolve or arrive. Icons tumble between shapes and the pointer pushes text out of its way. Click anywhere and a ring of light runs out from it, red at the front and violet at the back. If your system asks for less motion, the blocks snap into place, the icons hold still and the light stays off.',
+  build: [
+    'One WebGL2 draw call. Every block on the page is an instance, and the GPU works out all the motion; the CPU only rewrites buffers when the page changes.',
+    'Real HTML under the canvas, positioned over each block, so links, keyboards and screen readers work.',
+    `Every page is also prerendered as plain HTML, set in ${FONT.family}, for search engines, link previews and print. Turn WebGL off and that's what you get.`,
+    'The letters are bitmaps in a JavaScript file. The same file builds the font, and the same parts draw the link previews, the LinkedIn banner and the profile pictures.',
+    'Press G for the garden: a falling-sand simulation that steps 60 times a second and draws as one texture. A wrong address gets you a word puzzle.',
+    'Vite and plain JavaScript, no framework. Hosted on GitHub Pages.',
+  ],
+  downloads: [
+    { label: `${FONT.family.toUpperCase()} REGULAR`, kind: 'TTF', href: `/fonts/${FONT.files.regular}.ttf` },
+    { label: `${FONT.family.toUpperCase()} BOLD`, kind: 'TTF', href: `/fonts/${FONT.files.bold}.ttf` },
+    { label: 'THE MARK', kind: 'SVG', href: '/brand/jp-mark.svg' },
+    { label: 'LINKEDIN BANNER, LIGHT', kind: 'PNG · 1584×396', href: '/brand/linkedin-banner-light.png' },
+    { label: 'LINKEDIN BANNER, DARK', kind: 'PNG · 1584×396', href: '/brand/linkedin-banner-dark.png' },
+    { label: 'PROFILE PICTURE, LIGHT', kind: 'PNG · 1200×1200', href: '/brand/linkedin-profile-side-light.png' },
+    { label: 'PROFILE PICTURE, DARK', kind: 'PNG · 1200×1200', href: '/brand/linkedin-profile-side-dark.png' },
+  ],
+};

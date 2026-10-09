@@ -15,6 +15,8 @@
 // their target — so a page pixelates, re-arranges as coarse squares, and
 // sharpens into the next page.
 
+import { SPECTRUM, unit } from '../brand.js';
+
 export const STRIDE = 24;
 export const FIXED = 1; // ignores scroll (nav)
 export const FLAT = 2; // no tumble/rounding while moving (large fills)
@@ -110,9 +112,7 @@ uniform vec4 u_pulse[${PULSES}]; // doc-space x, y; start time; strength
 uniform int u_pulseN;
 uniform float u_pulseSpeed;
 uniform float u_pulseWidth;
-const vec3 SPECTRUM[7] = vec3[7](
-  vec3(1.00, 0.27, 0.23), vec3(1.00, 0.58, 0.16), vec3(1.00, 0.86, 0.20), vec3(0.30, 0.86, 0.42),
-  vec3(0.20, 0.80, 0.95), vec3(0.25, 0.42, 1.00), vec3(0.62, 0.32, 1.00));
+const vec3 SPECTRUM[7] = vec3[7](${SPECTRUM.map((h) => `vec3(${unit(h).map((c) => c.toFixed(3)).join(', ')})`).join(', ')});
 float hashL(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * .1031);
   p3 += dot(p3, p3.yzx + 33.33);

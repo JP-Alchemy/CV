@@ -8,14 +8,9 @@ import { GENERATORS } from '../src/engine/images.js';
 import { ICONS } from '../src/icons.js';
 import { frameBlocks } from '../src/ui.js';
 import { site } from '../src/content.js';
-import { Raster, hex } from './png.mjs';
+import { Raster, THEMES, SPECTRUM } from './png.mjs';
 
 const W = 1584, H = 396, M = 48;
-const THEMES = {
-  light: { bg: hex('#f0f0eb'), fg: hex('#0e0e0e'), dots: 0.09 },
-  dark: { bg: hex('#0c0c0c'), fg: hex('#ebebe4'), dots: 0.12 },
-};
-const SPECTRUM = ['#ff453a', '#ff9429', '#ffdb33', '#4cdb6b', '#33ccf2', '#406bff', '#9e52ff'].map(hex);
 
 const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v);
 const fract = (v) => v - Math.floor(v);

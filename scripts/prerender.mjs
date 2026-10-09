@@ -1,16 +1,16 @@
 // Runs after `vite build`: writes one real HTML file per route (own title,
 // description, canonical, Open Graph, JSON-LD and a plain-HTML copy of the
-// page), plus 404.html, sitemap.xml, robots.txt and the share images.
+// page), plus 404.html, sitemap.xml, robots.txt, a link preview card per page
+// and the home-screen icon. (The font and brand kit come from vite.config.js.)
 import fs from 'node:fs';
 import path from 'node:path';
-import { allRoutes, headTags, pageHTML } from '../src/seo.js';
+import { allRoutes, headTags, pageHTML, pageMeta, cardPath } from '../src/seo.js';
 import { parseRoute } from '../src/router.js';
 import { site } from '../src/content.js';
 import { gpxFiles } from '../src/roadbook.js';
-import { typeset } from '../src/engine/typeset.js';
-import { imageBlocks } from '../src/engine/images.js';
 import { iconFrames } from '../src/icons.js';
-import { Raster, hex } from './png.mjs';
+import { Raster, THEMES } from './png.mjs';
+import { card } from './cards.mjs';
 
 const dist = path.resolve('dist');
 const template = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
@@ -46,44 +46,15 @@ write(path.join(dist, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${base
 
 // ---------------------------------------------------------------- share images
 
-const PAPER = hex('#f0f0eb');
-const INK = hex('#0e0e0e');
-const SPECTRUM = ['#ff453a', '#ff9429', '#ffdb33', '#4cdb6b', '#33ccf2', '#406bff', '#9e52ff'].map(hex);
+for (const route of routes) write(path.join(dist, cardPath(route)), card(pageMeta(route).card, route.path));
 
-function ogImage() {
-  const W = 1200, H = 630, M = 72;
-  const r = new Raster(W, H, PAPER);
-  const dot = PAPER.map((c, k) => Math.round(c + (INK[k] - c) * 0.09));
-  for (let y = 8; y < H; y += 16) for (let x = 8; x < W; x += 16) r.rect(x, y, 2, 2, dot);
-  const put = (str, size, x, y, width, tone = 1) => {
-    const t = typeset(str, { size, width, lh: 10, tone });
-    r.blocks(t.blocks, x, y, INK, PAPER);
-    return t.height;
-  };
-  put('■ CREATIVE TECHNOLOGIST · LEIDEN, NL', 3, M, 84, 900);
-  put('JP BOTHMA', 14, M, 150, 1000);
-  const sub = put('THOUGHTFUL SOFTWARE FOR WORK THAT MATTERS.', 5, M, 300, 640);
-  put('INTERACTIVE 3D · DATA · AI AGENTS · SUSTAINABILITY', 3, M, 300 + sub + 36, 660, 0.55);
-  put('JPBOTHMA.COM', 3, M, H - M - 21, 600);
-  SPECTRUM.forEach((rgb, i) => r.rect(M + 300 + i * 18, H - M - 21, 14, 14, rgb));
-
-  const S = 400, ix = W - M - S, iy = (H - S) / 2;
-  r.blocks(imageBlocks({ kind: 'moon' }, S, S, { cell: 8 }), ix, iy, INK, PAPER);
-  for (const [cx, cy, dx, dy] of [[ix, iy, 1, 1], [ix + S - 2, iy, -1, 1], [ix, iy + S - 2, 1, -1], [ix + S - 2, iy + S - 2, -1, -1]]) {
-    r.rect(Math.min(cx, cx + dx * 14), cy, 16, 2, INK);
-    r.rect(cx, Math.min(cy, cy + dy * 14), 2, 16, INK);
-  }
-  return r.png();
-}
-
+// Home screen: the mark in paper on ink.
 function touchIcon() {
-  const r = new Raster(180, 180, INK);
-  const f = iconFrames('logo', 20).frames[0];
-  r.blocks(f, 20, 40, PAPER, INK);
+  const { bg, fg } = THEMES.light;
+  const r = new Raster(180, 180, fg);
+  r.blocks(iconFrames('logo', 20).frames[0], 20, 40, bg, fg);
   return r.png();
 }
-
-write(path.join(dist, 'og-image.png'), ogImage());
 write(path.join(dist, 'apple-touch-icon.png'), touchIcon());
 
-console.log(`prerendered ${routes.length} pages + 404, ${gpxFiles().length} GPX files, sitemap.xml, robots.txt, og-image.png, apple-touch-icon.png`);
+console.log(`prerendered ${routes.length} pages + 404, ${gpxFiles().length} GPX files, sitemap.xml, robots.txt, ${routes.length} preview cards, apple-touch-icon.png`);
