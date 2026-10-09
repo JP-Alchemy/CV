@@ -61,7 +61,11 @@ export const PROFILES = {
   icon: { dur: [0.3, 0.48], wave: 0, jitter: 0.12, arc: 0.18, tumble: 0.9 },
   grow: { dur: [0.22, 0.4], wave: 0, jitter: 0.28, arc: 0, tumble: 0.7 },
   step: { dur: [0.13, 0.17], wave: 0, jitter: 0.03, arc: 0.03, tumble: 0.15 }, // puzzle moves: snappy
+  glide: { dur: [1.84, 1.86], wave: 0, jitter: 0.01, arc: 0, tumble: 0 }, // the story's ship: one long slide, in one piece
+  pan: { dur: [0.86, 0.9], wave: 0, jitter: 0.02, arc: 0, tumble: 0.05 }, // the story's worlds going by
 };
+// Motions that set how an element slides when it only moves.
+const SLIDES = new Set(['step', 'glide', 'pan']);
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const sgn = () => (Math.random() < 0.5 ? -1 : 1);
@@ -209,7 +213,7 @@ export class Engine {
       const n = T.length / 5;
       const rec = {
         key: E.key, sig: E.sig, x: E.x, y: E.y, fixed: !!E.fixed, flat: !!E.flat, z: E.z || 0,
-        n, anim, motion: E.motion, match: E.match, sweep: E.sweep, inst: null, off: 0, T,
+        n, anim, motion: E.motion, match: E.match, sweep: E.sweep, order: E.order, inst: null, off: 0, T,
       };
 
       if (sameSig && O.x === E.x && O.y === E.y && (shift === 0 || E.fixed)) {
@@ -222,8 +226,8 @@ export class Engine {
         // Same shape, new place: slide.
         const C = curArr(O);
         rec.inst = new Float32Array(n * STRIDE);
-        const P = PROFILES[E.motion === 'step' ? 'step' : mode === 'page' ? 'shared' : 'move'];
-        const stagger = E.motion === 'step' ? 0 : mode === 'resize' ? 0.15 : 0.05;
+        const P = PROFILES[SLIDES.has(E.motion) ? E.motion : mode === 'page' ? 'shared' : 'move'];
+        const stagger = SLIDES.has(E.motion) ? 0 : mode === 'resize' ? 0.15 : 0.05;
         for (let i = 0; i < n; i++) {
           const b = i * 5;
           const d = Math.min(1, Math.max(0, (T[b + 1] - top) / this.vh));
@@ -376,16 +380,18 @@ export class Engine {
     const n = O.n;
     const inst = new Float32Array(m * STRIDE);
     const z = rec.z;
-    // rec.sweep (seconds): the new blocks form left to right over that long,
-    // like text being spoken (the story's captions).
+    // rec.sweep (seconds): the new blocks form over that long, like text being
+    // spoken (the story's captions): in reading order when rec.order gives
+    // each block's place (0–1), otherwise left to right.
     let sx0 = 0, sw = 1;
-    if (rec.sweep && m) {
+    if (rec.sweep && m && !rec.order) {
       let sx1 = -Infinity;
       sx0 = Infinity;
       for (let j = 0; j < m; j++) { if (T[j * 5] < sx0) sx0 = T[j * 5]; if (T[j * 5] > sx1) sx1 = T[j * 5]; }
       sw = Math.max(1, sx1 - sx0);
     }
-    const pick = (x = sx0) => [t + rnd(0, P.jitter) + (rec.sweep ? (rec.sweep * (x - sx0)) / sw : 0), rnd(P.dur[0], P.dur[1]), sgn() * rnd(0.3, 1) * P.arc, sgn() * rnd(0.3, 1) * P.tumble];
+    const at = (j) => (j < 0 || !rec.sweep ? 0 : rec.sweep * (rec.order ? rec.order[j] : (T[j * 5] - sx0) / sw));
+    const pick = (j = -1) => [t + rnd(0, P.jitter) + at(j), rnd(P.dur[0], P.dur[1]), sgn() * rnd(0.3, 1) * P.arc, sgn() * rnd(0.3, 1) * P.tumble];
     if (m === 0) {
       for (let i = 0; i < n; i++) {
         const b = i * 5;
@@ -398,7 +404,7 @@ export class Engine {
     if (n === 0) {
       for (let j = 0; j < m; j++) {
         const b = j * 5;
-        const [t0, dur, , tum] = pick(T[b]);
+        const [t0, dur, , tum] = pick(j);
         const cx = T[b] + T[b + 2] / 2, cy = T[b + 1] + T[b + 3] / 2;
         this.w(inst, j * STRIDE, cx, cy, 0, 0, T[b + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, 0, tum, z, flags);
       }
@@ -420,7 +426,7 @@ export class Engine {
     const ni = (r) => (sn ? sn[r] : r);
     const emit = (i, j, survivor) => {
       const a = i * 5, b = j * 5;
-      const [t0, dur, arc, tum] = pick(T[b]);
+      const [t0, dur, arc, tum] = pick(j);
       if (survivor) this.w(inst, j * STRIDE, C[a], C[a + 1], C[a + 2], C[a + 3], C[a + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, arc, tum, z, flags);
       else this.pushDying(C[a], C[a + 1], C[a + 2], C[a + 3], C[a + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, arc, tum, z, flags);
     };

@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="author" content="JP Bothma" />
     <title>The Adventurer — A Short Story in Pixel Blocks | JP Bothma</title>
     <meta name="description" content="An 80-second animated story, drawn and scored in the blocks of jpbothma.com: a d20, a small ship, seven unknown worlds, a dragon, and the colours coming home." />
@@ -24,74 +24,229 @@
       html,
       body {
         margin: 0;
-        min-height: 100vh;
+        height: 100%;
+        overflow: hidden;
         background: var(--bg);
-        color: var(--fg);
-        font: 20px/24px var(--font), ui-monospace, monospace;
       }
-      main {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 20px;
-        padding: 24px 16px;
+      /* The stage fills the window; --paper and --ink follow the story's day and night. */
+      #player {
+        --paper: var(--bg);
+        --ink: var(--fg);
+        position: fixed;
+        inset: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font: 20px/24px var(--font), ui-monospace, monospace;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
       }
       #stage {
+        position: absolute;
+        inset: 0;
         display: block;
-        width: min(100vw - 32px, (100vh - 140px) * 16 / 9);
-        aspect-ratio: 16 / 9;
+        width: 100%;
+        height: 100%;
+        touch-action: manipulation;
       }
+      /* Recording takes just the 16:9 frame. */
+      #player.recording #stage {
+        margin: auto;
+        width: min(100vw, 100vh * 16 / 9);
+        height: min(100vh, 100vw * 9 / 16);
+      }
+      #player.idle {
+        cursor: none;
+      }
+      #home,
       #bar {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        align-items: center;
-        gap: 12px;
+        transition: opacity 0.4s;
       }
-      button,
-      a {
-        font: inherit;
-        color: inherit;
-      }
-      button {
-        background: none;
-        border: 2px solid currentColor;
-        padding: 6px 14px;
-        cursor: pointer;
-      }
-      button:hover,
-      button:focus-visible {
-        background: var(--fg);
-        color: var(--bg);
-        outline: none;
+      #player.idle #home,
+      #player.idle #bar {
+        opacity: 0;
       }
       a {
+        color: var(--ink);
         text-underline-offset: 6px;
         text-decoration-thickness: 2px;
       }
+      /* The site's logo, top left, home on a click (drawn by logo.js). */
+      #home {
+        position: absolute;
+        top: max(16px, env(safe-area-inset-top));
+        left: max(16px, env(safe-area-inset-left));
+        width: 44px;
+        height: 36px;
+      }
+      #home canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      #home:focus-visible {
+        outline: 2px solid var(--ink);
+        outline-offset: 4px;
+      }
+      #bar {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      }
+      /* Icon buttons: the box and icon are blocks (pixels.js), which fill in on hover and focus. */
+      button {
+        flex: none;
+        display: block;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 0;
+        background: none;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      button:focus-visible {
+        outline: none;
+      }
+      button[hidden] {
+        display: none;
+      }
+      #sound {
+        width: 44px;
+      }
+      /* PLAY under the title on landing (placed by main.js). Once the story
+         starts it breaks up into blocks, then it's gone. */
+      #start {
+        position: absolute;
+      }
+      #start.gone {
+        visibility: hidden;
+        pointer-events: none;
+        transition: visibility 0s linear 0.9s;
+      }
+      button canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      /* The scrubber: a line, the chapters as ticks, and a block to drag. */
+      #scrub {
+        position: relative;
+        flex: 1 1 160px;
+        height: 40px;
+        cursor: pointer;
+        touch-action: none;
+        outline: none;
+      }
+      #track {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 18px;
+        height: 4px;
+        background: color-mix(in srgb, var(--ink) 22%, transparent);
+      }
+      #done {
+        width: 0;
+        height: 100%;
+        background: var(--ink);
+      }
+      #marks i {
+        position: absolute;
+        top: 14px;
+        width: 4px;
+        height: 12px;
+        margin-left: -2px;
+        background: var(--ink);
+      }
+      #knob {
+        position: absolute;
+        top: 8px;
+        left: 0;
+        width: 8px;
+        height: 24px;
+        margin-left: -4px;
+        background: var(--ink);
+      }
+      #scrub:focus-visible #knob {
+        outline: 2px solid var(--ink);
+        outline-offset: 3px;
+      }
+      #tip {
+        position: absolute;
+        bottom: 44px;
+        left: 0;
+        transform: translateX(-50%);
+        padding: 2px 8px;
+        white-space: nowrap;
+        pointer-events: none;
+        background: var(--paper);
+        border: 2px solid var(--ink);
+      }
       #time {
+        white-space: nowrap;
+      }
+      #of {
         opacity: 0.55;
-        min-width: 7em;
+      }
+      .sr {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+      #nogl,
+      #noscript {
+        position: absolute;
+        inset: 0;
+        height: fit-content;
+        max-width: 36rem;
+        margin: auto;
+        padding: 0 16px;
         text-align: center;
       }
-      #nogl {
-        max-width: 36rem;
-        text-align: center;
+      /* Phones: one row, just the time so far, and no fullscreen (turn the phone instead). */
+      @media (max-width: 599px) {
+        #bar {
+          gap: 10px;
+        }
+        #scrub {
+          flex-basis: 100px;
+        }
+        #of,
+        #full {
+          display: none;
+        }
       }
     </style>
   </head>
   <body>
-    <main>
-      <canvas id="stage" aria-label="The Adventurer: a short animated story in pixel blocks"></canvas>
+    <main id="player">
+      <h1 class="sr">The Adventurer: a short story in blocks</h1>
+      <canvas id="stage" role="img" aria-label="The Adventurer: a short animated story in pixel blocks"></canvas>
+      <p id="said" class="sr" aria-live="polite"></p>
+      <a id="home" href="/" aria-label="JP Bothma — home"><canvas id="logo"></canvas></a>
+      <button id="start" type="button" aria-label="Play" title="Play (space)"><canvas></canvas></button>
       <p id="nogl" hidden>This story is drawn with WebGL2, which this browser doesn't have. <a href="/">Back to jpbothma.com</a></p>
-      <noscript><p>This story is drawn with JavaScript and WebGL2. <a href="/">Back to jpbothma.com</a></p></noscript>
+      <noscript><p id="noscript">This story is drawn with JavaScript and WebGL2. <a href="/">Back to jpbothma.com</a></p></noscript>
       <div id="bar">
-        <button id="play" type="button">PLAY</button>
-        <button id="top" type="button">FROM THE TOP</button>
-        <button id="sound" type="button" aria-pressed="true">SOUND ON</button>
-        <span id="time">00:00 / 01:20</span>
-        <button id="rec" type="button">RECORD VIDEO</button>
-        <a href="/">JPBOTHMA.COM</a>
+        <button id="play" type="button" aria-label="Play" title="Play (space)"><canvas></canvas></button>
+        <div id="scrub" role="slider" tabindex="0" aria-label="Time" aria-valuemin="0" aria-valuemax="80" aria-valuenow="0">
+          <div id="track"><div id="done"></div></div>
+          <div id="marks" aria-hidden="true"></div>
+          <div id="knob" aria-hidden="true"></div>
+          <div id="tip" hidden aria-hidden="true"></div>
+        </div>
+        <span id="time"><span id="now">00:00</span><span id="of"> / 01:20</span></span>
+        <button id="sound" type="button" aria-label="Sound" aria-pressed="true" title="Sound on (M)"><canvas></canvas></button>
+        <button id="full" type="button" aria-label="Fullscreen" title="Fullscreen (F)"><canvas></canvas></button>
       </div>
     </main>
     <script type="module" src="/src/story/main.js"></script>

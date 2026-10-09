@@ -213,10 +213,14 @@ export class Sound {
       for (const n of nodes) this.live.add(n);
       this.pad = { g, nodes };
     } else if (!on && this.pad) {
+      // Fade from wherever it is (gain.value can't be trusted here: it isn't
+      // updated until the context next renders, which offline, or right after
+      // a jump into the night, means a burst at full gain).
       const { g, nodes } = this.pad;
-      g.gain.setValueAtTime(g.gain.value, t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 2.5);
-      for (const n of nodes) { n.stop(t + 2.6); n.onended = () => this.live.delete(n); }
+      if (g.gain.cancelAndHoldAtTime) g.gain.cancelAndHoldAtTime(t);
+      else g.gain.cancelScheduledValues(t);
+      g.gain.setTargetAtTime(0.0001, t, 0.6);
+      for (const n of nodes) { n.stop(t + 3); n.onended = () => this.live.delete(n); }
       this.pad = null;
     }
   }
@@ -246,6 +250,15 @@ const EFFECTS = {
     [6, 4, 6, 5].forEach((k, i) => s.tone(NOTES[k] * 2, t + i * 0.11, 0.35, { type: 'sine', gain: 0.035, rev: 0.8, r: 0.3 }));
   },
   caption(s, t) { s.tone(1760, t, 0.04, { type: 'sine', gain: 0.025, rev: 0.2, r: 0.03 }); },
+  /** A footstep: soft, and each foot a little different. */
+  step(s, t, i = 0) {
+    s.tone(i % 2 ? 150 : 124, t, 0.08, { type: 'sine', gain: 0.08, to: 64, r: 0.06, rev: 0.05 });
+    s.click(t, i % 2 ? 1500 : 1150, 0.018);
+  },
+  /** Something big going by: a rush of air, up and away. */
+  whoosh(s, t) {
+    s.hiss(t, 0.75, { f: 320, to: 2600, q: 0.7, gain: 0.07, a: 0.3, r: 0.35, rev: 0.45 });
+  },
   /** A die tumbling on stone. */
   roll(s, t, d = 2.4) {
     let u = 0;
