@@ -80,15 +80,20 @@ export function createPlayer(o) {
     const st = o.stage(), room = Math.max(1, st.h - ui.bar.offsetHeight);
     const tall = st.w / room < 0.8, fh = tall ? H + STRIP : H;
     const s = Math.min(st.w / SQ, room / fh); // screen px per story px
-    const w = st.w / s;
+    const w = st.w / s, seen = room / s; // what the stage shows, in story px (above the controls)
+    // A tall picture sits a little above the middle, where the eye expects it.
+    const y = (seen - fh) * (tall ? 0.4 : 0.5);
+    // The words at least ~11 px tall along the bottom, ~15 under a tall picture.
+    const cap = tall ? clamp(Math.round(15 / (7 * s)), 3, 9) : clamp(Math.ceil(11 / (7 * s)), 3, 5);
     return {
-      s, ox: st.x, oy: st.y, w, h: st.h / s, tall, clip: st.y,
+      s, ox: st.x, oy: st.y, w, h: st.h / s, tall, clip: st.y, cap, y,
       k: clamp((w - SQ) / (W - SQ), 0, 1),
       x: (w - W) / 2,
-      // A tall picture sits a little above the middle, where the eye expects it.
-      y: (room / s - fh) * (tall ? 0.4 : 0.5),
-      // The words at least ~11 px tall along the bottom, ~15 under a tall picture.
-      cap: tall ? clamp(Math.round(15 / (7 * s)), 3, 9) : clamp(Math.ceil(11 / (7 * s)), 3, 5),
+      // Height to spare: the sky reaches up to the top of the stage, and the
+      // ground settles down to just above the controls (on a tall stage,
+      // leaving room under it for three lines of words).
+      up: Math.max(0, y),
+      down: Math.max(0, seen - y - (tall ? 640 + (2 * 11 + 7) * cap + 30 : H)),
     };
   }
 
@@ -96,7 +101,7 @@ export function createPlayer(o) {
   function layout() {
     const v = fit();
     const same = view && view.tall === v.tall && view.cap === v.cap
-      && ['s', 'ox', 'oy', 'x', 'y', 'w', 'h'].every((k) => Math.abs(view[k] - v[k]) < 0.01);
+      && ['s', 'ox', 'oy', 'x', 'y', 'w', 'h', 'up', 'down'].every((k) => Math.abs(view[k] - v[k]) < 0.01);
     view = v;
     setView(v);
     // PLAY sits under the title card's "A SHORT STORY IN BLOCKS", wherever that is.

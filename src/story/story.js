@@ -28,15 +28,22 @@ const GROUND = 560, CELL = 6;
 // What the stage shows. s: screen px per story px. ox, oy: the stage's corner
 // on screen. x, y: the wide frame's corner, from the stage's (story px).
 // w, h: how much of the story the stage shows. k: how wide that is (0 just
-// the square, 1 the whole wide frame). tall: the words go under the square.
-// cap: the words' size.
-const view = { s: 1, ox: 0, oy: 0, x: 0, y: 0, w: W, h: H, k: 1, tall: false, cap: 3 };
+// the square, 1 the whole wide frame). up, down: on a stage taller than the
+// frame, how far the sky reaches up past it and the ground settles down past
+// it (story px). tall: the words go under the picture. cap: their size.
+const view = { s: 1, ox: 0, oy: 0, x: 0, y: 0, w: W, h: H, k: 1, up: 0, down: 0, tall: false, cap: 3 };
 export const setView = (v) => Object.assign(view, v);
 
 /** A place between the square's (q) and the wide frame's (w), for how wide the stage is. */
 const at = (w, q) => Math.round(q + (w - q) * view.k);
 /** The same for a point or a world ([x, y, r]), as a function: worked out when the scene is. */
 const P = (w, q) => () => w.map((v, i) => at(v, q[i]));
+// Up and down: things in the sky move up with it (TOP), things on the ground
+// move down with it (LOW, G), and what's in between stays in the middle (MID).
+const TOP = (y) => y - view.up;
+const MID = (y) => y + (view.down - view.up) / 2;
+const LOW = (y) => y + view.down;
+const G = () => LOW(GROUND); // the ground's surface
 // Just past the stage's left and right edges, for something w wide.
 const offLeft = (w) => -view.x - w - 40;
 const offRight = () => view.w - view.x + 40;
@@ -115,7 +122,7 @@ const caption = (str) => {
   if (!str) return null;
   const voice = voiceOf(str), size = view.cap;
   const t = typeset(str, { size, width: view.w - (view.tall ? 80 : 120), lh: 11, align: 'center' });
-  const y = view.tall ? 640 : 671 - t.height; // tall: just under the ground, running on into the room below
+  const y = LOW(view.tall ? 640 : 671 - t.height); // tall: just under the ground, running on into the room below
   return Object.assign(el('cap', Math.round((W - t.width) / 2), y, t.blocks, { sig: `t|${str}|${size}|${t.width}`, motion: 'step' }), {
     sweep: str.length * VOICES[voice.name].rate, order: readingOrder(t.blocks, 11 * size), say: str, voice,
   });
@@ -131,9 +138,9 @@ const starAt = (i, tx, ty) => {
   return { a, x: tx * W + Math.round(hash(a, 1) * (W - 8)), y: ty * H + Math.round(hash(a, 2) * (H - 8)), s: hash(a, 3) < 0.3 ? 4 : 2, len: 50 + hash(a, 4) * 150 };
 };
 
-/** Stars above `sky`, out to the stage's edges (but not behind the words under a tall picture); as warp streaks with `warp`. */
+/** Stars above `sky`, out to every edge of the stage; as warp streaks with `warp`. */
 function stars(sky = Infinity, warp = false) {
-  const x0 = -view.x - 8, x1 = view.w - view.x, y0 = -view.y - 8, y1 = Math.min(sky, view.tall ? H : view.h - view.y);
+  const x0 = -view.x - 8, x1 = view.w - view.x, y0 = -view.y - 8, y1 = Math.min(sky, view.h - view.y);
   const out = [];
   for (let ty = Math.floor(y0 / H); ty * H < y1; ty++) {
     for (let tx = Math.floor(x0 / W); tx * W < x1; tx++) {
@@ -151,7 +158,7 @@ function stars(sky = Infinity, warp = false) {
 }
 
 /** The one star that keeps changing colour. */
-const glitter = () => el('glitter', at(900, 690), at(150, 210), Float32Array.from([0, 0, 8, 8, 2]), {
+const glitter = () => el('glitter', at(900, 690), MID(at(150, 210)), Float32Array.from([0, 0, 8, 8, 2]), {
   sig: 'glitter', anim: { frames: [0, 1, 2, 3, 4, 5, 6].map((k) => Float32Array.from([0, 0, 8, 8, 2 + k])), period: 0.4, phase: 0.2 },
 });
 
@@ -164,18 +171,18 @@ function ground(tone = 0.55) {
       const h = hash(x * 0.37 + 3, y * 0.53 + 9);
       if (h > 0.95 - d * 0.85) continue;
       const s = d < 0.2 ? 8 : h < 0.3 ? 6 : 4;
-      out.push(x + (8 - s) / 2, y + (8 - s) / 2, s, s, tone);
+      out.push(x + (8 - s) / 2, y - GROUND + (8 - s) / 2, s, s, tone);
     }
   }
-  return el('ground', 0, 0, Float32Array.from(out), { sig: `ground|${tone}|${x0}|${x1}`, flat: true });
+  return el('ground', 0, G(), Float32Array.from(out), { sig: `ground|${tone}|${x0}|${x1}`, flat: true });
 }
 
-const ringed = () => el('planet', at(960, 780), at(70, 60), imageBlocks({ kind: 'orb' }, 220, 150, { cell: 6, dark: true }), { sig: 'planet', match: 'space' });
+const ringed = () => el('planet', at(960, 780), TOP(at(70, 60)), imageBlocks({ kind: 'orb' }, 220, 150, { cell: 6, dark: true }), { sig: 'planet', match: 'space' });
 
 /** The adventurer, feet on the ground at x. `star` colours the staff's tip; `motion` 'step' for walking (in one piece). */
 function hero(frame, x, star = null, motion) {
   const rows = ADVENTURER[frame];
-  return el('hero', x, GROUND - rows.length * CELL, blocks(rows, CELL, { star }), { sig: `hero|${frame}|${star}`, motion, flat: motion === 'step' });
+  return el('hero', x, G() - rows.length * CELL, blocks(rows, CELL, { star }), { sig: `hero|${frame}|${star}`, motion, flat: motion === 'step' });
 }
 
 /**
@@ -198,7 +205,7 @@ function beam(x) {
     for (let i = 0; i < 70; i++) out.push(Math.floor(hash(i * 3.1 + f * 17.3, 1) * 24) * 3, Math.floor(hash(i * 5.7 + f * 9.1, 2) * 32) * 3, 3, 3, [6, 4, 1][Math.floor(hash(i, f + 3) * 3)]);
     return Float32Array.from(out);
   });
-  return el('hero', x, GROUND - 96, fr[0], { sig: 'beam', anim: { frames: fr, period: 0.1, phase: 0.05 } });
+  return el('hero', x, G() - 96, fr[0], { sig: 'beam', anim: { frames: fr, period: 0.1, phase: 0.05 } });
 }
 
 const ROLL = frames([7, 13, 2, 18, 5, 11, 16, 9].map(d20), 5);
@@ -214,8 +221,8 @@ const ship = (x, y, motion) => el('ship', x === 'left' ? offLeft(SHIP[0].length 
 const slotX = (k) => Math.round((W - (7 * 28 + 6 * 12)) / 2) + k * 40;
 function slots(found) {
   return [0, 1, 2, 3, 4, 5, 6].flatMap((k) => [
-    el(`slot-${k}`, slotX(k), 28, frameBlocks(28, 28), { sig: 'slot' }),
-    found > k ? el(`gem-${k}`, slotX(k) + 4, 32, fillBlocks(20, 20, 5, 0, 2 + k), { sig: 'gem|slot' }) : null,
+    el(`slot-${k}`, slotX(k), TOP(28), frameBlocks(28, 28), { sig: 'slot' }),
+    found > k ? el(`gem-${k}`, slotX(k) + 4, TOP(32), fillBlocks(20, 20, 5, 0, 2 + k), { sig: 'gem|slot' }) : null,
   ]).filter(Boolean);
 }
 const GEM = ['...#...', '..###..', '.#####.', '#######', '.#####.', '..###..', '...#...'];
@@ -236,11 +243,11 @@ const WORLDS = [
   },
   {
     kind: 'cubes', line: 'THEN A CITY OF GOLDEN CUBES.', at: P([640, 370, 270], [640, 370, 250]), gem: P([970, 130], [900, 110]),
-    from: [W, 0], dur: 2.6,
+    from: () => [W, TOP(0)], dur: 2.6,
   },
   {
     kind: 'globe', line: 'A FOREST THAT WALKED AT NIGHT.', at: P([1000, 220, 120], [860, 220, 100]), gem: P([760, 130], [640, 140]),
-    ship: [P([100, 420], [290, 440]), P([330, 420], [400, 440])], from: [0, H / 2], dur: 2.6,
+    ship: [P([100, 420], [290, 440]), P([330, 420], [400, 440])], from: () => [0, MID(H / 2)], dur: 2.6,
   },
   {
     kind: 'rings', line: 'RINGS OF ICE, RINGING.', at: P([840, 320, 180], [760, 320, 150]), gem: P([1060, 130], [930, 120]),
@@ -248,7 +255,7 @@ const WORLDS = [
   },
   {
     kind: 'earth', line: 'A WORLD MADE ENTIRELY OF RAIN.', at: P([640, 330, 230], [640, 320, 210]), gem: P([960, 150], [880, 120]),
-    from: [W / 2, H], dur: 3.2,
+    from: () => [W / 2, LOW(H)], dur: 3.2,
   },
 ];
 const WORLD_BLOCKS = new Map();
@@ -266,7 +273,7 @@ function world(k, cx, cy, R, motion) {
   return el(`world-${k}`, cx - R, cy - R, WORLD_BLOCKS.get(id), { sig: `world|${id}`, match: 'space', motion });
 }
 
-const dragon = (frame) => el('dragon', at(840, 760), GROUND - 16 * 7, blocks(DRAGON[frame], 7), { sig: `dragon|${frame}` });
+const dragon = (frame) => el('dragon', at(840, 760), G() - 16 * 7, blocks(DRAGON[frame], 7), { sig: `dragon|${frame}` });
 
 /** A flower like the garden's: a stem and a 5×5 head in colour k. */
 function flower(i, x, k) {
@@ -277,13 +284,51 @@ function flower(i, x, k) {
     if (Math.abs(u) === 2 && Math.abs(v) === 2) continue;
     out.push(u * CELL, cy + v * CELL, CELL, CELL, u === 0 && v === 0 ? 1 : 2 + k);
   }
-  return el(`flower-${i}`, x, GROUND, Float32Array.from(out), { sig: `flower|${k}` });
+  return el(`flower-${i}`, x, G(), Float32Array.from(out), { sig: `flower|${k}` });
 }
-/** Flowers right across the stage, as many as fit. */
-function flowers() {
+/** Where the flowers come up: right across the stage, as many as fit. */
+function spots() {
   const n = Math.max(6, Math.floor((view.w - 120) / 68)), x0 = Math.round(W / 2 - ((n - 1) * 68) / 2);
-  return Array.from({ length: n }, (_, i) => flower(i, x0 + i * 68 + Math.round(hash(i, 9) * 20) - 10, i % 7));
+  return Array.from({ length: n }, (_, i) => ({ x: x0 + i * 68 + Math.round(hash(i, 9) * 20) - 10, k: i % 7 }));
 }
+const flowers = () => spots().map((p, i) => flower(i, p.x, p.k));
+/**
+ * The seeds the flowers come up from, waiting in the soil all night: pale,
+ * then (`lit`) in their colours once the colours are home. They share the
+ * flowers' keys, so at dawn each one grows into its flower.
+ */
+const seeds = (lit) => spots().map((p, i) => el(`flower-${i}`, p.x, G() + 14 + Math.round(hash(i, 11) * 12),
+  Float32Array.from([0, 0, 6, 6, lit ? 2 + p.k : 0.85, 6, 2, 4, 4, lit ? 2 + p.k : 0.85]), { sig: `seed|${lit ? p.k : '-'}` }));
+
+// Seven faint stars in the sky, one for each colour, lighting up in it as
+// it's found. (The Plough: seven stars, as it happens.) Behind the worlds.
+const PLOUGH = [[0, 22], [46, 0], [88, 12], [126, 34], [132, 86], [204, 96], [210, 30]];
+const LINES = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3]];
+function constellation(found) {
+  const x0 = at(110, 300), y0 = TOP(at(86, 96)), dots = [];
+  for (const [a, b] of LINES) {
+    const [ax, ay] = PLOUGH[a], [bx, by] = PLOUGH[b], n = Math.floor(Math.hypot(bx - ax, by - ay) / 12);
+    for (let j = 1; j < n; j++) dots.push(Math.round(ax + ((bx - ax) * j) / n), Math.round(ay + ((by - ay) * j) / n), 2, 2, 0.22);
+  }
+  const twinkle = (k) => ({ frames: [Float32Array.from([-2, -2, 8, 8, 2 + k]), Float32Array.from([-1, -1, 6, 6, 2 + k])], period: 0.9 + hash(k, 12) * 0.6, phase: hash(k, 13) });
+  return [
+    el('plough', x0, y0, Float32Array.from(dots), { sig: 'plough', z: -1 }),
+    ...PLOUGH.map(([x, y], k) => (k < found
+      ? el(`plough-${k}`, x0 + x, y0 + y, twinkle(k).frames[0], { sig: `plough|${k}`, z: -1, anim: twinkle(k) })
+      : el(`plough-${k}`, x0 + x, y0 + y, Float32Array.from([0, 0, 4, 4, 0.45]), { sig: 'plough|-', z: -1 }))),
+  ];
+}
+
+/** A shooting star: its head at (x, y), its tail trailing back up the way it came. */
+const meteor = ([x, y]) => el('meteor', x, y, Float32Array.from(
+  [6, 5, 4, 3, 2, 2].flatMap((s, i) => [-i * 11, -i * 4, s, s, i ? 0.85 - i * 0.12 : 1]),
+), { sig: 'meteor', z: -0.5 });
+/** One across the sky at t, from from() to to(), over the scene as it is then (scene(m), m the star or null). */
+const shooting = (t, from, to, scene) => [
+  { t, sound: ['meteor'], scene: () => scene(meteor(from())) },
+  { t: t + 0.12, scene: () => scene(meteor(to())) },
+  { t: t + 0.9, scene: () => scene(null) },
+];
 
 // ---------------------------------------------------------------- scenes
 
@@ -291,20 +336,23 @@ const HX = () => at(300, 360); // where the adventurer stands at home
 const LX = () => at(360, 400); // and in front of the dragon
 const walking = (o) => (o.walking ? 'step' : undefined);
 const home = (o) => [
-  ground(), ringed(), ...stars(GROUND - 40), o.glitter !== false ? glitter() : null,
-  hero(o.hero || 'stand', o.heroX ?? HX(), o.star ?? null, walking(o)), o.die ? die(HX() + 110, GROUND - 150, o.die) : null,
+  ground(), ...seeds(false), ringed(), ...stars(G() - 40), ...constellation(0), o.glitter !== false ? glitter() : null, o.meteor,
+  hero(o.hero || 'stand', o.heroX ?? HX(), o.star ?? null, walking(o)), o.die ? die(HX() + 110, G() - 150, o.die) : null,
   caption(o.cap),
 ].filter(Boolean);
 
 const space = (o) => [
-  ...stars(Infinity, o.warp), o.shipX !== null ? ship(o.shipX ?? at(400, 420), 300) : null, ...slots(0), caption(o.cap),
+  ...stars(Infinity, o.warp), ...constellation(0), o.meteor, o.shipX !== null ? ship(o.shipX ?? at(400, 420), MID(300)) : null, ...slots(0), caption(o.cap),
 ].filter(Boolean);
 
-/** At world k: the worlds in view ([k, x, y, R, motion]), the colours found so far, its colour coming up, the ship. */
-const atWorld = (k, o) => [
-  ...stars(), ...o.worlds.map((w) => world(...w)), ...slots(o.found),
-  o.gem ? gem(k, ...WORLDS[k].gem()) : null, o.ship ? ship(o.ship[0], o.ship[1], o.shipMotion) : null, caption(o.cap),
-].filter(Boolean);
+/** At world k: the worlds in view ([k, x, y, R, motion]), the colours found so far, its colour coming up, the ship. All in the middle of the sky. */
+const atWorld = (k, o) => {
+  const [gx, gy] = WORLDS[k].gem();
+  return [
+    ...stars(), ...constellation(o.found), ...o.worlds.map(([j, x, y, r, motion]) => world(j, x, MID(y), r, motion)), ...slots(o.found),
+    o.gem ? gem(k, gx, MID(gy)) : null, o.ship ? ship(o.ship[0], MID(o.ship[1]), o.shipMotion) : null, caption(o.cap),
+  ].filter(Boolean);
+};
 
 /** The trip: at each world its colour comes up and flies into its slot. */
 function trip(t) {
@@ -325,26 +373,27 @@ function trip(t) {
         { t: s + 0.6, scene: () => shot({ worlds: [gone(), here()], gem: true }) },
       );
     } else {
-      cues.push({ t: s, mode: 'page', origin: w.from || [W, H / 2], sound: ['shuffle', ['arrive', k]], scene: () => shot({ gem: true, ship: path[0]?.() }) });
+      cues.push({ t: s, mode: 'page', origin: w.from || (() => [W, MID(H / 2)]), sound: ['shuffle', ['arrive', k]], scene: () => shot({ gem: true, ship: path[0]?.() }) });
       // The ship sets off once the cut has settled (moving earlier, it would
       // drag the cut's loose blocks along with it).
       if (path.length > 1) cues.push({ t: s + 1.5, scene: () => shot({ gem: true, shipMotion: 'glide' }) });
     }
-    cues.push({ t: s + w.dur - 0.9, light: [[slotX(k) + 14, 42]], sound: [['collect', k]], scene: () => shot({ found: k + 1 }) });
+    cues.push({ t: s + w.dur - 0.9, light: () => [[slotX(k) + 14, TOP(42)]], sound: [['collect', k]], scene: () => shot({ found: k + 1 }) });
     if (k === 0) cues[0].chapter = 'SIX WORLDS';
     return cues;
   });
 }
 
 const lair = (o) => [
-  ground(0.4), ...stars(GROUND - 40), ...slots(6), dragon(o.dragon || 'grr'),
-  o.gem === 'big' ? gem(6, at(1080, 920), GROUND - 200) : null,
-  hero(o.hero || 'stand', o.heroX ?? LX(), 5, walking(o)), o.die ? die(LX() + 110, GROUND - 170, o.die) : null,
+  ground(0.4), ...stars(G() - 40), ...constellation(o.found ?? 6), o.meteor, ...slots(6), dragon(o.dragon || 'grr'),
+  o.gem === 'big' ? gem(6, at(1080, 920), G() - 200) : null,
+  hero(o.hero || 'stand', o.heroX ?? LX(), 5, walking(o)), o.die ? die(LX() + 110, G() - 170, o.die) : null,
   caption(o.cap),
 ].filter(Boolean);
 
+// Home again: the seeds have their colours now, and then they come up.
 const dawn = (o) => [
-  ground(), ringed(), ...slots(7), ...(o.flowers ? flowers() : []),
+  ground(), ringed(), ...constellation(7), ...slots(7), ...(o.flowers ? flowers() : seeds(true)),
   hero(o.hero || 'stand', o.heroX ?? HX(), 6, walking(o)), caption(o.cap),
 ].filter(Boolean);
 
@@ -353,20 +402,20 @@ const small = () => view.cap;
 const TITLE = 'THE ADVENTURER';
 const titleSize = () => fit(TITLE, 12);
 /** Where the title card's "A SHORT STORY IN BLOCKS" ends (the player puts PLAY under it). */
-export const subtitleEnd = () => 250 + 7 * titleSize() + 56 + 7 * small();
+export const subtitleEnd = () => MID(250 + 7 * titleSize() + 56 + 7 * small());
 const titleCard = () => [
-  text('title', TITLE, titleSize(), 250),
-  text('sub', 'A SHORT STORY IN BLOCKS', small(), 250 + 7 * titleSize() + 56),
+  text('title', TITLE, titleSize(), MID(250)),
+  text('sub', 'A SHORT STORY IN BLOCKS', small(), MID(250 + 7 * titleSize() + 56)),
 ];
 const end = () => {
   const mark = iconFrames('logo', 10), c = small(), by = 'BY JP BOTHMA · JPBOTHMA.COM';
   const subAt = view.tall ? 390 : 350, byAt = subAt + 7 * c + 24;
   const markAt = Math.max(470, byAt + typeset(by, { size: c, width: view.w - 100, lh: 11 }).height + 50);
   return [
-    text('end-title', TITLE, fit(TITLE, view.tall ? 12 : 8), 250),
-    text('end-sub', 'A SHORT STORY IN BLOCKS', c, subAt),
-    text('end-by', by, c, byAt, 0.55),
-    el('mark', Math.round((W - mark.w) / 2), markAt, mark.frames[0], { sig: 'mark', anim: { frames: mark.frames, period: 1.4, phase: 0.6 } }),
+    text('end-title', TITLE, fit(TITLE, view.tall ? 12 : 8), MID(250)),
+    text('end-sub', 'A SHORT STORY IN BLOCKS', c, MID(subAt)),
+    text('end-by', by, c, MID(byAt), 0.55),
+    el('mark', Math.round((W - mark.w) / 2), MID(markAt), mark.frames[0], { sig: 'mark', anim: { frames: mark.frames, period: 1.4, phase: 0.6 } }),
   ];
 };
 
@@ -377,36 +426,43 @@ const end = () => {
 // dissolving out from `at`. sound: effects from sound.js, [name, arg] for an
 // argument. chapter: a name for the scrubber. Points are in the wide frame;
 // lights, origins and theme.at can be functions, worked out when they happen.
-const C = [W / 2, H / 2];
-const heroAt = () => [HX() + 36, GROUND - 60];
+const C = () => [W / 2, MID(H / 2)];
+const E = () => [W, MID(H / 2)];
+const heroAt = () => [HX() + 36, G() - 60];
 const BACK = () => at(460, 540); // where the adventurer comes home from
-const backAt = () => [BACK() + 36, GROUND - 60];
+const backAt = () => [BACK() + 36, G() - 60];
 const HOME = 'EVERYTHING HERE WAS INK AND PAPER.';
 const LAIR = 'THE LAST COLOUR HAD A DRAGON ON IT.';
 const DAWN = 'AND THE COLOURS CAME HOME.';
 export const CUES = [
   { t: 0, chapter: 'TITLE', mode: 'intro', sound: ['assemble'], scene: titleCard },
-  { t: 2.3, light: () => [[W / 2, 250 + 3.5 * titleSize()]], sound: ['light'] },
+  { t: 2.3, light: () => [[W / 2, MID(250 + 3.5 * titleSize())]], sound: ['light'] },
   { t: 4.8, chapter: 'HOME', mode: 'page', origin: C, theme: { to: 'dark', at: C }, sound: ['shuffle', 'night'], scene: () => home({ heroX: at(60, 180), cap: HOME }) },
   ...walk(6.0, 15, () => at(60, 180), HX, 0.2, (x, f) => home({ heroX: x, hero: f, walking: true, cap: HOME })),
   { t: 9.8, sound: ['caption', 'twinkle'], scene: () => home({ hero: 'up', cap: 'BUT SOMETHING OUT THERE KEPT GLITTERING.' }) },
+  ...shooting(12.3, () => [at(380, 530), TOP(at(70, 150))], () => [at(760, 740), TOP(at(190, 230))],
+    (m) => home({ hero: 'up', cap: 'BUT SOMETHING OUT THERE KEPT GLITTERING.', meteor: m })),
   { t: 14.0, sound: ['caption', ['roll', 2.4]], scene: () => home({ hero: 'stand', die: 'roll', cap: 'SO THE ADVENTURER ROLLED FOR COURAGE.' }) },
-  { t: 16.6, light: () => [[HX() + 152, GROUND - 115]], sound: ['land', 'nat20'], scene: () => home({ hero: 'cheer', die: 20, cap: 'NATURAL 20.' }) },
+  { t: 16.6, light: () => [[HX() + 152, G() - 115]], sound: ['land', 'nat20'], scene: () => home({ hero: 'cheer', die: 20, cap: 'NATURAL 20.' }) },
   { t: 19.2, sound: ['caption'], scene: () => home({ hero: 'stand', glitter: true, cap: 'ENERGISE.' }) },
-  { t: 20.2, sound: ['energise'], scene: () => [ground(), ringed(), ...stars(GROUND - 40), glitter(), beam(HX() + 6), caption('ENERGISE.')] },
+  { t: 20.2, sound: ['energise'], scene: () => [ground(), ...seeds(false), ringed(), ...stars(G() - 40), ...constellation(0), glitter(), beam(HX() + 6), caption('ENERGISE.')] },
   { t: 21.8, chapter: 'THE SHIP', mode: 'page', origin: heroAt, sound: ['shuffle'], scene: () => space({ cap: 'THE SHIP WAS SMALL. THE SKY WAS NOT.' }) },
-  { t: 25.8, light: () => [[at(390, 450), 330]], sound: ['engage'], scene: () => space({ warp: true, shipX: at(470, 480), cap: 'ENGAGE.' }) },
+  ...shooting(24.0, () => [at(700, 560), TOP(at(110, 130))], () => [at(1080, 840), TOP(at(220, 230))],
+    (m) => space({ cap: 'THE SHIP WAS SMALL. THE SKY WAS NOT.', meteor: m })),
+  { t: 25.8, light: () => [[at(390, 450), MID(330)]], sound: ['engage'], scene: () => space({ warp: true, shipX: at(470, 480), cap: 'ENGAGE.' }) },
   // Off it goes, out of the picture (and gone, so it doesn't fly back across the cut).
   { t: 27.2, sound: ['whoosh'], scene: () => space({ warp: true, shipX: offRight(), cap: 'ENGAGE.' }) },
   { t: 27.8, scene: () => space({ warp: true, shipX: null, cap: 'ENGAGE.' }) },
   ...trip(28.0),
-  { t: 44.8, chapter: 'THE DRAGON', mode: 'page', origin: [W, H / 2], sound: ['shuffle', 'growl'], scene: () => lair({ gem: 'big', heroX: at(200, 300), cap: LAIR }) },
+  { t: 44.8, chapter: 'THE DRAGON', mode: 'page', origin: E, sound: ['shuffle', 'growl'], scene: () => lair({ gem: 'big', heroX: at(200, 300), cap: LAIR }) },
   ...walk(45.8, 10, () => at(200, 300), LX, 0.2, (x, f) => lair({ gem: 'big', heroX: x, hero: f, walking: true, cap: LAIR })),
   { t: 48.6, sound: ['caption', ['roll', 1.9]], scene: () => lair({ gem: 'big', die: 'roll', cap: 'ROLL FOR INITIATIVE.' }) },
   { t: 50.6, sound: ['land', 'nat1'], scene: () => lair({ gem: 'big', die: 1, cap: 'NATURAL 1.' }) },
   { t: 52.6, sound: ['caption', 'sit'], scene: () => lair({ gem: 'big', hero: 'sit', cap: 'SO THE ADVENTURER SAT DOWN AND TALKED.' }) },
+  ...shooting(54.8, () => [at(560, 540), TOP(at(110, 140))], () => [at(940, 760), TOP(at(230, 240))],
+    (m) => lair({ gem: 'big', hero: 'sit', cap: 'SO THE ADVENTURER SAT DOWN AND TALKED.', meteor: m })),
   { t: 56.4, sound: ['caption', 'calm'], scene: () => lair({ gem: 'big', hero: 'sit', dragon: 'calm', cap: 'IT HAD BEEN LONELY FOR A THOUSAND YEARS.' }) },
-  { t: 60.4, light: [[slotX(6) + 14, 42]], sound: [['collect', 6], 'light'], scene: () => [...lair({ hero: 'cheer', dragon: 'calm', cap: 'IT GAVE THE LAST COLOUR GLADLY.' }).filter((e) => !e.key.startsWith('slot') && !e.key.startsWith('gem')), ...slots(7)] },
+  { t: 60.4, light: () => [[slotX(6) + 14, TOP(42)]], sound: [['collect', 6], 'light'], scene: () => [...lair({ hero: 'cheer', dragon: 'calm', found: 7, cap: 'IT GAVE THE LAST COLOUR GLADLY.' }).filter((e) => !e.key.startsWith('slot') && !e.key.startsWith('gem')), ...slots(7)] },
   { t: 63.6, chapter: 'HOME AGAIN', mode: 'page', origin: backAt, theme: { to: 'light', at: backAt }, sound: ['shuffle', 'morning', 'dawn'], scene: () => dawn({ heroX: BACK(), cap: DAWN }) },
   ...walk(64.3, 10, BACK, HX, 0.15, (x, f) => dawn({ heroX: x, hero: f, walking: true, cap: DAWN })),
   { t: 65.8, light: () => { const [x, y] = heroAt(); return [[x, y], [x, y - 40]]; }, sound: ['light', 'bloom'], scene: () => dawn({ hero: 'cheer', flowers: true, cap: DAWN }) },

@@ -255,6 +255,11 @@ const EFFECTS = {
     s.tone(i % 2 ? 150 : 124, t, 0.08, { type: 'sine', gain: 0.08, to: 64, r: 0.06, rev: 0.05 });
     s.click(t, i % 2 ? 1500 : 1150, 0.018);
   },
+  /** A shooting star: a high note falling away, and a breath of air. */
+  meteor(s, t) {
+    s.tone(2600, t + 0.1, 0.6, { type: 'sine', gain: 0.022, to: 1250, r: 0.45, rev: 0.7 });
+    s.hiss(t + 0.1, 0.55, { f: 5200, to: 1800, q: 2.5, gain: 0.018, a: 0.12, r: 0.35, rev: 0.6 });
+  },
   /** Something big going by: a rush of air, up and away. */
   whoosh(s, t) {
     s.hiss(t, 0.75, { f: 320, to: 2600, q: 0.7, gain: 0.07, a: 0.3, r: 0.35, rev: 0.45 });
