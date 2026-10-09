@@ -5,6 +5,26 @@
 export const NOTES = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66]; // C D E G A C D
 const VOL = 0.75;
 
+/**
+ * The captions' voices: every letter blips as it forms, like dialogue in old
+ * games. rate: seconds a character. pitch: times the line's key (C, or a
+ * world's colour). contour: how far the pitch climbs (or falls) by the end.
+ */
+export const VOICES = {
+  narrator: { rate: 0.045, pitch: 1, wave: 'square', lp: 2400, gain: 0.032, dur: 0.055 },
+  hero: { rate: 0.05, pitch: 1.5, wave: 'triangle', gain: 0.06, dur: 0.06, contour: 0.15 },
+  cheer: { rate: 0.065, pitch: 1.25, wave: 'square', lp: 3200, gain: 0.036, dur: 0.075, contour: 0.45 },
+  dm: { rate: 0.06, pitch: 0.5, wave: 'square', lp: 1300, gain: 0.045, dur: 0.07, vib: 0.02 },
+  sad: { rate: 0.1, pitch: 0.75, wave: 'triangle', gain: 0.07, dur: 0.12, contour: -0.45 },
+  dragon: { rate: 0.066, pitch: 0.25, wave: 'sawtooth', lp: 650, gain: 0.06, dur: 0.09, vib: 0.05 },
+};
+const PENTA = [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3];
+/** A letter's note: always the same for the same letter, drifting a little along the line. */
+function letterPitch(ch, i, n, base, v) {
+  const deg = (ch.charCodeAt(0) * 7 + Math.floor(i / 4)) % 5;
+  return base * PENTA[deg] * (/[0-9]/.test(ch) ? 2 : 1) * (1 + (v.contour || 0) * (i / Math.max(1, n - 1)));
+}
+
 const rnd = (a, b) => a + Math.random() * (b - a);
 
 function noiseBuffer(c) {
@@ -87,6 +107,22 @@ export class Sound {
   play(name, arg, at = null) {
     if (!this.ready || !EFFECTS[name]) return;
     EFFECTS[name](this, at ?? this.ctx.currentTime + 0.02, arg);
+  }
+
+  /** Say a caption: a blip a letter, in the voice's register, in key `base` (a frequency). */
+  speak(text, voice = 'narrator', at = null, base = NOTES[0]) {
+    if (!this.ready) return;
+    const v = VOICES[voice] || VOICES.narrator;
+    const t0 = at ?? this.ctx.currentTime + 0.02, n = text.length;
+    let pause = 0;
+    [...text].forEach((ch, i) => {
+      if (/[A-Z0-9]/i.test(ch)) {
+        this.tone(letterPitch(ch.toUpperCase(), i, n, base * v.pitch, v), t0 + i * v.rate + pause, v.dur, {
+          type: v.wave, gain: v.gain, a: 0.003, r: v.dur * 0.6, rev: 0.15, lp: v.lp || 0, vib: v.vib || 0,
+        });
+      }
+      if ((ch === '.' || ch === ',') && i < n - 1) pause += ch === ',' ? 0.06 : 0.12;
+    });
   }
 
   // ---------------------------------------------------------------- voices
@@ -286,7 +322,13 @@ const EFFECTS = {
 export async function renderTrack(cues, length, rate = 22050) {
   const ctx = new OfflineAudioContext(2, Math.ceil(length * rate), rate);
   const s = new Sound(ctx);
-  for (const c of cues) for (const x of c.sound || []) { const [name, arg] = [].concat(x); s.play(name, arg, c.t); }
+  let said = null;
+  for (const c of cues) {
+    for (const x of c.sound || []) { const [name, arg] = [].concat(x); s.play(name, arg, c.t); }
+    const cap = c.scene?.().find((e) => e.key === 'cap');
+    if (cap && cap.say !== said) s.speak(cap.say, cap.voice.name, c.t + (said ? 0.12 : 0.7), cap.voice.base);
+    said = cap ? cap.say : null;
+  }
   const buf = await ctx.startRendering();
   const d = buf.getChannelData(0), out = [];
   for (let sec = 0; sec < length; sec++) {

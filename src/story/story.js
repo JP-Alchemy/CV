@@ -9,6 +9,7 @@ import { imageBlocks } from '../engine/images.js';
 import { iconFrames } from '../icons.js';
 import { frameBlocks, fillBlocks } from '../ui.js';
 import { ADVENTURER, SHIP, DRAGON, d20, blocks, frames } from './art.js';
+import { VOICES, NOTES } from './sound.js';
 
 export const W = 1280, H = 720;
 const GROUND = 560, CELL = 6;
@@ -32,7 +33,26 @@ const text = (key, str, size, y, tone = 1) => {
   const t = typeset(str, { size, tone, width: W - 120, lh: 11, align: 'center' });
   return el(key, Math.round((W - t.width) / 2), y, t.blocks, { sig: `t|${str}|${size}|${tone}` });
 };
-const caption = (str) => (str ? text('cap', str, 3, 650) : null);
+// Who says each line (the narrator, unless named here), and in which key: the
+// worlds' lines are spoken in their colour's note.
+const SAID = {
+  'NATURAL 20.': 'cheer',
+  'ENERGISE.': 'hero',
+  'ENGAGE.': 'hero',
+  'ROLL FOR INITIATIVE.': 'dm',
+  'NATURAL 1.': 'sad',
+  'IT HAD BEEN LONELY FOR A THOUSAND YEARS.': 'dragon',
+};
+const voiceOf = (str) => {
+  const k = WORLDS.findIndex((w) => w.line === str);
+  return { name: SAID[str] || 'narrator', base: NOTES[Math.max(0, k)] };
+};
+/** A caption forms left to right as it's said, a blip a letter (player and sound.js do the saying). */
+const caption = (str) => {
+  if (!str) return null;
+  const voice = voiceOf(str);
+  return Object.assign(text('cap', str, 3, 650), { motion: 'step', sweep: str.length * VOICES[voice.name].rate, say: str, voice });
+};
 
 // ---------------------------------------------------------------- pieces
 

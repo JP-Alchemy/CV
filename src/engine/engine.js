@@ -209,7 +209,7 @@ export class Engine {
       const n = T.length / 5;
       const rec = {
         key: E.key, sig: E.sig, x: E.x, y: E.y, fixed: !!E.fixed, flat: !!E.flat, z: E.z || 0,
-        n, anim, motion: E.motion, match: E.match, inst: null, off: 0, T,
+        n, anim, motion: E.motion, match: E.match, sweep: E.sweep, inst: null, off: 0, T,
       };
 
       if (sameSig && O.x === E.x && O.y === E.y && (shift === 0 || E.fixed)) {
@@ -376,7 +376,16 @@ export class Engine {
     const n = O.n;
     const inst = new Float32Array(m * STRIDE);
     const z = rec.z;
-    const pick = () => [t + rnd(0, P.jitter), rnd(P.dur[0], P.dur[1]), sgn() * rnd(0.3, 1) * P.arc, sgn() * rnd(0.3, 1) * P.tumble];
+    // rec.sweep (seconds): the new blocks form left to right over that long,
+    // like text being spoken (the story's captions).
+    let sx0 = 0, sw = 1;
+    if (rec.sweep && m) {
+      let sx1 = -Infinity;
+      sx0 = Infinity;
+      for (let j = 0; j < m; j++) { if (T[j * 5] < sx0) sx0 = T[j * 5]; if (T[j * 5] > sx1) sx1 = T[j * 5]; }
+      sw = Math.max(1, sx1 - sx0);
+    }
+    const pick = (x = sx0) => [t + rnd(0, P.jitter) + (rec.sweep ? (rec.sweep * (x - sx0)) / sw : 0), rnd(P.dur[0], P.dur[1]), sgn() * rnd(0.3, 1) * P.arc, sgn() * rnd(0.3, 1) * P.tumble];
     if (m === 0) {
       for (let i = 0; i < n; i++) {
         const b = i * 5;
@@ -389,7 +398,7 @@ export class Engine {
     if (n === 0) {
       for (let j = 0; j < m; j++) {
         const b = j * 5;
-        const [t0, dur, , tum] = pick();
+        const [t0, dur, , tum] = pick(T[b]);
         const cx = T[b] + T[b + 2] / 2, cy = T[b + 1] + T[b + 3] / 2;
         this.w(inst, j * STRIDE, cx, cy, 0, 0, T[b + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, 0, tum, z, flags);
       }
@@ -411,7 +420,7 @@ export class Engine {
     const ni = (r) => (sn ? sn[r] : r);
     const emit = (i, j, survivor) => {
       const a = i * 5, b = j * 5;
-      const [t0, dur, arc, tum] = pick();
+      const [t0, dur, arc, tum] = pick(T[b]);
       if (survivor) this.w(inst, j * STRIDE, C[a], C[a + 1], C[a + 2], C[a + 3], C[a + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, arc, tum, z, flags);
       else this.pushDying(C[a], C[a + 1], C[a + 2], C[a + 3], C[a + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, arc, tum, z, flags);
     };

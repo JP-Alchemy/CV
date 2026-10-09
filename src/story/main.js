@@ -35,10 +35,10 @@ const PULSE_LIFE = 1.6;
 const trail = { pos: new Float32Array(TRAIL * 4), meta: new Float32Array(TRAIL * 2), n: 0, box: [0, 0, 0, 0] };
 const pulseData = { data: new Float32Array(PULSES * 4), n: 0 };
 let engine, clock = 0, next = 0, playing = false, started = false, last = 0, recorder = null;
-let pulses = [], current = 'light', theme = null;
+let pulses = [], current = 'light', theme = null, said = null;
 
 function reset() {
-  clock = 0; next = 0; pulses = []; current = 'light';
+  clock = 0; next = 0; pulses = []; current = 'light'; said = null;
   theme = { from: THEMES.light, to: THEMES.light, start: -10, origin: [0, 0] };
   engine = new Engine(renderer);
   engine.now = () => clock;
@@ -52,7 +52,14 @@ function run(cue, live) {
     theme = { from: THEMES[current], to: THEMES[cue.theme.to], start: clock, origin: cue.theme.at };
     current = cue.theme.to;
   }
-  if (cue.scene) engine.morphTo({ elements: cue.scene() }, { mode: cue.mode || 'local', origin: cue.origin, scrollFrom: 0, scrollTo: 0 });
+  if (cue.scene) {
+    const els = cue.scene();
+    engine.morphTo({ elements: els }, { mode: cue.mode || 'local', origin: cue.origin, scrollFrom: 0, scrollTo: 0 });
+    // A new line is said as it forms; the very first one waits for the page to assemble.
+    const cap = els.find((e) => e.key === 'cap');
+    if (live && cap && cap.say !== said && sound.ready) sound.speak(cap.say, cap.voice.name, sound.ctx.currentTime + (said ? 0.12 : 0.7), cap.voice.base);
+    said = cap ? cap.say : null;
+  }
   for (const [x, y] of cue.light || []) pulses.push({ x, y, t: clock, s: 1 });
   if (live) for (const s of cue.sound || []) { const [name, arg] = [].concat(s); sound.play(name, arg); }
 }
