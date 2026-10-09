@@ -52,9 +52,11 @@ function navBar(state, S) {
     key: 'nav-garden', label: 'GARDEN', icon: 'garden', small: true, width: 36, action: 'garden', hover: false, active: !!state.garden,
     aria: state.garden ? 'Leave garden mode (G)' : 'Garden mode: grow the spectrum (G)', period: 1.6,
   });
+  // The story has its own day and night, and no room for a garden.
+  const tools = name === 'story' ? [] : [garden, theme];
   const right = S.mobile
-    ? [button({ key: 'nav-menu', label: state.menuOpen ? 'CLOSE' : 'MENU', action: 'menu', small: true, hover: hv('nav-menu'), active: state.menuOpen, aria: state.menuOpen ? 'Close menu' : 'Open menu' }), garden, theme]
-    : [...NAV.map((n) => button({ key: `nav-${n.label}`, label: n.label, href: n.href, small: true, hover: hv(`nav-${n.label}`), active: n.match.includes(name) })), garden, theme];
+    ? [button({ key: 'nav-menu', label: state.menuOpen ? 'CLOSE' : 'MENU', action: 'menu', small: true, hover: hv('nav-menu'), active: state.menuOpen, aria: state.menuOpen ? 'Close menu' : 'Open menu' }), ...tools]
+    : [...NAV.map((n) => button({ key: `nav-${n.label}`, label: n.label, href: n.href, small: true, hover: hv(`nav-${n.label}`), active: n.match.includes(name) })), ...tools];
   return row([row(left, { gap: 4 }), row(right, { gap: 4 })], { justify: 'between' });
 }
 
@@ -628,6 +630,14 @@ export function buildScene(state, vp) {
   const nav = layout(navBar(state, S), S.cw, ctx);
   shift(nav.els, S.left, S.navTop);
   for (const e of nav.els) e.fixed = true;
+
+  // The story plays itself under the nav (src/story/player.js), on blocks of
+  // its own; the page only holds its picture while morphing into it
+  // (state.storyEls, at rest, in screen px). Full screen, not even the nav.
+  if (state.route.name === 'story' && !state.menuOpen) {
+    const pic = (state.storyEls || []).map((e) => ({ ...e }));
+    return { elements: resolve([...(state.fullscreen ? [] : nav.els), ...pic]), height: vp.h, S, gardenTop: vp.h };
+  }
 
   const pageNode = state.menuOpen ? menu(state, S) : PAGES[state.route.name](state, S, state.route.slug);
   const page = layout(pageNode, S.cw, ctx);

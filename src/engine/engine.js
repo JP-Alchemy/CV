@@ -738,6 +738,37 @@ export class Engine {
     this.pack();
   }
 
+  /**
+   * Take over elements as they are, at rest, without moving them: blocks
+   * handed over from another engine (the story's, as you leave it), so the
+   * next morph can carry them off.
+   */
+  place(elements) {
+    for (const E of elements) {
+      const T = E.blocks, n = T.length / 5;
+      const rec = {
+        key: E.key, sig: E.sig, x: E.x, y: E.y, fixed: !!E.fixed, flat: !!E.flat, z: E.z || 0,
+        n, anim: null, motion: E.motion, inst: new Float32Array(n * STRIDE), off: 0, T,
+      };
+      const flags = this.flagsOf(rec);
+      for (let i = 0; i < n; i++) {
+        const b = i * 5;
+        this.w(rec.inst, i * STRIDE, T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], 0, 0, 0, 0, rec.z, flags);
+      }
+      if (this.els.has(E.key)) this.list = this.list.filter((R) => R.key !== E.key);
+      this.els.set(E.key, rec);
+      this.list.push(rec);
+    }
+    this.pack();
+  }
+
+  /** Let go of the elements whose key starts with `prefix`, at once (handed over to another engine). */
+  forget(prefix) {
+    this.list = this.list.filter((R) => !R.key.startsWith(prefix));
+    for (const k of [...this.els.keys()]) if (k.startsWith(prefix)) this.els.delete(k);
+    this.pack();
+  }
+
   /** Make a looping element advance right away (e.g. logo on hover). */
   nudge(key, t = this.now()) {
     const R = this.els.get(key);

@@ -1,0 +1,157 @@
+/* The story's controls (player.js), over the site's canvas. --paper and --ink
+   follow the story from day into night and back. */
+#story-ui {
+  --paper: var(--bg);
+  --ink: var(--fg);
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  color: var(--ink);
+  font: 20px/24px var(--font), ui-monospace, monospace;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  visibility: hidden;
+}
+#story-ui.on {
+  visibility: visible;
+}
+#story-ui.on > *:not(.sr) {
+  pointer-events: auto;
+}
+#story-ui .bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  transition: opacity 0.4s;
+}
+.story-idle #story-ui .bar {
+  opacity: 0;
+}
+.story-idle,
+.story-idle * {
+  cursor: none !important;
+}
+/* Icon buttons: the box and the icon are blocks (pixels.js), which fill in on hover and focus. */
+#story-ui button {
+  flex: none;
+  display: block;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+#story-ui button:focus-visible {
+  outline: none;
+}
+#story-ui button[hidden] {
+  display: none;
+}
+#story-ui button canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+#story-ui [data-sound] {
+  width: 44px;
+}
+/* PLAY under the title on landing (placed by player.js). Once the story
+   starts it breaks up into blocks, then it's gone. */
+#story-ui .start {
+  position: absolute;
+}
+#story-ui .start.gone {
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0s linear 0.9s;
+}
+/* The scrubber: a line, the chapters as ticks, and a block to drag. */
+#story-ui .scrub {
+  position: relative;
+  flex: 1 1 160px;
+  height: 40px;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+#story-ui .track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 18px;
+  height: 4px;
+  background: color-mix(in srgb, var(--ink) 22%, transparent);
+}
+#story-ui .done {
+  width: 0;
+  height: 100%;
+  background: var(--ink);
+}
+#story-ui .marks i {
+  position: absolute;
+  top: 14px;
+  width: 4px;
+  height: 12px;
+  margin-left: -2px;
+  background: var(--ink);
+}
+#story-ui .knob {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  width: 8px;
+  height: 24px;
+  margin-left: -4px;
+  background: var(--ink);
+}
+#story-ui .scrub:focus-visible .knob {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+#story-ui .tip {
+  position: absolute;
+  bottom: 44px;
+  left: 0;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+}
+#story-ui .time {
+  white-space: nowrap;
+}
+#story-ui .of {
+  opacity: 0.55;
+}
+#story-ui .sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* Phones: one row, just the time so far, and no fullscreen (turn the phone instead). */
+@media (max-width: 599px) {
+  #story-ui .bar {
+    gap: 10px;
+  }
+  #story-ui .scrub {
+    flex-basis: 100px;
+  }
+  #story-ui .of,
+  #story-ui [data-full] {
+    display: none;
+  }
+}

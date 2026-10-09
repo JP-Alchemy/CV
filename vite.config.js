@@ -1,5 +1,4 @@
 import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import { THEMES, FONT } from './src/brand.js';
 import { markSVG } from './src/icons.js';
@@ -58,15 +57,6 @@ function brand() {
   };
 }
 
-// The site, and the story at /story/.
 export default defineConfig({
   plugins: [brand()],
-  build: {
-    rollupOptions: {
-      input: {
-        main: fileURLToPath(new URL('index.html', import.meta.url)),
-        story: fileURLToPath(new URL('story/index.html', import.meta.url)),
-      },
-    },
-  },
 });

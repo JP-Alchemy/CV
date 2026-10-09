@@ -9,6 +9,7 @@ import {
 import { parseRoute, PAGES } from './router.js';
 import { book, tripStats, gpxFile, eur, ROADBOOK_PATH } from './roadbook.js';
 import { THEMES, SPECTRUM, COLOURS, FONT } from './brand.js';
+import { ADVENTURER, blocks as sprite } from './story/art.js';
 
 const BASE = site.url.replace(/\/$/, '');
 const OG_IMAGE = `${BASE}/og-image.png`;
@@ -115,6 +116,17 @@ function describe(route) {
       card: {
         eyebrow: 'COLOPHON', title: 'HOW THIS SITE IS MADE.', text: 'One material: square blocks of ink on a dot grid. Colour only shows up as light, when something happens.',
         picture: { mark: 0 },
+      },
+    };
+    case 'story': return {
+      ...base,
+      title: 'The Adventurer — A Short Story in Pixel Blocks | JP Bothma',
+      description: 'An 80-second animated story, drawn and scored in the blocks of jpbothma.com: a d20, a small ship, seven unknown worlds, a dragon, and the colours coming home.',
+      card: {
+        eyebrow: 'A SHORT STORY IN BLOCKS', title: 'THE ADVENTURER',
+        text: 'A d20, a small ship, seven unknown worlds, a dragon, and the colours coming home.',
+        // The adventurer, staff raised.
+        picture: { blocks: sprite(ADVENTURER.cheer, 18, { star: 6 }), w: 12 * 18, h: 16 * 18 },
       },
     };
     case 'roadbook': {
@@ -482,6 +494,12 @@ const BODIES = {
     <p>${a(story.href, 'Watch The Adventurer →')}</p>
     <h2>Downloads</h2>
     <ul class="list">${colophon.downloads.map((d) => `<li><a href="${esc(d.href)}" download>${esc(sentence(d.label))}</a> <span class="muted">${esc(d.kind)}</span></li>`).join('')}</ul>`,
+
+  story: () => `
+    <p class="eyebrow">A short story in blocks</p>
+    <h1>The Adventurer</h1>
+    <p class="lead">An 80-second animated story, drawn and scored in the blocks this site is made of: a d20, a small ship, seven unknown worlds, a dragon, and the colours coming home. Sound on.</p>
+    <p>It plays with JavaScript and WebGL2. ${a('/', 'Back home →')}</p>`,
 
   notFound: () => `
     <h1>Page not found</h1>

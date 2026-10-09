@@ -2,9 +2,10 @@ import { Renderer, TRAIL, PULSES } from './engine/renderer.js';
 import { Engine, SHRINK } from './engine/engine.js';
 import { buildScene } from './scene.js';
 import { DomMirror } from './dom.js';
-import { parseRoute, fromHash, OUTSIDE } from './router.js';
+import { parseRoute, fromHash } from './router.js';
 import { applyMeta, pageHTML } from './seo.js';
 import { site, experience } from './content.js';
+import { tokens } from './ui.js';
 import { puzzle } from './puzzle.js';
 import { Garden } from './garden/mode.js';
 import { THEMES as BRAND, unit } from './brand.js';
@@ -48,6 +49,8 @@ const state = {
   menuOpen: false,
   theme: store.get('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   touch: matchMedia('(pointer: coarse)').matches,
+  fullscreen: false,
+  storyEls: null, // the story's picture, while the page morphs into it
 };
 
 // Measure the canvas itself: it tracks every viewport change (rotation,
@@ -148,6 +151,7 @@ function updateTrail(t) {
 const PULSE_LIFE = 1.6; // seconds (matches the fade in LIGHT_GLSL)
 const pulses = [];
 const pulseData = { data: new Float32Array(PULSES * 4), n: 0 };
+const storyPulses = { data: new Float32Array(PULSES * 4), n: 0 }; // the same, in the story's time
 
 function pulse(x, y, force = false) {
   if (engine.calm && !force) return;
@@ -161,6 +165,67 @@ function updatePulses(t) {
   pulses.forEach((p, i) => pulseData.data.set([p.x, p.y, p.t, p.s], i * 4));
   pulseData.n = pulses.length;
   return pulseData.n > 0;
+}
+
+// ---------------------------------------------------------------- the story
+//
+// /story/ is played by src/story/player.js (loaded the first time it's
+// needed) on a layer of blocks of its own, with its own clock, under the nav.
+// Arriving, the page morphs into the story's picture and then the story takes
+// over; leaving (or opening the menu), it hands its picture back to the page,
+// which morphs it into what's next. The story sets the colours while it shows.
+
+let story = null; // the player, while on /story/
+let handover = false; // the page is morphing into the story's picture
+let storyAt = 0; // the site's time at the story's last frame
+let storyLib = null;
+const loadStory = () => import('./story/player.js').then((m) => { storyLib = m; });
+const canGL = () => !document.documentElement.classList.contains('no-gl');
+const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+
+/** The rectangle the story has, on screen: under the nav (all of it, full screen). */
+function storyStage() {
+  const top = state.fullscreen ? 0 : tokens(renderer.w).navClip;
+  return { x: 0, y: top, w: renderer.w, h: renderer.h - top };
+}
+
+function toggleFullscreen() {
+  const d = document, el = d.documentElement;
+  const r = fsElement()
+    ? (d.exitFullscreen || d.webkitExitFullscreen).call(d)
+    : (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+  r?.catch?.(() => {});
+}
+const onFullscreen = () => {
+  state.fullscreen = !!fsElement();
+  render('local');
+  story?.layout();
+};
+document.addEventListener('fullscreenchange', onFullscreen);
+document.addEventListener('webkitfullscreenchange', onFullscreen);
+
+/** Morph the page into the story's picture (creating the player first, if need be); it takes over once there. */
+function storyIn() {
+  story ||= storyLib.createPlayer({ renderer, stage: storyStage, fullscreen: toggleFullscreen, isFullscreen: () => !!fsElement() });
+  state.storyEls = [story.frame()];
+  handover = true;
+  themeFrom = themeTo;
+  themeTo = story.look().b;
+  themeStart = engine.now();
+  themeOrigin = lastOrigin || [vp.w / 2, vp.h / 2];
+}
+
+/** The story hands its picture to the page, at rest, and goes (or only hides, under the menu). */
+function storyOut(keep) {
+  themeFrom = story.visible ? story.colours() : themeTo;
+  themeTo = THEMES[state.theme];
+  themeStart = engine.now();
+  themeOrigin = lastOrigin || [vp.w / 2, vp.h / 2];
+  if (story.visible) engine.place([story.frame()]);
+  handover = false;
+  state.storyEls = null;
+  if (keep) story.hide();
+  else { story.destroy(); story = null; }
 }
 
 // ---------------------------------------------------------------- frame loop
@@ -178,16 +243,42 @@ function frame() {
   const lit = updatePulses(t);
   if (garden.on) garden.frame(t, pulses, { speed: 1100, width: scene.S.mobile ? 110 : 150 });
   const d = renderer.dpr;
-  const tt = (t - themeStart) / 0.9;
+  let tt = (t - themeStart) / 0.9;
+  let look = { a: themeFrom, b: themeTo, t: tt >= 1 ? 2 : Math.max(0, tt), origin: themeOrigin };
+  const layers = [];
+  if (story) {
+    story.step(Math.min(Math.max(0, t - storyAt), 0.05));
+    storyAt = t;
+    // The page has become the story's picture: the story takes it from here.
+    if (handover && t > engine.animUntil + 0.05) {
+      handover = false;
+      engine.forget('story:');
+      state.storyEls = null;
+      story.show();
+    }
+    if (story.visible) {
+      look = story.look();
+      tt = look.t;
+      // Each light reaches both: the page's in the story's time, the story's in the page's.
+      const shift = story.time() - t, own = story.pulses();
+      const mine = [...pulses.map((p) => ({ ...p, t: p.t + shift })), ...own].slice(-PULSES);
+      storyPulses.n = mine.length;
+      mine.forEach((p, i) => storyPulses.data.set([p.x, p.y, p.t, p.s], i * 4));
+      const all = [...pulses, ...own.map((p) => ({ ...p, t: p.t - shift }))].slice(-PULSES);
+      pulseData.n = all.length;
+      all.forEach((p, i) => pulseData.data.set([p.x, p.y, p.t, p.s], i * 4));
+      layers.push({ layer: story.layer, time: story.time(), navClip: story.clip(), pulses: storyPulses });
+    }
+  }
   renderer.draw({
     time: t,
     scroll: Math.round(window.scrollY * d) / d,
     shrink: SHRINK,
     navClip: Math.min(window.scrollY, scene.S.navClip),
-    themeA: themeFrom,
-    themeB: themeTo,
-    themeT: tt >= 1 ? 2 : Math.max(0, tt),
-    themeOrigin,
+    themeA: look.a,
+    themeB: look.b,
+    themeT: look.t,
+    themeOrigin: look.origin,
     gridOrigin: [scene.S.left, 0],
     gridStep: 16,
     mouse,
@@ -198,8 +289,9 @@ function frame() {
     pulses: pulseData,
     pulseSpeed: 1100,
     pulseWidth: scene.S.mobile ? 110 : 150,
+    layers,
   });
-  if (garden.on || t < engine.animUntil + 0.05 || tt < 1 || pushing || lit) { kick(); return; }
+  if (story || garden.on || t < engine.animUntil + 0.05 || tt < 1 || pushing || lit) { kick(); return; }
   clearTimeout(timer);
   const next = engine.nextTick();
   if (next < Infinity) timer = setTimeout(kick, Math.max(16, (next - engine.now()) * 1000));
@@ -242,6 +334,7 @@ capture.addEventListener('pointercancel', () => garden.up());
 
 function toggleGarden() {
   const root = document.documentElement;
+  if (!garden.on && state.route.name === 'story') return; // the story needs the whole stage
   if (garden.on) {
     garden.leave();
     state.garden = null;
@@ -323,10 +416,12 @@ function runAction(action, node) {
     state.hover = null;
     if (!state.menuOpen) {
       menuReturnScroll = window.scrollY;
+      if (story) storyOut(true);
       state.menuOpen = true;
       render('page', { scrollTo: 0, origin: centerOf(node) });
     } else {
       state.menuOpen = false;
+      if (story) storyIn();
       render('page', { scrollTo: menuReturnScroll, origin: centerOf(node) });
     }
   } else if (action === 'top') {
@@ -368,13 +463,14 @@ const dom = new DomMirror(docEl, fixedEl, {
     if (action) { e.preventDefault(); runAction(action, node); return; }
     const href = node.getAttribute('href') || '';
     // Internal links navigate in place (and morph); modified clicks open tabs.
-    if (!href.startsWith('/') || href.startsWith('//') || OUTSIDE.some((p) => href.startsWith(p)) || node.hasAttribute('download') || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (!href.startsWith('/') || href.startsWith('//') || node.hasAttribute('download') || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
     const route = parseRoute(new URL(href, location.href).pathname);
     if (route.path !== state.route.path) { navigate(route, true); return; }
     if (state.menuOpen) {
       state.menuOpen = false;
       state.hover = null;
+      if (story) storyIn();
       render('page', { scrollTo: 0, origin: lastOrigin });
     } else {
       window.scrollTo({ top: 0, behavior: engine.calm ? 'auto' : 'smooth' });
@@ -387,16 +483,19 @@ function syncStatic() {
   staticEl.innerHTML = pageHTML(state.route);
 }
 
-function navigate(route, push) {
+async function navigate(route, push) {
   if (garden.on) toggleGarden();
+  if (route.name === 'story' && canGL() && !storyLib) await loadStory();
   scrollMemory.set(state.route.path, state.menuOpen ? menuReturnScroll : window.scrollY);
   if (push) history.pushState(null, '', route.path + location.search);
   const target = push ? 0 : scrollMemory.get(route.path) ?? 0;
+  if (story && route.name !== 'story') storyOut(false);
   state.route = route;
   state.menuOpen = false;
   state.hover = null;
   applyMeta(route);
   syncStatic();
+  if (route.name === 'story' && canGL()) storyIn();
   render('page', { scrollTo: target, origin: lastOrigin || [vp.w / 2, vp.h / 2] });
   if (navByKeyboard) docEl.querySelector('h1')?.focus({ preventScroll: true });
   navByKeyboard = false;
@@ -450,6 +549,7 @@ function onResize() {
   engine.vh = h;
   renderer.resize(w, h, d);
   engine.reveal(window.scrollY);
+  story?.layout(); // the story re-fits at once, so its blocks shift as the window does
   kick();
   clearTimeout(rz);
   rz = setTimeout(() => {
@@ -480,10 +580,16 @@ applyThemeCss();
 applyMeta(state.route);
 syncStatic();
 renderer.resize(vp.w, vp.h, dpr());
-render('intro', { scrollTo: 0 });
+const boot = () => render('intro', { scrollTo: 0 });
+if (state.route.name === 'story' && canGL()) {
+  loadStory().then(() => { storyIn(); boot(); });
+} else {
+  boot();
+  setTimeout(loadStory, 4000); // the story's code, ready for when it's wanted
+}
 
 // Real photos re-render once loaded.
 window.addEventListener('photo-loaded', () => render('local'));
 
 // Debug/inspection handle.
-window.__site = { engine, state, render, impulses, pulses, kick, frame, puzzle, garden, get scene() { return scene; } };
+window.__site = { engine, state, render, impulses, pulses, kick, frame, puzzle, garden, navigate, get scene() { return scene; }, get story() { return story; } };

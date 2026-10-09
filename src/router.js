@@ -5,11 +5,10 @@
 //   /work/           project index
 //   /work/:slug/     project
 //   /services/, /about/, /cv/, /contact/, /colophon/
+//   /story/          The Adventurer (src/story/), played under the nav
 //   /projects/moto-tour/  the motorcycle roadbook (address kept from the old site)
 
-export const PAGES = ['work', 'services', 'about', 'cv', 'contact', 'colophon'];
-/** Pages of their own (separate builds), which links reach with a normal page load. */
-export const OUTSIDE = ['/story/'];
+export const PAGES = ['work', 'services', 'about', 'cv', 'contact', 'colophon', 'story'];
 
 export function parseRoute(pathname = location.pathname) {
   const parts = pathname.split('/').filter(Boolean);

@@ -465,6 +465,7 @@ export class Renderer {
     this.vao = gl.createVertexArray();
     gl.bindVertexArray(this.vao);
     const quad = gl.createBuffer();
+    this.quad = quad;
     gl.bindBuffer(gl.ARRAY_BUFFER, quad);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0);
@@ -517,6 +518,42 @@ export class Renderer {
     gl.bufferSubData(gl.ARRAY_BUFFER, dstInstance * STRIDE * 4, data, srcOffset, count * STRIDE);
   }
 
+  /**
+   * A second set of blocks, for an engine with a clock of its own (the
+   * story's): hand it to that Engine as its renderer, and pass it to draw()
+   * in `layers` with its time. It's drawn over the page's blocks.
+   */
+  layer() {
+    const gl = this.gl;
+    const L = { vao: gl.createVertexArray(), buf: gl.createBuffer(), capacity: 0, count: 0 };
+    gl.bindVertexArray(L.vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, L.buf);
+    for (let i = 0; i < STRIDE / 4; i++) {
+      gl.enableVertexAttribArray(1 + i);
+      gl.vertexAttribPointer(1 + i, 4, gl.FLOAT, false, STRIDE * 4, i * 16);
+      gl.vertexAttribDivisor(1 + i, 1);
+    }
+    gl.bindVertexArray(null);
+    L.setInstances = (data, count) => {
+      gl.bindBuffer(gl.ARRAY_BUFFER, L.buf);
+      if (count > L.capacity) {
+        L.capacity = Math.ceil(count * 1.5) + 256;
+        gl.bufferData(gl.ARRAY_BUFFER, L.capacity * STRIDE * 4, gl.DYNAMIC_DRAW);
+      }
+      if (count) gl.bufferSubData(gl.ARRAY_BUFFER, 0, data, 0, count * STRIDE);
+      L.count = count;
+    };
+    L.updateInstances = (data, srcOffset, dstInstance, count) => {
+      gl.bindBuffer(gl.ARRAY_BUFFER, L.buf);
+      gl.bufferSubData(gl.ARRAY_BUFFER, dstInstance * STRIDE * 4, data, srcOffset, count * STRIDE);
+    };
+    L.dispose = () => { gl.deleteBuffer(L.buf); gl.deleteVertexArray(L.vao); L.count = 0; };
+    return L;
+  }
+
   /** Show the garden: a cols × rows RGBA grid of 4px cells at (x0, y0) on screen. */
   setGarden(g) {
     const gl = this.gl;
@@ -556,8 +593,7 @@ export class Renderer {
     gl.clearDepth(1);
     gl.clear(gl.DEPTH_BUFFER_BIT);
 
-    const setPush = (u) => {
-      const T = f.trail;
+    const setPush = (u, T = f.trail) => {
       const n = T ? T.n : 0;
       gl.uniform1i(u.u_trailN, n);
       if (!n) return;
@@ -569,8 +605,7 @@ export class Renderer {
       gl.uniform4f(u.u_trailBox, b[0], b[1], b[2], b[3]);
     };
 
-    const setLight = (u) => {
-      const P = f.pulses;
+    const setLight = (u, P = f.pulses) => {
       const n = P ? P.n : 0;
       gl.uniform1i(u.u_pulseN, n);
       if (!n) return;
@@ -605,23 +640,28 @@ export class Renderer {
     gl.bindVertexArray(this.dotVao);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, cols * rows);
 
-    if (this.count) {
+    const blocks = (vao, count, time, navClip, trail, pulses) => {
+      if (!count) return;
       gl.enable(gl.DEPTH_TEST);
       gl.depthFunc(gl.LEQUAL);
       ({ u, p } = this.blocks);
       gl.useProgram(p);
       setTheme(u);
-      setPush(u);
-      setLight(u);
+      setPush(u, trail);
+      setLight(u, pulses);
       gl.uniform2f(u.u_view, this.w, this.h);
       gl.uniform1f(u.u_scroll, f.scroll);
-      gl.uniform1f(u.u_time, f.time);
+      gl.uniform1f(u.u_time, time);
       gl.uniform1f(u.u_shrink, f.shrink);
-      gl.uniform1f(u.u_navClip, f.navClip);
-      gl.bindVertexArray(this.vao);
-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.count);
+      gl.uniform1f(u.u_navClip, navClip);
+      gl.bindVertexArray(vao);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count);
       gl.bindVertexArray(null);
-    }
+    };
+    blocks(this.vao, this.count, f.time, f.navClip, f.trail, f.pulses);
+    // Layers (see layer()): on their own clock, clipped under the nav, lit by
+    // their own pulses (in their time), not pushed by the pointer.
+    for (const L of f.layers || []) blocks(L.layer.vao, L.layer.count, L.time, L.navClip, null, L.pulses);
 
     const G = this.garden;
     if (!G) return;
