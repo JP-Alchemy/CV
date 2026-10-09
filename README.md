@@ -41,6 +41,12 @@ It also writes `404.html` (noindex), `sitemap.xml`, `robots.txt`, a pixel-style 
 
 `dist/` works on any static host with no rewrite rules: each route is a real file and unknown paths fall back to `404.html`. This repo deploys to GitHub Pages on every push to `main` ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)), served at **jpbothma.com** (`public/CNAME`).
 
+### LinkedIn banner and profile picture
+
+`npm run banner` draws `brand/linkedin-banner-light.png` and `-dark.png` (1584 × 396, LinkedIn's size) from the site's own parts: the pixel font, the logo's five states, the halftone moon and the click light, set off by a pixel cursor that pushes the moon's blocks aside. The lower left stays clear for the profile photo. `node scripts/banner.mjs --preview <dir>` also writes copies with the photo drawn where LinkedIn puts it, on desktop and in the app.
+
+`npm run profile` draws the matching profile picture, `brand/linkedin-profile-light.png` and `-dark.png` (1200 × 1200). It uses the About portrait's settings (cut-out, levels, 1-bit dither), with the face sharp and the shoulders still assembling in coarser halftone blocks, and the click light crossing one of them. Every block is a multiple of 3px, so LinkedIn's 400px copy matches the site pixel for pixel. Its source is `brand/source/jp-portrait.png`, a lossless copy of the About photo. `--preview <dir>` writes circle-cropped copies.
+
 ### The roadbook
 
 [`/projects/moto-tour/`](src/roadbook.js) keeps the address it had on the old site. It is drawn from [`src/data/roadbook.js`](src/data/roadbook.js): the route map is projected from the days' via points, each day expands to its elevation profile and stay, and the build writes the GPX files (all routes plus one per riding day) to `dist/projects/moto-tour/gpx/`.
