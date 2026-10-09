@@ -323,6 +323,16 @@ export const onRequest = {
   text: 'Also on request: security assessments of operational technology for energy and industrial clients — wind, solar and industrial control systems.',
 };
 
+// The short animated story at /story/ (src/story/), as it's offered on the
+// home and about pages.
+export const story = {
+  title: 'THE ADVENTURER',
+  href: '/story/',
+  cta: 'WATCH IT',
+  home: 'An ink-and-paper world, a d20, a small ship, seven unknown worlds and a lonely dragon, told in the blocks this site is made of. Eighty seconds, with sound.',
+  about: 'The short version, in blocks: someone leaves an ink-and-paper world to go looking for colour, and brings it home. Eighty seconds, with sound.',
+};
+
 export const about = {
   bio: [
     "I'm a South African creative technologist living in Leiden, working where interactive experiences, data visualisation and sustainability-minded engineering meet.",
@@ -508,6 +518,7 @@ export const colophon = {
     'The letters are bitmaps in a JavaScript file. The same file builds the font, and the same parts draw the link previews, the LinkedIn banner and the profile pictures.',
     'Press G for the garden: a falling-sand simulation that steps 60 times a second and draws as one texture. A wrong address gets you a word puzzle.',
     'Vite and plain JavaScript, no framework. Hosted on GitHub Pages.',
+    'The same parts tell a story, too: The Adventurer, eighty seconds with sound, drawn and voiced in blocks.',
   ],
   downloads: [
     { label: `${FONT.family.toUpperCase()} REGULAR`, kind: 'TTF', href: `/fonts/${FONT.files.regular}.ttf` },

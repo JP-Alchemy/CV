@@ -4,7 +4,7 @@
 // at runtime it keeps <head> in sync and backs the print view of the CV.
 
 import {
-  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills, colophon,
+  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills, colophon, story,
 } from './content.js';
 import { parseRoute, PAGES } from './router.js';
 import { book, tripStats, gpxFile, eur, ROADBOOK_PATH } from './roadbook.js';
@@ -334,6 +334,8 @@ const BODIES = {
     <p>${a('/work/', 'All projects →')}</p>
     <h2>Currently</h2>
     <ul class="list">${site.now.map((n) => `<li><span class="muted">${esc(n.when.toLowerCase())}</span> — ${esc(n.text)}</li>`).join('')}</ul>
+    <h2>My story</h2>
+    <p>${esc(story.home)} ${a(story.href, 'Watch The Adventurer →')}</p>
     <h2>Work with me</h2>
     <p>By day I lead sustainability technology at Interfood. Around that, I take on a small number of engagements: interactive 3D, data visualisation, AI agents, sustainability engineering and fractional CTO work. ${a('/services/', 'Services & rates →')}</p>`,
 
@@ -421,7 +423,9 @@ const BODIES = {
     <ul class="stats">${stats.map((s) => `<li><strong>${esc(s.value)}</strong> ${esc(sentence(s.label))}</li>`).join('')}</ul>
     <blockquote>${esc(sentence(about.quote))}</blockquote>
     <h2>Creativity · craft · impact</h2>
-    ${principles.map((p) => `<h3>${esc(sentence(p.title))}</h3><p>${esc(p.text)}</p>`).join('')}`,
+    ${principles.map((p) => `<h3>${esc(sentence(p.title))}</h3><p>${esc(p.text)}</p>`).join('')}
+    <h2>My story</h2>
+    <p>${esc(story.about)} ${a(story.href, 'Watch The Adventurer →')}</p>`,
 
   cv: () => `
     <header class="cv-head">
@@ -475,6 +479,7 @@ const BODIES = {
     <p>${esc(colophon.motion)}</p>
     <h2>How it's built</h2>
     <ul>${colophon.build.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>
+    <p>${a(story.href, 'Watch The Adventurer →')}</p>
     <h2>Downloads</h2>
     <ul class="list">${colophon.downloads.map((d) => `<li><a href="${esc(d.href)}" download>${esc(sentence(d.label))}</a> <span class="muted">${esc(d.kind)}</span></li>`).join('')}</ul>`,
 

@@ -6,8 +6,9 @@ import { roadbookPage } from './roadbook.js';
 import { puzzle, board, boardWidth } from './puzzle.js';
 import { COLOURS, PRIMARY } from './garden/sim.js';
 import { THEMES, SPECTRUM } from './brand.js';
+import { ADVENTURER, frames as spriteFrames } from './story/art.js';
 import {
-  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills, colophon,
+  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills, colophon, story,
 } from './content.js';
 
 const pad2 = (i) => String(i + 1).padStart(2, '0');
@@ -134,6 +135,22 @@ function pageHead(S, eyebrow, title, o = {}) {
   ]);
 }
 
+/** A way into the story (/story/): the adventurer looking about, a line, and a button. */
+function storyTeaser(state, S, line) {
+  const cell = S.mobile ? 5 : 6;
+  const f = spriteFrames([ADVENTURER.stand, ADVENTURER.up, ADVENTURER.cheer, ADVENTURER.stand, ADVENTURER.walk], cell);
+  const hero = custom((w, ctx) => {
+    const W = 12 * cell, H = 16 * cell;
+    return { w: W, h: H, els: [ctx.el({ key: 'story-hero', sig: `story-hero|${cell}`, w: W, h: H, blocks: f[0], motion: 'icon', anim: { frames: f, period: 1.7, phase: 0.9 } })] };
+  });
+  const body = col([
+    text(story.title, S.h3, { key: 'story-title', tag: 'h3', label: 'The Adventurer' }),
+    maxw(560, text(line, S.body, { key: 'story-line', mt: S.sp(1) })),
+    row([button({ key: 'story-watch', label: story.cta, arrow: '→', href: story.href, hover: state.hover === 'story-watch', aria: 'Watch The Adventurer, a short animated story with sound' })], { mt: S.sp(2) }),
+  ]);
+  return row([hero, { ...body, grow: true }], { gap: S.sp(S.mobile ? 2 : 4), valign: 'center', mt: S.sp(3) });
+}
+
 function projectRow(p, i, state, S) {
   const key = `row-${p.slug}`;
   const hv = state.hover === key;
@@ -185,6 +202,8 @@ function home(state, S) {
     { ...link({ key: 'all-work', label: 'ALL PROJECTS →', href: '/work/', hover: hv('all-work') }), mt: S.sp(3) },
     ...section(S, 'now', 'CURRENTLY'),
     ...now,
+    ...section(S, 'story', 'MY STORY'),
+    storyTeaser(state, S, story.home),
     ...section(S, 'hire', 'WORK WITH ME'),
     maxw(640, text('By day I lead sustainability technology at Interfood. Around that, I take on a small number of engagements: interactive 3D, data visualisation, AI agents, sustainability engineering and fractional CTO work.', S.body, { key: 'hire-text', mt: S.sp(3) })),
     { ...link({ key: 'hire-link', label: 'SERVICES & RATES →', href: '/services/', hover: hv('hire-link') }), mt: S.sp(3) },
@@ -360,6 +379,8 @@ function aboutPage(state, S) {
     maxw(900, text(about.quote, S.h2, { key: 'about-quote', mt: S.sp(10), tag: 'blockquote' })),
     ...section(S, 'pr', 'CREATIVITY · CRAFT · IMPACT'),
     { ...grid(items, { cols: S.mobile ? 1 : 3, gap: S.sp(4), rowGap: S.sp(5) }), mt: S.sp(4) },
+    ...section(S, 'story', 'MY STORY'),
+    storyTeaser(state, S, story.about),
   ]);
 }
 
@@ -568,6 +589,7 @@ function colophonPage(state, S) {
       text('→', S.body, { key: `cf-build-${i}:a`, a11y: false }),
       { ...maxw(720, text(b, S.body, { key: `cf-build-${i}` })), grow: true },
     ], { gap: 12, mt: i ? S.sp(2) : 0 })), { mt: S.sp(3) }),
+    row([button({ key: 'cf-story', label: 'WATCH THE ADVENTURER', arrow: '→', href: story.href, hover: hv('cf-story'), aria: 'Watch The Adventurer, a short animated story with sound' })], { mt: S.sp(4) }),
 
     ...section(S, 'files', 'DOWNLOADS'),
     ...files,
