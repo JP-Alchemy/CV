@@ -42,10 +42,7 @@ function logoBox() {
 function navBar(state, S) {
   const hv = (k) => state.hover === k;
   const name = state.route.name;
-  const left = [
-    logoBox(),
-    button({ key: 'nav-name', label: site.name, href: '/', small: true, hover: hv('nav-name'), aria: 'Home' }),
-  ];
+  const left = [logoBox()];
   if (!S.mobile && !S.tablet) left.push(button({ key: 'nav-tag', label: 'CREATIVE TECHNOLOGIST', href: '/about/', small: true, hover: hv('nav-tag'), aria: 'About JP' }));
   const theme = button({
     key: 'nav-theme', label: 'THEME', icon: state.theme === 'dark' ? 'dark' : 'light', small: true, width: 36,
