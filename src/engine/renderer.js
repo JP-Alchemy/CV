@@ -347,6 +347,7 @@ uniform sampler2D u_grid;
 uniform vec2 u_gOrigin;
 uniform float u_gCell;
 uniform vec2 u_gSize;
+uniform vec4 u_gHole; // a screen rect the garden leaves clear (the first lesson's box)
 uniform float u_scroll;
 uniform float u_time;
 out vec4 o;
@@ -354,6 +355,7 @@ ${THEME_GLSL}
 ${LIGHT_GLSL}
 void main() {
   vec2 sp = vec2(gl_FragCoord.x, u_viewDev.y - gl_FragCoord.y) / u_dpr;
+  if (sp.x >= u_gHole.x && sp.x < u_gHole.z && sp.y >= u_gHole.y && sp.y < u_gHole.w) discard;
   vec2 g = (sp - u_gOrigin) / u_gCell;
   if (g.x < 0.0 || g.y < 0.0 || g.x >= u_gSize.x || g.y >= u_gSize.y) discard;
   ivec2 c = ivec2(g);
@@ -554,7 +556,7 @@ export class Renderer {
     return L;
   }
 
-  /** Show the garden: a cols × rows RGBA grid of 4px cells at (x0, y0) on screen. */
+  /** Show the garden: a cols × rows RGBA grid of 4px cells at (x0, y0) on screen, clear of `hole` ([x0, y0, x1, y1]). */
   setGarden(g) {
     const gl = this.gl;
     if (!this.gtex) this.gtex = gl.createTexture();
@@ -569,7 +571,7 @@ export class Renderer {
     } else {
       gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, g.cols, g.rows, gl.RGBA, gl.UNSIGNED_BYTE, g.buf);
     }
-    this.garden = { cols: g.cols, rows: g.rows, x0: g.x0, y0: g.y0, cell: g.cell };
+    this.garden = { cols: g.cols, rows: g.rows, x0: g.x0, y0: g.y0, cell: g.cell, hole: g.hole || [0, 0, 0, 0] };
   }
 
   clearGarden() { this.garden = null; }
@@ -676,6 +678,7 @@ export class Renderer {
     gl.uniform2f(u.u_gOrigin, G.x0, G.y0);
     gl.uniform1f(u.u_gCell, G.cell);
     gl.uniform2f(u.u_gSize, G.cols, G.rows);
+    gl.uniform4f(u.u_gHole, ...G.hole);
     gl.uniform1f(u.u_scroll, f.scroll);
     gl.uniform1f(u.u_time, f.time);
     gl.bindVertexArray(this.bgVao);

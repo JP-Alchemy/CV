@@ -33,7 +33,7 @@ export const DEVICES = {
 };
 const AGENT = ['####', '#a#a', '####', '#..#'];
 
-const PACE = 0.6; // growth steps per second, in a plant's favourite light
+const PACE = 1.2; // growth steps per second, in a plant's favourite light
 const DAYLIGHT = 0.22; // light per second where the sky is open
 const BEAM = { reach: 64, spread: 0.35, power: 0.85 }; // a hung light's cone: cells, widening per row, light/s at the top
 

@@ -113,13 +113,20 @@ function gardenBar(state, S) {
   const v = state.garden;
   const hv = (k) => state.hover === k;
   const tools = v.tools.map((t) => button({ key: `gd-tool-${t}`, label: t.toUpperCase(), small: true, action: `gd:tool:${t}`, active: v.tool === t, pressed: v.tool === t, hover: hv(`gd-tool-${t}`) }));
-  const done = button({ key: 'gd-done', label: 'START OVER', small: true, action: 'gd:restart', hover: hv('gd-done'), aria: 'Start the garden over: fresh soil, empty pots (your colours and seeds stay)' });
+  // On a phone the first lesson lives down here, in the hint's place, with
+  // its button where START OVER goes (no box over the garden to get in the way).
+  const lesson = S.mobile && v.tutorial;
+  const done = lesson
+    ? button({ key: 'gd-done', label: v.tutorial.button, small: true, action: 'gd:skip', hover: hv('gd-done'), aria: v.tutorial.button === 'SKIP' ? 'Skip the garden lesson' : 'Close the garden lesson' })
+    : button({ key: 'gd-done', label: 'START OVER', small: true, action: 'gd:restart', hover: hv('gd-done'), aria: 'Start the garden over: fresh soil, empty pots (your colours and seeds stay)' });
   const chips = row(COLOURS.map((_, k) => seedChip(v, k, hv)), { gap: S.mobile ? 4 : 6 });
   // The hint has room for a set number of lines, whatever it says, so the
   // toolbar (and the ground and pots on it) never move as it changes.
-  const lines = S.mobile ? 3 : 2, line = typeset('A', S.small).height;
-  const said = text(v.hint, S.small, { key: 'gd-hint', tone: 1, attrs: { 'aria-live': 'polite' } });
-  const hint = custom((w, ctx) => { const b = layout(said, w, ctx); return { w: b.w, h: lines * line, els: b.els }; });
+  const lines = S.mobile ? 4 : 2, line = typeset('A', S.small).height, room = lines * line + (S.mobile ? 4 : 0);
+  const said = lesson
+    ? col([text(v.tutorial.label, S.small, { key: 'gd-hint-step', tone: 0.55 }), text(v.tutorial.text, S.small, { key: 'gd-hint', tone: 1, mt: 4, attrs: { 'aria-live': 'polite' } })])
+    : text(v.hint, S.small, { key: 'gd-hint', tone: 1, attrs: { 'aria-live': 'polite' } });
+  const hint = custom((w, ctx) => { const b = layout(said, w, ctx); return { w: b.w, h: room, els: b.els }; });
   if (S.mobile) {
     return col([row([...tools, done], { gap: 4, wrap: true, rowGap: 4 }), { ...chips, mt: 10 }, { ...hint, mt: 2 }]);
   }
@@ -136,7 +143,7 @@ function gardenBar(state, S) {
  */
 function gardenBand(state, S, ctx, vp) {
   const b = layout(gardenBar(state, S), S.cw, ctx);
-  const full = layout(gardenBar({ ...state, garden: { ...state.garden, tools: state.garden.every } }, S), S.cw, new Ctx('gd-size', state));
+  const full = layout(gardenBar({ ...state, garden: { ...state.garden, tools: state.garden.every, tutorial: null } }, S), S.cw, new Ctx('gd-size', state));
   const pad = S.mobile ? 12 : 16, bandH = Math.max(b.h, full.h) + pad * 2, top = vp.h - bandH;
   shift(b.els, S.left, top + pad);
   const band = ctx.el({ key: 'gd-band', sig: `gdb|${vp.w}|${bandH}`, w: vp.w, h: bandH, blocks: fillBlocks(vp.w, bandH, 4, 0, 0), flat: true });
@@ -165,6 +172,81 @@ function gardenBed(S, ctx, top, bottom) {
     return el;
   });
   return { els, beds };
+}
+
+// The first lesson (garden/tutorial.js): a box saying what to do, an arrow
+// at where, and a mark on the spot to click. A toolbar button to press first
+// blinks instead, and the box sits over it.
+const ARROW = ['...#...', '...#...', '...#...', '#######', '.#####.', '..###..', '...#...'];
+const cells = (rows, c, tone = 1) => Float32Array.from(rows.flatMap((r, y) => [...r].flatMap((ch, x) => (ch === '#' ? [x * c, y * c, c, c, tone] : []))));
+const nudge = (b, dy) => { const o = b.slice(); for (let i = 1; i < o.length; i += 5) o[i] += dy; return o; };
+const blink = (w, h, b) => ({ frames: [frameBlocks(w, h, b), frameBlocks(w, h, b, 0.15)], period: 0.45, phase: 0 });
+
+function gardenLesson(state, S, ctx, band, top) {
+  const t = state.garden?.tutorial;
+  if (!t) return { els: [], hole: null };
+  const els = [];
+  const fix = (e, z = 8) => { e.fixed = true; e.z = z; els.push(e); return e; };
+  // A toolbar button to press first: a blinking ring round it, and the arrow points there.
+  const want = t.tool ? `gd-tool-${t.tool}:frame` : t.chip !== null ? `gd-seed-${t.chip}:frame` : null;
+  const at = want && band.els.find((e) => e.key === want);
+  let point = t.target;
+  if (at) {
+    const w = at.w + 8, h = at.h + 8;
+    const ring = fix(ctx.el({ key: 'gt-ring', sig: `gtr|${w}|${h}`, w, h, blocks: frameBlocks(w, h, 4), motion: 'icon', anim: blink(w, h, 4) }));
+    ring.x = at.x - 4; ring.y = at.y - 4;
+    point = [at.x + at.w / 2, at.y - 6];
+  }
+  // The spot to click: a small blinking square.
+  if (t.mark) {
+    const q = 24;
+    const mark = fix(ctx.el({ key: 'gt-mark', sig: 'gt-mark', w: q, h: q, blocks: frameBlocks(q, q, 4), motion: 'icon', anim: blink(q, q, 4) }));
+    mark.x = even(t.mark[0] - q / 2); mark.y = even(t.mark[1] - q / 2);
+  }
+  const A = 7 * 4;
+  const arrowAt = (tx, ty) => {
+    const tip = t.mark && !at ? ty - 18 : ty; // stop short of the mark
+    const ay = even(tip - A - 6);
+    if (t.arrow !== false && !at) {
+      const arrow = fix(ctx.el({ key: 'gt-arrow', sig: 'gt-arrow', w: A, h: A, blocks: cells(ARROW, 4), motion: 'icon', anim: { frames: [cells(ARROW, 4), nudge(cells(ARROW, 4), 6)], period: 0.6, phase: 0 } }));
+      arrow.x = even(tx - A / 2); arrow.y = ay;
+    }
+    return ay;
+  };
+  if (S.mobile) {
+    if (point) arrowAt(...point);
+    return { els, hole: null };
+  }
+  // The box, with what to do.
+  const W = Math.min(320, S.cw), pad = 12;
+  const body = layout(col([
+    text(t.label, S.small, { key: 'gt-step', tone: 0.55, a11y: false }),
+    text(t.text, S.small, { key: 'gt-text', tone: 1, a11y: false, mt: 6 }),
+    row([button({ key: 'gt-btn', label: t.button, small: true, action: 'gd:skip', hover: state.hover === 'gt-btn', aria: t.button === 'SKIP' ? 'Skip the garden lesson' : 'Close the garden lesson' })], { mt: 10 }),
+  ]), W - pad * 2, ctx);
+  const H = body.h + pad * 2;
+  let x, y;
+  if (point) {
+    // The box goes over the arrow, or beside it where the heading is in the way.
+    const [tx, ty] = point;
+    const ay = arrowAt(tx, ty);
+    x = tx - W / 2; y = ay - 6 - H;
+    if (y < top) {
+      const side = tx - A / 2 - 16 - W >= S.left ? -1 : 1;
+      x = side < 0 ? tx - A / 2 - 16 - W : tx + A / 2 + 16;
+      y = Math.max(top, ay + A - H);
+    }
+  } else {
+    x = S.left + S.cw - W; y = band.top - H - 16;
+  }
+  x = even(Math.max(S.left, Math.min(S.left + S.cw - W, x)));
+  y = even(Math.max(S.navClip + 8, y));
+  const fill = fix(ctx.el({ key: 'gt-box', sig: `gtb|${W}|${H}`, w: W, h: H, blocks: fillBlocks(W, H, 4, 0, 0), flat: true }), 7);
+  const edge = fix(ctx.el({ key: 'gt-edge', sig: `gte|${W}|${H}`, w: W, h: H, blocks: frameBlocks(W, H) }));
+  fill.x = edge.x = x; fill.y = edge.y = y;
+  shift(body.els, x + pad, y + pad);
+  for (const e of body.els) fix(e, 9);
+  return { els, hole: [x, y, x + W, y + H] };
 }
 
 function gardenPage(state, S) {
@@ -694,7 +776,11 @@ export function buildScene(state, vp) {
   if (state.route.name === 'garden' && !state.menuOpen) {
     const bar = state.garden ? gardenBand(state, S, ctx, vp) : { els: [], top: vp.h };
     const ground = gardenBed(S, ctx, top + page.h, bar.top);
-    return { elements: resolve([...nav.els, ...page.els, ...ground.els, ...bar.els]), height: vp.h, S, gardenTop: bar.top, beds: ground.beds };
+    const lesson = gardenLesson(state, S, ctx, bar, top + page.h + 8);
+    return {
+      elements: resolve([...nav.els, ...page.els, ...ground.els, ...bar.els, ...lesson.els]),
+      height: vp.h, S, gardenTop: bar.top, beds: ground.beds, gardenHole: lesson.hole,
+    };
   }
 
   const count = (els) => els.reduce((n, e) => n + e.blocks.length / 5, 0);

@@ -2,22 +2,23 @@
 // terrain for a falling-sand garden, and the pots and ground fill with soil.
 // Plant seeds in the soil (or drop them and bury them in sand), water them,
 // hang lights over them, and grow all seven spectrum colours. Flowers
-// harvested beside another colour give crossed seeds; sprinklers, sowers and
+// collected beside another colour give crossed seeds; sprinklers, sowers and
 // agents unlock as the spectrum fills in. Progress (colours, seeds) is kept
 // locally.
 import { Sim, K, CELL, COLOURS, PRIMARY, NEEDS } from './sim.js';
+import { Tutorial } from './tutorial.js';
 
 const KEY = 'garden.v1';
 const LIMIT = { light: 16, sprinkler: 4, sower: 3, agent: 3 };
 const TOOLS = ['seed', 'sand', 'water', 'light', 'sprinkler', 'sower', 'agent'];
 const TIPS = {
-  seed: 'DROP A SEED OVER SOIL AND IT PLANTS ITSELF. CLICK A FLOWER TO HARVEST.',
+  seed: 'DROP A SEED OVER SOIL AND IT PLANTS ITSELF. CLICK A FLOWER TO COLLECT.',
   sand: 'HOLD TO POUR SAND. BURY SEEDS IN IT.',
   water: 'HOLD TO POUR WATER. IT SOAKS INTO SAND.',
   light: 'CLICK TO HANG A LIGHT. IT SHINES DOWN. CLICK IT AGAIN TO TAKE IT DOWN.',
   sprinkler: 'CLICK TO PLACE A SPRINKLER. IT DRIPS WATER BELOW IT.',
   sower: 'PICK A COLOUR, THEN PLACE A SOWER. IT SOWS THAT COLOUR BELOW IT.',
-  agent: 'CLICK TO DROP AN AGENT. IT WALKS TO FLOWERS AND HARVESTS THEM.',
+  agent: 'CLICK TO DROP AN AGENT. IT WALKS TO FLOWERS AND COLLECTS THEIR SEEDS.',
 };
 const lower = (k) => COLOURS[k].toLowerCase();
 
@@ -57,17 +58,20 @@ export class Garden {
     };
   }
 
-  /** The toolbar's view of the garden (read by the scene). */
+  /** The toolbar's view of the garden (read by the scene), and the first lesson's step if it's on. */
   view() {
     const u = this.unlocked();
+    const lesson = this.tutorial?.view() ?? null;
+    const said = this.msg && this.msg.until > this.host.now() ? this.msg.text : null;
     return {
+      tutorial: lesson,
       tool: this.tool,
       seed: this.seed,
       found: this.progress.found,
       seeds: this.progress.seeds.map((n, k) => (PRIMARY.includes(k) ? Infinity : n)),
       tools: TOOLS.filter((t) => !(t in u) || u[t]),
       every: TOOLS, // for sizing the toolbar as it will be once all are unlocked
-      hint: this.msg && this.msg.until > this.host.now() ? this.msg.text : this.hint(),
+      hint: said || lesson?.text || this.hint(),
     };
   }
 
@@ -78,6 +82,15 @@ export class Garden {
     this.progress = load();
     this.tool = 'seed';
     this.seed = 2; // yellow: the most forgiving
+    // The first lesson, until a first flower's seeds are collected (or it's skipped).
+    this.tutorial = !this.progress.taught && !this.progress.bloomed ? new Tutorial(this) : null;
+  }
+
+  /** The lesson's over: done, or skipped. */
+  taught() {
+    this.progress.taught = true;
+    this.save();
+    this.tutorial = null;
   }
 
   /**
@@ -106,7 +119,9 @@ export class Garden {
       }
     }
     this.sim = new Sim(this.cols, this.rows, solid);
-    this.filling = this.fill(area.beds || []);
+    this.beds = area.beds || [];
+    this.filling = this.fill(this.beds);
+    this.tutorial?.reset();
     // Sowers sow from your seeds (red, yellow and blue never run out).
     this.sim.take = (gene) => {
       if (PRIMARY.includes(gene)) return true;
@@ -120,7 +135,7 @@ export class Garden {
     this.started = this.host.now();
     this.last = this.started;
     this.acc = 0;
-    this.say(this.progress.bloomed ? 'WELCOME BACK. GROW ALL SEVEN COLOURS.' : 'PICK A SEED, THEN CLICK OVER A POT TO DROP IT IN.', 5);
+    if (!this.tutorial) this.say(this.progress.bloomed ? 'WELCOME BACK. GROW ALL SEVEN COLOURS.' : 'PICK A SEED, THEN CLICK OVER A POT TO DROP IT IN.', 5);
   }
 
   /** The cells the beds fill: what's open below each level that its point can reach, lowest last. */
@@ -167,11 +182,12 @@ export class Garden {
 
   select(action) {
     const [, what, arg] = action.split(':');
-    if (what === 'tool') { this.tool = arg; this.say(TIPS[arg], 5); }
+    if (what === 'skip') this.taught();
+    if (what === 'tool') { this.tool = arg; if (!this.tutorial) this.say(TIPS[arg], 5); }
     if (what === 'seed') {
       const k = Number(arg);
       if (PRIMARY.includes(k) || this.progress.seeds[k] > 0) { this.seed = k; this.tool = 'seed'; this.say(this.needs(k), 4); }
-      else if (this.progress.found[k]) this.say(`NO ${COLOURS[k]} SEEDS LEFT. HARVEST A ${COLOURS[k]} FLOWER FOR MORE.`, 4);
+      else if (this.progress.found[k]) this.say(`NO ${COLOURS[k]} SEEDS LEFT. COLLECT SOME FROM A ${COLOURS[k]} FLOWER.`, 4);
       else this.say(`${COLOURS[k]}: NOT GROWN YET. CROSS TWO COLOURS TO FIND IT.`, 4);
     }
     this.host.changed();
@@ -191,20 +207,25 @@ export class Garden {
 
   down(x, y) {
     if (!this.sim) return;
+    const h = this.host.hole?.(); // the lesson's box sits over the garden
+    if (h && x >= h[0] && x < h[2] && y >= h[1] && y < h[3]) return;
     const c = this.cellAt(x, y);
     if (!c) return;
     const s = this.sim, i = s.idx(c[0], c[1]);
     this.pointer = { x, y };
+    // A flower gives up its seeds to a click, whatever tool is in hand
+    // (unless the click is on a light or machine, to take it away).
+    const machine = s.owner[i] >= 0 && !s.plants.has(s.owner[i]);
+    const flower = machine ? null : s.flowerAt(i);
+    if (flower) { this.gather(s.harvest(flower), x, y); this.pointer = null; return; }
     if (this.tool === 'seed') {
-      const p = s.flowerAt(i);
-      if (p) { this.gather(s.harvest(p), x, y); this.pointer = null; return; }
       const k = this.seed;
       if (!PRIMARY.includes(k) && !(this.progress.seeds[k] > 0)) { this.say(`NO ${COLOURS[k]} SEEDS LEFT.`, 3); return; }
       this.pointer = null;
       // In the air it drops from where you clicked (and plants itself where
       // it lands); clicked on soil, it goes straight in there.
       const spot = this.spot(c[0], c[1]);
-      if (spot >= 0) { s.put(spot, K.SEED, k); this.say(`PLANTED. ${this.needs(k)}`, 4); }
+      if (spot >= 0) { s.put(spot, K.SEED, k); this.say(`PLANTED. ${this.needs(k)}`, 4); this.tutorial?.planted(spot); }
       else if (s.free(i)) s.put(i, K.SEED, k);
       else return;
       if (!PRIMARY.includes(k)) { this.progress.seeds[k]--; this.save(); this.host.changed(); }
@@ -212,12 +233,13 @@ export class Garden {
       // Click a light or machine with its own tool to take it away again.
       this.pointer = null;
       const t = this.tool;
-      if (s.remove(i, t)) { this.say(`${t.toUpperCase()} REMOVED.`, 2); return; }
+      if (s.remove(i, t)) { this.say(`${t.toUpperCase()} REMOVED.`, 2); this.host.changed(); return; }
       const placed = t === 'agent' ? s.agents.length : t === 'light' ? s.lights.length : s.devices.filter((d) => d.type === t).length;
       if (placed >= LIMIT[t]) { this.say(`THAT'S ALL THE ${t.toUpperCase()}S FOR NOW (${LIMIT[t]}).`, 3); return; }
       const ok = t === 'agent' ? s.addAgent(c[0] - 2, c[1] - 2) : t === 'light' ? s.hang(c[0] - 1, c[1] - 1) : s.place(t, c[0] - 2, c[1] - 2, this.seed);
       if (!ok) { this.say('NOT ENOUGH ROOM THERE.', 2); return; }
       if (t === 'light') this.host.pulse(x, y);
+      this.host.changed(); // the lesson may have moved on
       if (t === 'sower') this.say(`A ${COLOURS[this.seed]} SOWER.${PRIMARY.includes(this.seed) || this.progress.seeds[this.seed] ? '' : ` IT WAITS FOR ${COLOURS[this.seed]} SEEDS.`}`, 4);
     }
   }
@@ -242,8 +264,9 @@ export class Garden {
     p.seeds[got.gene] += got.count;
     this.save();
     const what = `${got.count} ${COLOURS[got.gene]} SEEDS`;
-    this.say(got.crossed ? `CROSSED ${COLOURS[got.from]} WITH ${COLOURS[got.with]}: ${what}.` : `HARVESTED ${what}.`, 4);
+    this.say(got.crossed ? `CROSSED ${COLOURS[got.from]} WITH ${COLOURS[got.with]}: ${what}.` : `COLLECTED ${what}.`, 4);
     if (x !== undefined) this.host.pulse(x, y);
+    if (this.tutorial) { this.tutorial.collected(got); this.progress.taught = true; this.save(); this.msg = null; }
     this.host.changed();
   }
 
@@ -287,19 +310,23 @@ export class Garden {
     for (const e of s.events.splice(0)) this.event(e, sy);
     if (t - this.hintAt > 0.5) {
       this.hintAt = t;
-      const h = this.view().hint;
+      const v = this.view(), h = v.hint + JSON.stringify(v.tutorial);
       if (h !== this.shown) { this.shown = h; this.host.changed(); }
     }
     s.paint(this.buf);
-    this.host.renderer.setGarden({ cols: s.cols, rows: s.rows, x0: this.x0, y0: this.y0, cell: CELL, buf: this.buf });
+    this.host.renderer.setGarden({ cols: s.cols, rows: s.rows, x0: this.x0, y0: this.y0, cell: CELL, buf: this.buf, hole: this.host.hole?.() });
   }
 
   event(e, sy) {
     const s = this.sim, p = this.progress;
     const at = (i) => [this.x0 + (i % s.cols) * CELL + 2, this.y0 + ((i / s.cols) | 0) * CELL + 2];
     if (e.type === 'planted') {
-      if (!s.devices.some((d) => d.sx === e.at % s.cols)) this.say(`PLANTED. ${this.needs(e.gene)}`, 4); // a sower's seeds plant quietly
+      if (s.devices.some((d) => d.sx === e.at % s.cols)) return; // a sower's seeds plant quietly
+      this.say(`PLANTED. ${this.needs(e.gene)}`, 4);
+      this.tutorial?.planted(e.at);
+      this.host.changed();
     } else if (e.type === 'bloom') {
+      this.tutorial?.bloomed(e.plant);
       const before = this.unlocked(), first = !p.found[e.plant.gene];
       p.bloomed++;
       p.found[e.plant.gene] = true;
@@ -307,10 +334,10 @@ export class Garden {
       const [x, y] = at(e.plant.bud);
       this.host.pulse(x, y);
       const after = this.unlocked(), n = p.found.filter(Boolean).length;
-      let text = first ? `NEW COLOUR: ${COLOURS[e.plant.gene]}. ${n} OF 7.` : `A ${COLOURS[e.plant.gene]} FLOWER. CLICK IT WITH SEEDS TO HARVEST.`;
-      if (after.sprinkler && !before.sprinkler) text = `FIRST BLOOM. HARVEST IT WITH THE SEED TOOL. SPRINKLER UNLOCKED.`;
+      let text = first ? `NEW COLOUR: ${COLOURS[e.plant.gene]}. ${n} OF 7.` : `A ${COLOURS[e.plant.gene]} FLOWER. CLICK IT TO COLLECT ITS SEEDS.`;
+      if (after.sprinkler && !before.sprinkler) text = `FIRST BLOOM. CLICK IT TO COLLECT ITS SEEDS. SPRINKLER UNLOCKED.`;
       else if (after.sower && !before.sower) text = `NEW COLOUR: ${COLOURS[e.plant.gene]}. SOWER UNLOCKED: IT SOWS AND BURIES SEEDS FOR YOU.`;
-      else if (after.agent && !before.agent) text = `NEW COLOUR: ${COLOURS[e.plant.gene]}. AGENT UNLOCKED: IT WALKS THE GARDEN AND HARVESTS.`;
+      else if (after.agent && !before.agent) text = `NEW COLOUR: ${COLOURS[e.plant.gene]}. AGENT UNLOCKED: IT WALKS THE GARDEN COLLECTING SEEDS.`;
       if (n === 7 && first) {
         text = 'THE FULL SPECTRUM. THANK YOU FOR GROWING IT.';
         for (let k = 0; k < 4; k++) setTimeout(() => this.host.pulse(Math.random() * innerWidth, this.y0 + Math.random() * s.rows * CELL), k * 350);
@@ -321,9 +348,10 @@ export class Garden {
       const p2 = this.progress;
       p2.seeds[e.gene] += e.count;
       this.save();
-      this.say(`AN AGENT HARVESTED ${e.count} ${COLOURS[e.gene]} SEEDS${e.crossed ? ` (A ${COLOURS[e.from]} × ${COLOURS[e.with]} CROSS)` : ''}.`, 4);
+      this.say(`AN AGENT COLLECTED ${e.count} ${COLOURS[e.gene]} SEEDS${e.crossed ? ` (A ${COLOURS[e.from]} × ${COLOURS[e.with]} CROSS)` : ''}.`, 4);
       this.host.changed();
     } else if (e.type === 'die') {
+      this.tutorial?.died(e.plant);
       const why = { wet: 'TOO MUCH WATER', dry: 'TOO DRY', bright: 'TOO MUCH LIGHT', dark: 'NOT ENOUGH LIGHT', deep: 'PLANTED TOO DEEP' }[e.plant.mood] || 'UNHAPPY';
       this.say(`THE ${COLOURS[e.plant.gene]} DIED (${why}). IT'S SOIL NOW.`, 4);
     }
@@ -351,10 +379,10 @@ export class Garden {
     if (dry) return 'NOW WATER IT.';
     if (seeds > buried) return 'COVER THE SEED WITH SAND.';
     const plants = [...s.plants.values()];
-    if (plants.some((p) => p.stage === 'bloom')) return 'CLICK A FLOWER WITH THE SEED TOOL TO HARVEST ITS SEEDS.';
+    if (plants.some((p) => p.stage === 'bloom')) return 'CLICK A FLOWER TO COLLECT ITS SEEDS.';
     if (plants.length) return n ? `${n} OF 7 COLOURS. ${this.needs(plants[0].gene)}` : 'GROWING. A LIGHT ABOVE IT HELPS IT ALONG.';
     if (!seeds && !this.progress.bloomed) return 'PICK A SEED, THEN CLICK OVER A POT TO DROP IT IN.';
-    if (n >= 1 && n < 7) return `${n} OF 7. FLOWERS THAT BLOOM SIDE BY SIDE CROSS WHEN YOU HARVEST THEM.`;
+    if (n >= 1 && n < 7) return `${n} OF 7. FLOWERS THAT BLOOM SIDE BY SIDE CROSS WHEN YOU COLLECT THEM.`;
     return n === 7 ? 'THE FULL SPECTRUM. KEEP GARDENING.' : 'GROW ALL SEVEN COLOURS.';
   }
 }

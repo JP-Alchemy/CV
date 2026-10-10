@@ -485,7 +485,7 @@ export const skills = [
 export const gardenText = {
   eyebrow: 'GARDEN',
   title: 'GROW THE SPECTRUM',
-  intro: 'Plant a seed in a pot, water it and hang a light over it. There are seven colours to find, and flowers that bloom side by side cross when you harvest them.',
+  intro: 'Plant a seed in a pot, water it and hang a light over it. There are seven colours to find, and flowers that bloom side by side cross when you collect their seeds.',
 };
 
 // The colophon (/colophon/): how the site is made, and the rules it keeps.

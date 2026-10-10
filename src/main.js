@@ -316,6 +316,7 @@ const garden = new Garden({
   pulse: (x, y) => pulse(x, y, true),
   changed: () => { if (state.garden) { state.garden = garden.view(); render('local'); } },
   scene: () => scene,
+  hole: () => scene?.gardenHole,
 });
 // The page holds still while gardening. Hiding overflow would drop the
 // scrollbar and widen the page (a resize), so scrolling is blocked instead.
