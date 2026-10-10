@@ -445,7 +445,7 @@ function cvPage(state, S) {
     ...edu,
     ...section(S, 'sk', 'SKILLS', { mt: S.sp(8) }),
     { ...grid(sk, { cols: S.mobile ? 2 : 4, gap: S.sp(2), rowGap: S.sp(4) }), mt: S.sp(3) },
-    ...section(S, 'avail', 'CURRENTLY AVAILABLE', { mt: S.sp(8) }),
+    ...section(S, 'avail', 'OPEN TO COLLABORATION', { mt: S.sp(8) }),
     maxw(720, text(cv.available, S.body, { key: 'cv-avail', mt: S.sp(3) })),
     row([button({ key: 'cv-contact', label: 'GET IN TOUCH', arrow: '→', href: '/contact/', hover: hv('cv-contact') })], { mt: S.sp(3) }),
   ]);

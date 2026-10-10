@@ -358,7 +358,7 @@ export const cv = {
   summary:
     'Hands-on tech lead with 10+ years shipping products across sustainability, AI, FinTech, XR and IoT. I own products from first sketch to production: architecture, code, teams and delivery.',
   available:
-    'Open to senior and principal engineering roles, tech-lead positions and fractional CTO engagements — AI, full-stack, interactive or sustainability. On-site in the Netherlands, hybrid or remote.',
+    "Always happy to talk about good work. If you're building something in AI, full-stack, interactive 3D or sustainability and think we'd work well together, in whatever shape that takes, I'd like to hear about it. Based in Leiden: on-site, hybrid or remote.",
 };
 
 export const experience = [

@@ -459,7 +459,7 @@ const BODIES = {
     ${education.map((e) => `<p><strong>${esc(e.title)}</strong> — ${esc(e.org)} <span class="muted">(${esc(e.period)})</span></p>`).join('')}
     <h2>Skills</h2>
     <dl class="skills">${skills.map((g) => `<dt>${esc(sentence(g.group))}</dt><dd>${esc(g.items.join(', '))}</dd>`).join('')}</dl>
-    <h2>Currently available</h2>
+    <h2>Open to collaboration</h2>
     <p>${esc(cv.available)}</p>`,
 
   contact: () => `
