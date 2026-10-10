@@ -9,6 +9,7 @@ import { tokens } from './ui.js';
 import { puzzle } from './puzzle.js';
 import { Garden } from './garden/mode.js';
 import { THEMES as BRAND, unit } from './brand.js';
+import { animateFavicon } from './favicon.js';
 import './style.css';
 
 const THEMES = Object.fromEntries(Object.entries(BRAND).map(([k, t]) => [k, { bg: unit(t.bg), fg: unit(t.fg), css: t.bg }]));
@@ -587,6 +588,8 @@ if (state.route.name === 'story' && canGL()) {
   boot();
   setTimeout(loadStory, 4000); // the story's code, ready for when it's wanted
 }
+
+animateFavicon();
 
 // Real photos re-render once loaded.
 window.addEventListener('photo-loaded', () => render('local'));

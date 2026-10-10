@@ -26,7 +26,7 @@ Debug: append `?slow=5` to the URL to run every animation 5× slower.
 - **Pages / layout**: [`src/scene.js`](src/scene.js) builds each page from small layout nodes (`text`, `col`, `row`, `grid`, `button`, `image`, `icon` …).
 - **Titles, descriptions, structured data**: [`src/seo.js`](src/seo.js).
 - **Icons**: the looping pixel icons (including the nav logo) are ASCII frames in [`src/icons.js`](src/icons.js).
-- **The brand**: paper and ink for both themes, the seven colours of the light, the dot grid and the font's name are all in [`src/brand.js`](src/brand.js), and everything reads them from there: the CSS variables, theme colour, favicon and `@font-face` (written into every page's `<head>` by [`vite.config.js`](vite.config.js)), the shaders, the link preview cards, the font files and the brand kit scripts. The rules themselves are written up at [`/colophon/`](src/scene.js).
+- **The brand**: paper and ink for both themes, the seven colours of the light, the dot grid and the font's name are all in [`src/brand.js`](src/brand.js), and everything reads them from there: the CSS variables, theme colour, favicon and `@font-face` (written into every page's `<head>` by [`vite.config.js`](vite.config.js); [`src/favicon.js`](src/favicon.js) then sets the favicon tumbling through the mark's frames, like the nav's logo), the shaders, the link preview cards, the font files and the brand kit scripts. The rules themselves are written up at [`/colophon/`](src/scene.js).
 
 ## SEO and deploying
 

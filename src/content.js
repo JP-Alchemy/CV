@@ -499,7 +499,7 @@ export const colophon = {
   colour: "Ink and paper do the work, and swap places in the dark. The seven colours only ever arrive as light: the ring that runs out from a click, a flower in the garden, the light crossing my profile picture. Outside this page, if something is coloured and nothing happened, it's a bug.",
   type: `${FONT.family}: five blocks by seven, with lowercase, descenders and a bold that is the same letter again, one pixel to the right. Capitals for headings, sentence case for reading. Set it in whole pixels, 20px for text and 40px and up for headings, and it stays sharp. It's a real font file as well now, so print, slides and email can use it.`,
   specimen: ['ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz', '0123456789 .,:;!?&@#%€ ← → ↑ ↓ ✓ ©'],
-  mark: "JP, seven blocks by five. In the nav it keeps changing its mind, and the frames are the job, more or less. At rest it's always JP: that's the favicon, and the file below.",
+  mark: "JP, seven blocks by five. In the nav and in your browser tab it keeps changing its mind, and the frames are the job, more or less. At rest it's always JP: that's the file below.",
   frames: [
     { label: 'JP', text: 'Me.' },
     { label: 'PROMPT', text: 'Build it.' },

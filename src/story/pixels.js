@@ -3,8 +3,8 @@
 // and the buttons' icons, which tumble from one state into the next and fill
 // in on hover like the home page's nav buttons. Each is a small 2D canvas: the
 // engine works out where every block is, this paints the squares.
-import { Engine, evalInst } from '../engine/engine.js';
-import { STRIDE, FLAT } from '../engine/renderer.js';
+import { Engine } from '../engine/engine.js';
+import { paint } from '../engine/paint.js';
 import { iconFrames } from '../icons.js';
 import { frameBlocks, fillBlocks } from '../ui.js';
 import { typeset } from '../engine/typeset.js';
@@ -40,7 +40,6 @@ const NONE = { setInstances() {}, updateInstances() {} }; // the engine's render
 const EMPTY = new Float32Array(0);
 const even = (v) => Math.round(v / 2) * 2;
 const mix = (a, b, k) => a.map((v, i) => v + (b[i] - v) * k);
-const rgb = (c) => `rgb(${c.map((v) => Math.round(v * 255)).join(',')})`;
 const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 
 /**
@@ -109,32 +108,10 @@ export function pixelBox(canvas, w, h) {
       if (!look) return;
       const t = e.now();
       e.tick(t);
-      const { bg, fg } = colours(t), ink = rgb(fg), paper = rgb(bg);
+      const { bg, fg } = colours(t);
       g.setTransform(1, 0, 0, 1, 0, 0);
       g.clearRect(0, 0, canvas.width, canvas.height);
-      g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const a = e.buf, order = Array.from({ length: e.count }, (_, i) => i).sort((i, j) => a[i * STRIDE + 18] - a[j * STRIDE + 18]);
-      for (const i of order) {
-        const o = i * STRIDE, c = evalInst(a, o, t);
-        if (c.w < 0.05 || c.h < 0.05) continue;
-        g.fillStyle = c.tone >= 0.999 ? ink : c.tone <= 0.001 ? paper : rgb(mix(bg, fg, c.tone));
-        if (c.p <= 0 || c.p >= 1) {
-          // At rest, on whole device pixels, like the site's renderer.
-          const x0 = Math.round(c.x * dpr) / dpr, y0 = Math.round(c.y * dpr) / dpr;
-          g.fillRect(x0, y0, Math.round((c.x + c.w) * dpr) / dpr - x0, Math.round((c.y + c.h) * dpr) / dpr - y0);
-          continue;
-        }
-        // On the move: turning and rounding as they go, as the shader does.
-        const flat = a[o + 19] & FLAT, b = Math.sin(Math.PI * c.p);
-        g.save();
-        g.translate(c.x + c.w / 2, c.y + c.h / 2);
-        if (!flat) g.rotate(b * a[o + 15]);
-        g.beginPath();
-        if (g.roundRect && !flat) g.roundRect(-c.w / 2, -c.h / 2, c.w, c.h, (b * 0.55 * Math.min(c.w, c.h)) / 2);
-        else g.rect(-c.w / 2, -c.h / 2, c.w, c.h);
-        g.fill();
-        g.restore();
-      }
+      paint(g, e, t, bg, fg, dpr);
     },
   };
 }
