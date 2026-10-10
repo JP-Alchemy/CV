@@ -4,8 +4,9 @@
 // at runtime it keeps <head> in sync and backs the print view of the CV.
 
 import {
-  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills, colophon, story,
+  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills, colophon, story, gardenText,
 } from './content.js';
+import { ICONS } from './icons.js';
 import { parseRoute, PAGES } from './router.js';
 import { book, tripStats, gpxFile, eur, ROADBOOK_PATH } from './roadbook.js';
 import { THEMES, SPECTRUM, COLOURS, FONT } from './brand.js';
@@ -116,6 +117,16 @@ function describe(route) {
       card: {
         eyebrow: 'COLOPHON', title: 'HOW THIS SITE IS MADE.', text: 'One material: square blocks of ink on a dot grid. Colour only shows up as light, when something happens.',
         picture: { mark: 0 },
+      },
+    };
+    case 'garden': return {
+      ...base,
+      title: 'Garden — Grow the Spectrum, a Falling-Sand Game | JP Bothma',
+      description: 'A falling-sand garden in pixel blocks: plant seeds in pots, water them, hang lights over them and grow all seven colours of the spectrum. Free in the browser.',
+      card: {
+        eyebrow: 'A FALLING-SAND GARDEN', title: gardenText.title, text: 'Plant seeds in pots, water them, hang lights over them, and grow all seven colours.',
+        // The nav's sprout, in flower.
+        picture: { blocks: ICONS.garden[2].flatMap((r, y) => [...r].flatMap((c, x) => (c === '#' ? [x * 56 + 2, y * 56 + 2, 52, 52, 1] : []))), w: 280, h: 280 },
       },
     };
     case 'story': return {
@@ -500,6 +511,12 @@ const BODIES = {
     <h1>The Adventurer</h1>
     <p class="lead">An 80-second animated story, drawn and scored in the blocks this site is made of: a d20, a small ship, seven unknown worlds, a dragon, and the colours coming home. Sound on.</p>
     <p>It plays with JavaScript and WebGL2. ${a('/', 'Back home →')}</p>`,
+
+  garden: () => `
+    <p class="eyebrow">${esc(sentence(gardenText.eyebrow))}</p>
+    <h1>Grow the spectrum</h1>
+    <p class="lead">${esc(gardenText.intro)}</p>
+    <p>A falling-sand garden: sand piles, water soaks in, and each of the seven colours wants its own water and light. It plays with JavaScript and WebGL2. ${a('/', 'Back home →')}</p>`,
 
   notFound: () => `
     <h1>Page not found</h1>

@@ -71,7 +71,7 @@ export const ICONS = {
     ['######', '######', '##..##', '##..##', '.####.', '..##..'],
   ],
   // Static states (no loop): picked by sig.
-  // Garden mode: a seed in the ground that sprouts and flowers.
+  // The garden: a seed in the ground that sprouts and flowers.
   garden: [
     ['.....', '.....', '.....', '..#..', '#####'],
     ['.....', '.....', '.#.#.', '..#..', '#####'],

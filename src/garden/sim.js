@@ -3,7 +3,7 @@
 // sprouts, and its flower blooms in one of the seven spectrum colours. Each
 // colour wants different water and light; flowers that bloom near another
 // colour cross when harvested. Hung lights shine down in cones (soil and stone
-// cast shadows), sprinklers drip, planters sow and agents walk the ground
+// cast shadows), sprinklers drip, sowers sow and agents walk the ground
 // harvesting. Pure logic: garden/mode.js drives and draws it.
 
 import { COLOURS } from '../brand.js';
@@ -29,7 +29,7 @@ export function cross(a, b) {
 export const DEVICES = {
   // 4×4 sprites: # ink, a accent (spectrum index in `accent`)
   sprinkler: { accent: 4, art: ['.##.', '####', '#aa#', 'a..a'] },
-  planter: { accent: 2, art: ['####', '#aa#', '#aa#', '.##.'] }, // accent: the colour it sows
+  sower: { accent: 2, art: ['####', '#aa#', '#aa#', '.##.'] }, // accent: the colour it sows
 };
 const AGENT = ['####', '#a#a', '####', '#..#'];
 
@@ -55,7 +55,7 @@ export class Sim {
     this.agents = [];
     this.lights = [];
     this.lit = new Uint8Array(n); // light reaching each cell from hung lights, 0-255
-    this.take = () => true; // garden/mode.js: may a planter use a seed of this colour?
+    this.take = () => true; // garden/mode.js: may a sower use a seed of this colour?
     this.nextId = 1;
     this.events = [];
   }
@@ -119,9 +119,17 @@ export class Sim {
 
   fall(i, x, y) {
     if (y + 1 >= this.rows) return;
-    const b = i + this.cols;
+    let b = i + this.cols;
     const sinks = (j) => this.free(j) || (this.kind[j] === K.WATER && !this.solid[j]);
     if (sinks(b)) { this.swap(i, b); return; }
+    // A seed that lands on soil digs itself in, two cells deep (one if
+    // that's all there is); on stone it waits to be buried with sand.
+    if (this.kind[i] === K.SEED && this.soil(b) && !(i >= this.cols && this.soil(i - this.cols))) {
+      this.swap(i, b);
+      if (b + this.cols < this.n && this.soil(b + this.cols)) { this.swap(b, b + this.cols); b += this.cols; }
+      this.events.push({ type: 'planted', gene: this.data[b], at: b });
+      return;
+    }
     // Seeds stay where they land, and soil that lands on a seed stays on it
     // (so it can be buried). Damp sand holds its shape; dry sand runs down.
     if (this.kind[i] === K.SEED || this.kind[b] === K.SEED) return;
@@ -166,11 +174,20 @@ export class Sim {
     }
   }
 
-  /** Moisture seeps down and sideways through soil and dries at the surface. */
+  /**
+   * Moisture seeps down and sideways through soil and dries at the surface.
+   * Standing water dries up too, slowly (faster under a light), so a pot
+   * that was overwatered comes back.
+   */
   soak() {
     const { cols, n, kind, data, solid } = this;
     for (let i = n - 1; i >= 0; i--) {
       const k = kind[i];
+      if (k === K.WATER) {
+        const a = i - cols;
+        if ((a < 0 || (kind[a] === K.EMPTY && !solid[a])) && Math.random() < 0.0015 + this.lit[i] / 60000) this.clear(i);
+        continue;
+      }
       if ((k !== K.SAND && k !== K.DEAD) || !data[i]) continue;
       const b = i + cols;
       if (b < n && (kind[b] === K.SAND || kind[b] === K.DEAD) && data[b] + 6 < data[i]) {
@@ -486,7 +503,7 @@ export class Sim {
       cells.push(k);
     }
     const d = { id: this.nextId++, type, x, y, cells, t: 0, gene, slot: 0, cover: 0 };
-    const art = DEVICES[type].art, accent = type === 'planter' ? gene : DEVICES[type].accent;
+    const art = DEVICES[type].art, accent = type === 'sower' ? gene : DEVICES[type].accent;
     cells.forEach((k, n) => {
       const ch = art[(n / 4) | 0][n % 4];
       // Every cell is solid; '.' cells are drawn as paper.
@@ -499,7 +516,7 @@ export class Sim {
   }
 
   /**
-   * A planter sows three spots in a row beneath it, one seed at a time, and
+   * A sower sows three spots in a row beneath it, one seed at a time, and
    * covers each seed with a few grains of sand. A spot with a plant waits.
    */
   sow(d) {
@@ -537,7 +554,7 @@ export class Sim {
       if (d.type === 'sprinkler' && d.t % 5 === 0) { // four drops a second, from alternate nozzles
         const x = d.x + (d.t % 10 ? 0 : 3), y = d.y + 4;
         if (this.inside(x, y) && this.free(this.idx(x, y))) this.put(this.idx(x, y), K.WATER);
-      } else if (d.type === 'planter') this.sow(d);
+      } else if (d.type === 'sower') this.sow(d);
     }
     // Agents: fall, walk, step up one cell, turn at walls, harvest what they reach.
     // They walk through plants (in front of them), not through soil or stone.

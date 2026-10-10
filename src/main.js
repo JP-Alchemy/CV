@@ -80,6 +80,9 @@ const dpr = () => Math.min(window.devicePixelRatio || 1, 3);
 
 function render(mode = 'local', o = {}) {
   scene = buildScene(state, { w: vp.w, h: layoutH });
+  // A garden is laid on the page as it was: if its ground has moved, it starts again.
+  const moved = garden.on && scene.gardenTop !== garden.bottom;
+  if (moved) stopGarden(false);
   const scrollFrom = window.scrollY;
   let scrollTo = o.scrollTo ?? scrollFrom;
   scrollTo = Math.max(0, Math.min(scrollTo, scene.height - vp.h));
@@ -87,6 +90,7 @@ function render(mode = 'local', o = {}) {
   engine.vh = vp.h;
   engine.gridX = scene.S.left;
   engine.morphTo(scene, { mode, scrollFrom, scrollTo, origin: o.origin });
+  if (moved) gardenAfterMorph();
   for (const s of impulses) s.y += scrollTo - scrollFrom; // keep pushes where they were on screen
   for (const p of pulses) p.y += scrollTo - scrollFrom;
   docEl.style.height = `${scene.height}px`;
@@ -111,7 +115,7 @@ let pending = [0, 0]; // motion since the last impulse
 let lastImpulse = -1;
 
 function onPointer(e) {
-  if (e.pointerType === 'touch') return;
+  if (e.pointerType === 'touch' || garden.on) return; // the garden's terrain holds still
   if (pointer) { pending[0] += e.clientX - pointer[0]; pending[1] += e.clientY - pointer[1]; }
   pointer = [e.clientX, e.clientY];
 }
@@ -242,7 +246,8 @@ function frame() {
   engine.tick(t);
   const pushing = updateTrail(t);
   const lit = updatePulses(t);
-  if (garden.on) garden.frame(t, pulses, { speed: 1100, width: scene.S.mobile ? 110 : 150 });
+  if (state.garden && !garden.on && !state.menuOpen && t > gardenAt) startGarden(); // the page has arrived
+  if (garden.on && !state.menuOpen) garden.frame(t, pulses, { speed: 1100, width: scene.S.mobile ? 110 : 150 });
   const d = renderer.dpr;
   let tt = (t - themeStart) / 0.9;
   let look = { a: themeFrom, b: themeTo, t: tt >= 1 ? 2 : Math.max(0, tt), origin: themeOrigin };
@@ -298,17 +303,18 @@ function frame() {
   if (next < Infinity) timer = setTimeout(kick, Math.max(16, (next - engine.now()) * 1000));
 }
 
-// ---------------------------------------------------------------- garden mode
+// ---------------------------------------------------------------- garden
 //
-// Any page can turn into a falling-sand garden (src/garden). While it's on,
-// the page can't scroll, and a layer over it takes the pointer for the tools.
+// The garden page (/garden/) is a falling-sand garden (src/garden). Once the
+// page has arrived, its pots and ground fill with soil, the page holds still
+// and a layer over it takes the pointer for the tools.
 
 const garden = new Garden({
   renderer,
   engine,
   now: () => engine.now(),
   pulse: (x, y) => pulse(x, y, true),
-  changed: () => { if (garden.on) { state.garden = garden.view(); render('local'); } },
+  changed: () => { if (state.garden) { state.garden = garden.view(); render('local'); } },
   scene: () => scene,
 });
 // The page holds still while gardening. Hiding overflow would drop the
@@ -333,29 +339,49 @@ capture.addEventListener('pointermove', (e) => { mouse = [e.clientX, e.clientY];
 capture.addEventListener('pointerup', () => garden.up());
 capture.addEventListener('pointercancel', () => garden.up());
 
-function toggleGarden() {
-  const root = document.documentElement;
-  if (!garden.on && state.route.name === 'story') return; // the story needs the whole stage
-  if (garden.on) {
-    garden.leave();
-    state.garden = null;
-    root.classList.remove('gardening');
-    render('local');
-    return;
-  }
-  if (state.menuOpen) { state.menuOpen = false; render('page', { scrollTo: menuReturnScroll }); }
-  state.hover = null;
-  lockY = window.scrollY;
+let gardenNote = null; // something to say once the garden starts (again)
+let gardenAt = 0; // when the page will have arrived, for the garden to start
+
+/** Arriving on the garden page: progress and tools, for its toolbar. */
+function openGarden() {
   garden.open();
   state.garden = garden.view();
-  root.classList.add('gardening');
-  render('local');
-  garden.enter({ top: scene.S.navClip, bottom: scene.gardenTop, width: vp.w });
+}
+
+/** Start the garden once the morph that's just begun has landed (not the icons' tumbling, which never stops). */
+const gardenAfterMorph = () => { gardenAt = engine.animUntil + 0.05; };
+
+/** Lay the garden over the page as it now stands (frame() calls this once the page has arrived). */
+function startGarden() {
+  lockY = window.scrollY;
+  pointer = null;
+  garden.enter({ top: scene.S.navClip, bottom: scene.gardenTop, width: vp.w, beds: scene.beds });
+  if (gardenNote) { garden.say(gardenNote, 5); gardenNote = null; }
   state.garden = garden.view();
+  document.documentElement.classList.add('gardening');
   capture.style.top = `${garden.y0}px`;
   capture.style.height = `${garden.rows * 4}px`;
-  kick();
+  render('local');
 }
+
+/** Take the garden up: its grains fly into the page on screen (`absorb`), or just go. */
+function stopGarden(absorb = true) {
+  if (garden.on) {
+    if (absorb) garden.leave();
+    else { garden.sim = null; renderer.clearGarden(); }
+  }
+  garden.up();
+  document.documentElement.classList.remove('gardening');
+}
+
+/** G: to the garden, or from it back to where you were. */
+function goGarden() {
+  if (state.route.name === 'story') return; // the story needs the whole stage
+  if (state.route.name !== 'garden') navigate(parseRoute('/garden/'), true);
+  else if (cameToGarden) history.back();
+  else navigate(parseRoute('/'), true);
+}
+let cameToGarden = false;
 
 // ---------------------------------------------------------------- 404 puzzle
 
@@ -418,12 +444,15 @@ function runAction(action, node) {
     if (!state.menuOpen) {
       menuReturnScroll = window.scrollY;
       if (story) storyOut(true);
+      if (garden.on) { renderer.clearGarden(); garden.up(); document.documentElement.classList.remove('gardening'); } // it waits under the menu
       state.menuOpen = true;
       render('page', { scrollTo: 0, origin: centerOf(node) });
     } else {
       state.menuOpen = false;
       if (story) storyIn();
+      if (garden.on) document.documentElement.classList.add('gardening');
       render('page', { scrollTo: menuReturnScroll, origin: centerOf(node) });
+      gardenAfterMorph();
     }
   } else if (action === 'top') {
     window.scrollTo({ top: 0, behavior: engine.calm ? 'auto' : 'smooth' });
@@ -434,8 +463,10 @@ function runAction(action, node) {
     setTimeout(() => { state.copied = false; render('local'); }, 2200);
   } else if (action === 'print') {
     window.print();
-  } else if (action === 'garden') {
-    toggleGarden();
+  } else if (action === 'gd:restart') {
+    stopGarden(false);
+    gardenNote = 'FRESH SOIL. YOUR COLOURS AND SEEDS ARE STILL HERE.';
+    kick();
   } else if (action.startsWith('gd:')) {
     garden.select(action);
   } else if (action === 'pz:undo') {
@@ -485,7 +516,7 @@ function syncStatic() {
 }
 
 async function navigate(route, push) {
-  if (garden.on) toggleGarden();
+  const fromGarden = state.route.name === 'garden';
   if (route.name === 'story' && canGL() && !storyLib) await loadStory();
   scrollMemory.set(state.route.path, state.menuOpen ? menuReturnScroll : window.scrollY);
   if (push) history.pushState(null, '', route.path + location.search);
@@ -497,7 +528,11 @@ async function navigate(route, push) {
   applyMeta(route);
   syncStatic();
   if (route.name === 'story' && canGL()) storyIn();
+  if (route.name === 'garden' && !fromGarden) { cameToGarden = push; openGarden(); }
+  if (route.name !== 'garden') state.garden = null;
   render('page', { scrollTo: target, origin: lastOrigin || [vp.w / 2, vp.h / 2] });
+  if (route.name === 'garden') gardenAfterMorph();
+  if (fromGarden && route.name !== 'garden') stopGarden(); // its grains fly into the new page
   if (navByKeyboard) docEl.querySelector('h1')?.focus({ preventScroll: true });
   navByKeyboard = false;
 }
@@ -523,10 +558,10 @@ document.documentElement.addEventListener('pointerleave', () => { mouse = [-1e4,
 window.addEventListener('scroll', () => { engine.reveal(window.scrollY); kick(); }, { passive: true });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && state.menuOpen) runAction('menu', fixedEl);
-  // Garden mode: G toggles it on any page, Escape leaves; keys don't scroll it.
-  if (!e.metaKey && !e.ctrlKey && !e.altKey && ((e.key === 'g' || e.key === 'G') || (e.key === 'Escape' && garden.on))) {
+  // G: to the garden and back again. Keys don't scroll it.
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'g' || e.key === 'G')) {
     e.preventDefault();
-    if (!e.repeat) toggleGarden();
+    if (!e.repeat) goGarden();
     return;
   }
   if (garden.on && SCROLL_KEYS.has(e.key) && !(e.key === ' ' && e.target.closest?.('a, button'))) e.preventDefault();
@@ -556,17 +591,18 @@ function onResize() {
   rz = setTimeout(() => {
     const [w2, h2] = size();
     const widthChanged = w2 !== vp.w;
-    // A garden is laid on the page as it was, so a new width starts it again.
-    const regarden = widthChanged && garden.on;
-    if (regarden) toggleGarden();
+    const relayout = widthChanged || Math.abs(h2 - layoutH) > 160;
+    // The garden is laid on the page as it was, so a new layout starts it
+    // again (frame() does, once the page has moved).
+    if (relayout && garden.on) {
+      stopGarden(false);
+      gardenNote = 'THE WINDOW CHANGED SIZE, SO THE GARDEN STARTED AGAIN.';
+    }
     vp.w = w2;
-    if (widthChanged || Math.abs(h2 - layoutH) > 160) {
+    if (relayout) {
       layoutH = h2;
       render('resize');
-    }
-    if (regarden) {
-      toggleGarden();
-      garden.say('THE WINDOW CHANGED SIZE, SO THE GARDEN STARTED AGAIN.', 5);
+      gardenAfterMorph();
     }
   }, 140);
 }
@@ -581,7 +617,8 @@ applyThemeCss();
 applyMeta(state.route);
 syncStatic();
 renderer.resize(vp.w, vp.h, dpr());
-const boot = () => render('intro', { scrollTo: 0 });
+if (state.route.name === 'garden') openGarden();
+const boot = () => { render('intro', { scrollTo: 0 }); gardenAfterMorph(); };
 if (state.route.name === 'story' && canGL()) {
   loadStory().then(() => { storyIn(); boot(); });
 } else {

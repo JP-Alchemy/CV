@@ -37,7 +37,7 @@ const today = new Date().toISOString().slice(0, 10);
 const base = site.url.replace(/\/$/, '');
 write(path.join(dist, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${routes.map((r) => `  <url><loc>${base}${r.path}</loc><lastmod>${today}</lastmod><priority>${r.path === '/' ? '1.0' : r.name === 'project' ? '0.6' : r.name === 'story' ? '0.5' : '0.8'}</priority></url>`).join('\n')}
+${routes.map((r) => `  <url><loc>${base}${r.path}</loc><lastmod>${today}</lastmod><priority>${r.path === '/' ? '1.0' : r.name === 'project' ? '0.6' : r.name === 'story' || r.name === 'garden' ? '0.5' : '0.8'}</priority></url>`).join('\n')}
 </urlset>
 `);
 for (const [file, xml] of gpxFiles()) write(path.join(dist, file), xml);

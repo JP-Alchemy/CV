@@ -4,11 +4,12 @@ import { iconFrames } from './icons.js';
 import { typeset } from './engine/typeset.js';
 import { roadbookPage } from './roadbook.js';
 import { puzzle, board, boardWidth } from './puzzle.js';
-import { COLOURS, PRIMARY } from './garden/sim.js';
+import { COLOURS, PRIMARY, CELL } from './garden/sim.js';
+import { bed } from './garden/bed.js';
 import { THEMES, SPECTRUM } from './brand.js';
 import { ADVENTURER, frames as spriteFrames } from './story/art.js';
 import {
-  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills, colophon, story,
+  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills, colophon, story, gardenText,
 } from './content.js';
 
 const pad2 = (i) => String(i + 1).padStart(2, '0');
@@ -49,8 +50,8 @@ function navBar(state, S) {
     action: 'theme', hover: false, aria: state.theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme',
   });
   const garden = button({
-    key: 'nav-garden', label: 'GARDEN', icon: 'garden', small: true, width: 36, action: 'garden', hover: false, active: !!state.garden,
-    aria: state.garden ? 'Leave garden mode (G)' : 'Garden mode: grow the spectrum (G)', period: 1.6,
+    key: 'nav-garden', label: 'GARDEN', icon: 'garden', small: true, width: 36, href: '/garden/', hover: false, active: name === 'garden',
+    aria: 'The garden: grow the spectrum (G)', period: 1.6,
   });
   // The story has its own day and night, and no room for a garden.
   const tools = name === 'story' ? [] : [garden, theme];
@@ -74,7 +75,7 @@ function footer(state, S, count) {
   ]);
 }
 
-// ---------------------------------------------------------------- garden mode
+// ---------------------------------------------------------------- garden
 
 /** One colour of the spectrum: a swatch to pick its seeds, with how many you hold. */
 function seedChip(v, k, hv) {
@@ -107,14 +108,18 @@ function seedChip(v, k, hv) {
   });
 }
 
-/** Garden mode's toolbar: tools, the spectrum's seeds, and what to do next. */
+/** The garden's toolbar: tools, the spectrum's seeds, and what to do next. */
 function gardenBar(state, S) {
   const v = state.garden;
   const hv = (k) => state.hover === k;
   const tools = v.tools.map((t) => button({ key: `gd-tool-${t}`, label: t.toUpperCase(), small: true, action: `gd:tool:${t}`, active: v.tool === t, pressed: v.tool === t, hover: hv(`gd-tool-${t}`) }));
-  const done = button({ key: 'gd-done', label: 'LEAVE', arrow: '→', small: true, action: 'garden', hover: hv('gd-done'), aria: 'Leave garden mode' });
+  const done = button({ key: 'gd-done', label: 'START OVER', small: true, action: 'gd:restart', hover: hv('gd-done'), aria: 'Start the garden over: fresh soil, empty pots (your colours and seeds stay)' });
   const chips = row(COLOURS.map((_, k) => seedChip(v, k, hv)), { gap: S.mobile ? 4 : 6 });
-  const hint = text(v.hint, S.small, { key: 'gd-hint', tone: 1, attrs: { 'aria-live': 'polite' } });
+  // The hint has room for a set number of lines, whatever it says, so the
+  // toolbar (and the ground and pots on it) never move as it changes.
+  const lines = S.mobile ? 3 : 2, line = typeset('A', S.small).height;
+  const said = text(v.hint, S.small, { key: 'gd-hint', tone: 1, attrs: { 'aria-live': 'polite' } });
+  const hint = custom((w, ctx) => { const b = layout(said, w, ctx); return { w: b.w, h: lines * line, els: b.els }; });
   if (S.mobile) {
     return col([row([...tools, done], { gap: 4, wrap: true, rowGap: 4 }), { ...chips, mt: 10 }, { ...hint, mt: 2 }]);
   }
@@ -122,6 +127,48 @@ function gardenBar(state, S) {
     row([row(tools, { gap: 4 }), done], { justify: 'between' }),
     { ...row([chips, { ...hint, grow: true }], { gap: 20 }), mt: 12 },
   ]);
+}
+
+/**
+ * The toolbar, pinned to the bottom of the screen on a paper-coloured band,
+ * as tall as it will be with every tool unlocked (so unlocking one doesn't
+ * move the ground).
+ */
+function gardenBand(state, S, ctx, vp) {
+  const b = layout(gardenBar(state, S), S.cw, ctx);
+  const full = layout(gardenBar({ ...state, garden: { ...state.garden, tools: state.garden.every } }, S), S.cw, new Ctx('gd-size', state));
+  const pad = S.mobile ? 12 : 16, bandH = Math.max(b.h, full.h) + pad * 2, top = vp.h - bandH;
+  shift(b.els, S.left, top + pad);
+  const band = ctx.el({ key: 'gd-band', sig: `gdb|${vp.w}|${bandH}`, w: vp.w, h: bandH, blocks: fillBlocks(vp.w, bandH, 4, 0, 0), flat: true });
+  const edge = ctx.el({ key: 'gd-edge', sig: `gde|${vp.w}`, w: vp.w, h: 2, blocks: solidLine(vp.w) });
+  band.y = top;
+  edge.y = top;
+  for (const e of b.els) e.z = (e.z || 0) + 4;
+  band.z = 3;
+  edge.z = 4;
+  const els = [band, edge, ...b.els];
+  for (const e of els) e.fixed = true;
+  return { els, top };
+}
+
+/** The ground and pots (garden/bed.js) between the heading and the toolbar, as page blocks. */
+function gardenBed(S, ctx, top, bottom) {
+  const { pots, beds } = bed({ left: S.left, width: S.cw, top, bottom, y0: Math.ceil(S.navClip / CELL) * CELL });
+  const els = pots.map((p, i) => {
+    const b = p.blocks;
+    let x0 = Infinity, y0 = Infinity, x1 = 0, y1 = 0;
+    for (let j = 0; j < b.length; j += 5) { x0 = Math.min(x0, b[j]); y0 = Math.min(y0, b[j + 1]); x1 = Math.max(x1, b[j] + b[j + 2]); y1 = Math.max(y1, b[j + 1] + b[j + 3]); }
+    const local = b.slice();
+    for (let j = 0; j < local.length; j += 5) { local[j] -= x0; local[j + 1] -= y0; }
+    const el = ctx.el({ key: `pot-${i}`, sig: `pot|${p.name}`, w: x1 - x0, h: y1 - y0, blocks: local });
+    el.x = x0; el.y = y0;
+    return el;
+  });
+  return { els, beds };
+}
+
+function gardenPage(state, S) {
+  return pageHead(S, gardenText.eyebrow, gardenText.title, { h1: 'Grow the spectrum: a falling-sand garden', intro: gardenText.intro });
 }
 
 // ---------------------------------------------------------------- pieces
@@ -621,7 +668,7 @@ function notFound(state, S) {
   return row([{ ...col([...intro, ...help]), grow: true }, { ...play, basis: boardWidth(1e4) }], { gap: S.sp(6) });
 }
 
-const PAGES = { home, work, project, services: servicesPage, about: aboutPage, cv: cvPage, contact, colophon: colophonPage, notFound, roadbook: roadbookPage };
+const PAGES = { home, work, project, services: servicesPage, about: aboutPage, cv: cvPage, contact, colophon: colophonPage, notFound, roadbook: roadbookPage, garden: gardenPage };
 
 export function buildScene(state, vp) {
   const S = tokens(vp.w);
@@ -636,7 +683,7 @@ export function buildScene(state, vp) {
   // (state.storyEls, at rest, in screen px). Full screen, not even the nav.
   if (state.route.name === 'story' && !state.menuOpen) {
     const pic = (state.storyEls || []).map((e) => ({ ...e }));
-    return { elements: resolve([...(state.fullscreen ? [] : nav.els), ...pic]), height: vp.h, S, gardenTop: vp.h };
+    return { elements: resolve([...(state.fullscreen ? [] : nav.els), ...pic]), height: vp.h, S };
   }
 
   const pageNode = state.menuOpen ? menu(state, S) : PAGES[state.route.name](state, S, state.route.slug);
@@ -644,31 +691,20 @@ export function buildScene(state, vp) {
   const top = S.navClip + S.top;
   shift(page.els, S.left, top);
 
+  // The garden is one screen: its heading, then the ground and pots down to
+  // the toolbar, and no footer. `beds` tell garden/mode.js where the soil goes.
+  if (state.route.name === 'garden' && !state.menuOpen) {
+    const bar = state.garden ? gardenBand(state, S, ctx, vp) : { els: [], top: vp.h };
+    const ground = gardenBed(S, ctx, top + page.h, bar.top);
+    return { elements: resolve([...nav.els, ...page.els, ...ground.els, ...bar.els]), height: vp.h, S, gardenTop: bar.top, beds: ground.beds };
+  }
+
   const count = (els) => els.reduce((n, e) => n + e.blocks.length / 5, 0);
   const approx = count(nav.els) + count(page.els) + 900;
   const foot = layout(footer(state, S, Math.round(approx / 10) * 10), S.cw, ctx);
   const fy = Math.max(top + page.h + S.sp(10), vp.h - foot.h - S.sp(3));
   shift(foot.els, S.left, fy);
 
-  // Garden mode: a toolbar pinned to the bottom, on a paper-coloured band.
-  const bar = [];
-  let gardenTop = vp.h;
-  if (state.garden) {
-    const b = layout(gardenBar(state, S), S.cw, ctx);
-    const pad = S.mobile ? 12 : 16, bandH = b.h + pad * 2;
-    gardenTop = vp.h - bandH;
-    shift(b.els, S.left, gardenTop + pad);
-    const band = ctx.el({ key: 'gd-band', sig: `gdb|${vp.w}|${bandH}`, w: vp.w, h: bandH, blocks: fillBlocks(vp.w, bandH, 4, 0, 0), flat: true });
-    const edge = ctx.el({ key: 'gd-edge', sig: `gde|${vp.w}`, w: vp.w, h: 2, blocks: solidLine(vp.w) });
-    band.y = gardenTop;
-    edge.y = gardenTop;
-    for (const e of b.els) e.z = (e.z || 0) + 4;
-    band.z = 3;
-    edge.z = 4;
-    bar.push(band, edge, ...b.els);
-    for (const e of bar) e.fixed = true;
-  }
-
-  const elements = resolve([...nav.els, ...page.els, ...foot.els, ...bar]);
-  return { elements, height: fy + foot.h + S.sp(3), S, gardenTop };
+  const elements = resolve([...nav.els, ...page.els, ...foot.els]);
+  return { elements, height: fy + foot.h + S.sp(3), S };
 }

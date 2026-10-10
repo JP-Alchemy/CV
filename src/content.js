@@ -493,6 +493,13 @@ export const skills = [
   { group: 'DOMAINS', items: ['Sustainability & ESG', 'FinTech & trading', 'Cybersecurity', 'IoT & embedded', 'EdTech & DRM'] },
 ];
 
+// The garden (/garden/): a falling-sand game, under its heading.
+export const gardenText = {
+  eyebrow: 'GARDEN',
+  title: 'GROW THE SPECTRUM',
+  intro: 'Plant a seed in a pot, water it and hang a light over it. There are seven colours to find, and flowers that bloom side by side cross when you harvest them.',
+};
+
 // The colophon (/colophon/): how the site is made, and the rules it keeps.
 export const colophon = {
   intro: 'Everything here is made of one material: square blocks of ink on a dot grid. Colour only shows up as light, when something happens. These are the rules I keep, and the parts, in case you want to borrow any.',
@@ -513,7 +520,7 @@ export const colophon = {
     'Real HTML under the canvas, positioned over each block, so links, keyboards and screen readers work.',
     `Every page is also prerendered as plain HTML, set in ${FONT.family}, for search engines, link previews and print. Turn WebGL off and that's what you get.`,
     'The letters are bitmaps in a JavaScript file. The same file builds the font, and the same parts draw the link previews, the LinkedIn banner and the profile pictures.',
-    'Press G for the garden: a falling-sand simulation that steps 60 times a second and draws as one texture. A wrong address gets you a word puzzle.',
+    'The garden (press G) is a falling-sand simulation that steps 60 times a second and draws as one texture. A wrong address gets you a word puzzle.',
     'Vite and plain JavaScript, no framework. Hosted on GitHub Pages.',
     'The same parts tell a story, too: The Adventurer, eighty seconds with sound, drawn and voiced in blocks.',
   ],

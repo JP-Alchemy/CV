@@ -30,7 +30,7 @@ Debug: append `?slow=5` to the URL to run every animation 5× slower.
 
 ## SEO and deploying
 
-The site uses real paths (`/work/`, `/work/interfarm/`, `/services/`, `/about/`, `/cv/`, `/contact/`, `/colophon/`). Old `#/…` links redirect to them.
+The site uses real paths (`/work/`, `/work/interfarm/`, `/services/`, `/about/`, `/cv/`, `/contact/`, `/colophon/`, `/story/`, `/garden/`). Old `#/…` links redirect to them.
 
 `npm run build` runs [`scripts/prerender.mjs`](scripts/prerender.mjs) after Vite, which writes for every route a real `dist/<path>/index.html` with:
 
@@ -50,15 +50,15 @@ It also writes `404.html` (noindex), `sitemap.xml`, `robots.txt`, `apple-touch-i
 
 `dist/` works on any static host with no rewrite rules: each route is a real file and unknown paths fall back to `404.html`. This repo deploys to GitHub Pages on every push to `main` ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)), served at **jpbothma.com** (`public/CNAME`).
 
-### Garden mode
+### The garden
 
-Press **G** (or the sprout in the nav) on any page and it freezes into terrain for a falling-sand garden ([`src/garden/`](src/garden)). Sand piles on your headings, water runs between the letters and soaks in. A seed buried in damp soil sprouts and blooms in one of the seven spectrum colours. Light comes from lights you hang: each shines a cone downward (soil, stone and machines cast shadows below them, and lit soil dries faster), plus a little daylight where the sky is open. The goal is to grow all seven:
+[`/garden/`](src/garden) is a falling-sand garden on a page of its own (press **G**, or the sprout in the nav, to go there and back). Its heading, a strip of ground and a row of pots freeze into terrain, then the pots and ground fill with damp soil. With the seed tool, click to drop a seed: it falls from where you click, and when it lands on soil it digs itself in, two cells deep. Click the soil itself and it goes straight in there. A seed that lands on stone (the heading's letters) waits to be buried with sand. A seed in damp soil sprouts and blooms in one of the seven spectrum colours. Sand piles on the heading, water runs between the letters and soaks in, and standing water slowly dries up. Light comes from lights you hang: each shines a cone downward (soil, stone and machines cast shadows below them, and lit soil dries faster), plus a little daylight where the sky is open, which the heading's letters shade. The goal is to grow all seven:
 
-- **Needs.** Each colour wants different water and light, from red (dry, a light right above it) to violet (wet, shade). Unhappy plants wilt or rot over tens of seconds, and the hint line says why.
+- **Needs.** Each colour wants different water and light, from red (dry, a light right above it) to violet (wet, shade). Each pot keeps its own water, so a dry pot and a wet one can stand side by side. Unhappy plants wilt or rot over tens of seconds, and the hint line says why.
 - **Breeding.** Harvest a flower with the seed tool. If another colour bloomed nearby, its seeds are a cross, halfway round the spectrum: red + yellow = orange, yellow + blue = green, blue + red = violet, green + blue = cyan. Red, yellow and blue seeds never run out.
-- **Automation.** The first bloom unlocks a sprinkler, the first crossed colour a planter (it sows and buries a colour of your choice, from your seeds), and five colours an agent that walks and climbs the garden harvesting for you. Together they can run a farm: the agents' harvests feed the planters. Click a light or machine with its own tool to take it away.
+- **Automation.** The first bloom unlocks a sprinkler, the first crossed colour a sower (it sows and buries a colour of your choice, from your seeds), and five colours an agent that walks and climbs the garden harvesting for you. Together they can run a farm: the agents' harvests feed the sowers. Click a light or machine with its own tool to take it away. START OVER brings fresh soil and empty pots; colours and seeds stay.
 
-`sim.js` is the world as plain logic (grid, plants, machines); `mode.js` handles entering and leaving, tools, hints and saved progress (localStorage). The renderer draws the whole grid in one pass from a small texture, so the theme dissolve and the click light reach the garden too. When you leave, every grain flies back into the page. Blocks with a tone of 2 to 8 render as spectrum colours anywhere on the site (the toolbar's swatches use them).
+`bed.js` lays out the ground and pots on the garden's 4 px grid (the page draws their walls, and they're exactly the walls the sand meets); `sim.js` is the world as plain logic (grid, plants, machines); `mode.js` handles starting and leaving, filling the beds, tools, hints and saved progress (localStorage). The garden starts once the page has arrived, and the renderer draws the whole grid in one pass from a small texture, so the theme dissolve and the click light reach it too. When you leave, every grain flies into the next page. Blocks with a tone of 2 to 8 render as spectrum colours anywhere on the site (the toolbar's swatches use them).
 
 ### The 404 puzzle
 

@@ -6,9 +6,10 @@
 //   /work/:slug/     project
 //   /services/, /about/, /cv/, /contact/, /colophon/
 //   /story/          The Adventurer (src/story/), played under the nav
+//   /garden/         the falling-sand garden (src/garden/)
 //   /projects/moto-tour/  the motorcycle roadbook (address kept from the old site)
 
-export const PAGES = ['work', 'services', 'about', 'cv', 'contact', 'colophon', 'story'];
+export const PAGES = ['work', 'services', 'about', 'cv', 'contact', 'colophon', 'story', 'garden'];
 
 export function parseRoute(pathname = location.pathname) {
   const parts = pathname.split('/').filter(Boolean);
