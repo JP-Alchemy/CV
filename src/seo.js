@@ -73,10 +73,10 @@ function describe(route) {
     };
     case 'services': return {
       ...base,
-      title: 'Services & Rates — 3D, Data, AI Agents, Fractional CTO | JP Bothma',
+      title: 'Services — 3D, Data, AI Agents, Fractional CTO | JP Bothma',
       description: 'Interactive 3D and WebGL, data visualisation, AI agents and workflow automation, sustainability engineering and fractional CTO work. Leiden-based, EU and global.',
       card: {
-        eyebrow: 'SERVICES & RATES', title: "COME IN, LET'S TALK WORK.",
+        eyebrow: 'SERVICES', title: "COME IN, LET'S TALK WORK.",
         text: 'Interactive 3D, data visualisation, AI agents, sustainability engineering and fractional CTO work.',
         picture: { icons: [...services.map((x) => x.icon), 'shield'] },
       },
@@ -213,11 +213,7 @@ const website = {
   inLanguage: 'en',
 };
 
-const offer = (name, text, price) => ({
-  '@type': 'Offer',
-  itemOffered: { '@type': 'Service', name, description: text },
-  priceSpecification: { '@type': 'UnitPriceSpecification', price, priceCurrency: 'EUR', unitCode: 'HUR', unitText: 'hour' },
-});
+const offer = (name, text) => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name, description: text } });
 
 const business = {
   '@type': 'ProfessionalService',
@@ -231,7 +227,7 @@ const business = {
   hasOfferCatalog: {
     '@type': 'OfferCatalog',
     name: 'Services',
-    itemListElement: [...services.map((s) => offer(s.name, s.text, s.price)), offer(onRequest.name, onRequest.text, onRequest.price)],
+    itemListElement: [...services.map((s) => offer(s.name, s.text)), offer(onRequest.name, onRequest.text)],
   },
 };
 
@@ -360,7 +356,7 @@ const BODIES = {
     <h2>My story</h2>
     <p>${esc(story.home)} ${a(story.href, 'Watch The Adventurer →')}</p>
     <h2>Work with me</h2>
-    <p>By day I lead sustainability technology at Interfood. Around that, I take on a small number of engagements: interactive 3D, data visualisation, AI agents, sustainability engineering and fractional CTO work. ${a('/services/', 'Services & rates →')}</p>`,
+    <p>By day I lead sustainability technology at Interfood. Around that, I take on a small number of engagements: interactive 3D, data visualisation, AI agents, sustainability engineering and fractional CTO work. ${a('/services/', 'Services →')}</p>`,
 
   work: () => `
     <p class="eyebrow">Work</p>
@@ -427,15 +423,15 @@ const BODIES = {
   },
 
   services: () => `
-    <p class="eyebrow">Services &amp; rates</p>
+    <p class="eyebrow">Services</p>
     <h1>Services — interactive 3D, data visualisation, AI agents, sustainability engineering and fractional CTO</h1>
-    <p>By day I lead sustainability technology at Interfood. Around that, I take on a small number of engagements — project work, retainers and long partnerships. Leiden-based, working with teams across the EU and further afield.</p>
+    <p>By day I lead sustainability technology at Interfood. Around that, I take on a small number of engagements — project work, retainers and long partnerships. Leiden-based, working with teams across the EU and further afield. For rates, get in touch and I'll give you a straight answer.</p>
     ${services.map((s) => `
     <section>
-      <h2>${esc(s.name)} <span class="muted">— ${esc(s.rate.toLowerCase())}</span></h2>
+      <h2>${esc(s.name)}</h2>
       <p>${esc(s.text)}</p>
     </section>`).join('')}
-    <p class="muted">${esc(onRequest.text.replace(/\.$/, ''))} — ${esc(onRequest.rate.toLowerCase())}.</p>
+    <p class="muted">${esc(onRequest.text)}</p>
     <p>${a('/contact/', 'Get in touch →')}</p>`,
 
   about: () => `

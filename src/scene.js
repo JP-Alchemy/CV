@@ -252,7 +252,7 @@ function home(state, S) {
     storyTeaser(state, S, story.home),
     ...section(S, 'hire', 'WORK WITH ME'),
     maxw(640, text('By day I lead sustainability technology at Interfood. Around that, I take on a small number of engagements: interactive 3D, data visualisation, AI agents, sustainability engineering and fractional CTO work.', S.body, { key: 'hire-text', mt: S.sp(3) })),
-    { ...link({ key: 'hire-link', label: 'SERVICES & RATES →', href: '/services/', hover: hv('hire-link') }), mt: S.sp(3) },
+    { ...link({ key: 'hire-link', label: 'SERVICES →', href: '/services/', hover: hv('hire-link') }), mt: S.sp(3) },
   ]);
 }
 
@@ -366,29 +366,27 @@ function servicesPage(state, S) {
   const rows = services.map((s, i) => {
     const key = `svc-${i}`;
     return pressRow({
-      key, href: '/contact/', hover: hv(key), label: `${s.name} — ${s.rate.toLowerCase()}. ${s.text}`, padY: 22,
+      key, href: '/contact/', hover: hv(key), label: `${s.name}. ${s.text}`, padY: 22,
       content: (tone, z) => (S.mobile
         ? col([
           row([icon({ key: `${key}:i`, name: s.icon, cell: 4, tone, z }), text(s.title, S.h3, { key: `${key}:t`, tone, z, a11y: false })], { gap: 12, valign: 'center' }),
           text(s.text, S.body, { key: `${key}:d`, tone: tone ? 0.55 : 0, z, a11y: false, mt: 12 }),
-          text(s.rate, S.small, { key: `${key}:r`, tone, z, a11y: false, mt: 12 }),
         ])
         : row([
           icon({ key: `${key}:i`, name: s.icon, cell: 5, tone, z }),
           { ...text(s.title, S.h3, { key: `${key}:t`, tone, z, a11y: false }), basis: 300 },
           { ...text(s.text, S.body, { key: `${key}:d`, tone: tone ? 0.55 : 0, z, a11y: false }), grow: true },
-          { ...text(s.rate, S.small, { key: `${key}:r`, tone, z, a11y: false, align: 'right' }), basis: 150 },
         ], { gap: S.sp(2), valign: 'center' })),
     });
   });
   return col([
-    pageHead(S, 'SERVICES & RATES', "COME IN, LET'S TALK WORK.", {
+    pageHead(S, 'SERVICES', "COME IN, LET'S TALK WORK.", {
       h1: 'Services — interactive 3D, data visualisation, AI agents, sustainability engineering and fractional CTO',
-      intro: 'By day I lead sustainability technology at Interfood. Around that, I take on a small number of engagements — project work, retainers and long partnerships. Leiden-based, working with teams across the EU and further afield.',
+      intro: "By day I lead sustainability technology at Interfood. Around that, I take on a small number of engagements — project work, retainers and long partnerships. Leiden-based, working with teams across the EU and further afield. For rates, get in touch and I'll give you a straight answer.",
     }),
     { ...rule({ key: 'svc-rule' }), mt: S.sp(6) },
     ...rows,
-    maxw(720, text(`${onRequest.text.replace(/\.$/, '')} — ${onRequest.rate.toLowerCase()}.`, S.body, { key: 'svc-extra', tone: 0.55, mt: S.sp(4) })),
+    maxw(720, text(onRequest.text, S.body, { key: 'svc-extra', tone: 0.55, mt: S.sp(4) })),
     row([
       button({ key: 'svc-contact', label: 'GET IN TOUCH', arrow: '→', href: '/contact/', hover: hv('svc-contact') }),
       button({ key: 'svc-cv', label: 'READ MY CV', href: '/cv/', hover: hv('svc-cv') }),
@@ -513,7 +511,7 @@ function contact(state, S) {
       { ...link({ key: 'li-big', label: 'SAY HELLO ON LINKEDIN', href: site.linkedin, external: true, style: big, hover: hv('li-big'), aria: 'Message JP on LinkedIn' }), mt: S.sp(6) },
       row([
         button({ key: 'li', label: 'MESSAGE ME', arrow: '↗', href: site.linkedin, external: true, hover: hv('li') }),
-        button({ key: 'svc', label: 'SERVICES & RATES', href: '/services/', hover: hv('svc') }),
+        button({ key: 'svc', label: 'SERVICES', href: '/services/', hover: hv('svc') }),
       ], { gap: 8, wrap: true, mt: S.sp(3) }),
     ];
   return col([

@@ -35,7 +35,7 @@ The site uses real paths (`/work/`, `/work/interfarm/`, `/services/`, `/about/`,
 `npm run build` runs [`scripts/prerender.mjs`](scripts/prerender.mjs) after Vite, which writes for every route a real `dist/<path>/index.html` with:
 
 - its own `<title>`, meta description, canonical URL, Open Graph and Twitter tags,
-- JSON-LD (`WebSite` + `Person` everywhere; `ProfessionalService` with rates on home/services; `ProfilePage` on about; `CreativeWork` + breadcrumbs on projects),
+- JSON-LD (`WebSite` + `Person` everywhere; `ProfessionalService` with its services on home/services; `ProfilePage` on about; `CreativeWork` + breadcrumbs on projects),
 - a plain semantic-HTML copy of the page, which is what crawlers and link previews read and what no-JS / no-WebGL visitors see. It's set in the site's pixel font (below) at whole-pixel sizes, and it's also what prints, so the CV's "Print / save as PDF" produces a clean document in the same type, with the text still selectable.
 
 It also writes `404.html` (noindex), `sitemap.xml`, `robots.txt`, `apple-touch-icon.png` and a link preview card for every page: `og-image.png` for home and `og/<page>.png` for the rest (`og/work-<slug>.png` for projects). [`scripts/cards.mjs`](scripts/cards.mjs) draws each from the `card` in its page's entry in [`src/seo.js`](src/seo.js): the eyebrow and title in the pixel font, a line of text, the page's own picture in blocks (photos come from PNG copies in `brand/source/`, since Node can't decode JPEG), the mark, and the click light crossing one corner. The Google Search Console verification tag from the previous site is kept in `index.html`.

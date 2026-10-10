@@ -275,48 +275,36 @@ export const services = [
     icon: 'cube',
     title: 'INTERACTIVE EXPERIENCES & 3D',
     name: 'Interactive experiences & 3D',
-    rate: 'FROM €130/HR',
-    price: 130,
     text: 'Real-time 3D, WebGL and immersive interfaces for web and native — React-Three-Fiber, Unity, Unreal. Built to be felt before they are understood.',
   },
   {
     icon: 'data',
     title: 'DATA VISUALISATION & DASHBOARDS',
     name: 'Data visualisation & dashboards',
-    rate: 'FROM €120/HR',
-    price: 120,
     text: 'Operational dashboards, sustainability reporting and custom visual tools that make complex data legible, useful and quietly beautiful.',
   },
   {
     icon: 'agent',
     title: 'AI AGENTS & WORKFLOW AUTOMATION',
     name: 'AI agents & workflow automation',
-    rate: 'FROM €140/HR',
-    price: 140,
     text: 'Custom models, orchestrated agents and end-to-end automated workflows that take the repetitive work — leaving people the judgement, the care and the creative leap.',
   },
   {
     icon: 'leaf',
     title: 'SUSTAINABILITY ENGINEERING',
     name: 'Sustainability engineering',
-    rate: 'FROM €120/HR',
-    price: 120,
     text: 'Software for the circular economy: digital product passports, lifecycle data pipelines and measured-impact tools. ESPR-aligned and built to last.',
   },
   {
     icon: 'compass',
     title: 'FRACTIONAL CTO',
     name: 'Fractional CTO',
-    rate: 'FROM €130/HR',
-    price: 130,
     text: 'Part-time technical leadership for small teams — strategy, architecture, hiring and honest counsel, without the overhead of a full-time hire.',
   },
 ];
 
 export const onRequest = {
   name: 'OT/ICS security assessments',
-  rate: 'FROM €150/HR',
-  price: 150,
   text: 'Also on request: security assessments of operational technology for energy and industrial clients — wind, solar and industrial control systems.',
 };
 
