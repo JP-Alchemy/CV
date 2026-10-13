@@ -333,7 +333,7 @@ capture.setAttribute('aria-hidden', 'true');
 document.body.appendChild(capture);
 capture.addEventListener('pointerdown', (e) => {
   try { capture.setPointerCapture(e.pointerId); } catch { /* not a live pointer */ }
-  garden.down(e.clientX, e.clientY);
+  garden.down(e.clientX, e.clientY, e.pointerType === 'touch' || e.pointerType === 'pen');
   kick();
 });
 capture.addEventListener('pointermove', (e) => { mouse = [e.clientX, e.clientY]; garden.move(e.clientX, e.clientY); });

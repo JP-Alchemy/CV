@@ -71,13 +71,14 @@ export class Tutorial {
     return null;
   }
 
-  /** The pot to plant in: the first with open sky over it (or the first pot, or the ground). */
+  /** The pot to plant in: the first with open sky over it, or the first pot, or (no room for pots) the middle of the ground. */
   pot() {
     const s = this.g.sim;
     if (this.potFor !== s) {
-      const pots = this.g.beds.length > 1 ? this.g.beds.slice(1) : this.g.beds;
+      const [ground, ...pots] = this.g.beds;
       this.potFor = s;
-      this.potBed = pots.find((b) => { const c = this.g.cellAt(b.x, b.level); return c && s.sky(s.idx(c[0], c[1])); }) || pots[0];
+      this.potBed = pots.find((b) => { const c = this.g.cellAt(b.x, b.level); return c && s.sky(s.idx(c[0], c[1])); })
+        || pots[0] || { ...ground, x: this.g.x0 + Math.round((s.cols * CELL) / 2) };
     }
     return this.potBed;
   }
@@ -117,7 +118,7 @@ export class Tutorial {
       const b = this.pot();
       if (g.tool !== 'seed') { say('PICK SEED IN THE TOOLBAR.'); v.tool = 'seed'; }
       else if (g.seed !== YELLOW && !this.picked) { say("PICK THE YELLOW SEED. IT'S THE EASIEST TO GROW."); v.chip = YELLOW; }
-      else { say('CLICK JUST ABOVE THIS POT TO DROP A SEED IN.'); v.target = v.mark = [b.x, b.level - 10 * CELL]; }
+      else { say(this.g.beds.length > 1 ? 'CLICK JUST ABOVE THIS POT TO DROP A SEED IN.' : 'CLICK JUST ABOVE THE GROUND TO DROP A SEED IN.'); v.target = v.mark = [b.x, b.level - 10 * CELL]; }
       if (g.seed === YELLOW) this.picked = true;
     } else if (this.step === 'light') {
       v.target = v.mark = this.px(this.spot());

@@ -81,6 +81,15 @@ body {
   display: none;
   touch-action: none;
   cursor: crosshair;
+  /* a long press is gardening, not selecting or a menu */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Quick taps on the garden's tools don't zoom the page. */
+.gardening .hit {
+  touch-action: manipulation;
 }
 
 .gardening #garden {

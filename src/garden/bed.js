@@ -15,7 +15,7 @@ const POTS = {
 const ORDER = ['pot', 'tall', 'trough', 'small', 'pot']; // left to right, as many as fit
 const GROUND = 9; // rows of soil under it all
 const GAP = 12; // the least room between pots, in cells
-const ROOM = 34; // rows a pot leaves clear above it, for the plants
+const ROOM = 34; // rows a pot leaves clear above it, for the plants (fewer on a small screen)
 
 /** The ground's gentle rise and fall, in rows above its lowest level. */
 export const hills = (col) => Math.round(1.5 + 1.5 * Math.sin(col * 0.045 + 0.7));
@@ -41,18 +41,18 @@ function walls({ w, h, taper }) {
  * and the beds of soil to fill: a point inside each, the level it fills to,
  * and how damp it starts.
  */
-export function bed({ left, width, top, bottom, y0 }) {
+export function bed({ left, width, top, bottom, y0, compact }) {
   const rows = Math.floor((bottom - y0) / CELL);
   const ground = rows - GROUND;
   const beds = [{ x: Math.ceil(left / CELL) * CELL + 2, y: y0 + (rows - 1) * CELL + 2, level: y0 + ground * CELL, hills, damp: 45 }];
   const c0 = Math.ceil(left / CELL), c1 = Math.floor((left + width) / CELL);
-  const fits = (name) => y0 + (ground - POTS[name].h - ROOM) * CELL >= top;
+  const room = compact ? 26 : ROOM;
+  const fits = (name) => y0 + (ground - POTS[name].h - room) * CELL >= top;
   const picked = [];
   let used = 0;
   for (const name of ORDER) {
-    if (!fits(name)) continue;
     const need = POTS[name].w + 2 + (picked.length ? GAP : 0);
-    if (used + need > c1 - c0) break;
+    if (!fits(name) || used + need > c1 - c0) continue; // too tall or too wide: a smaller one may fit
     picked.push(name);
     used += need;
   }

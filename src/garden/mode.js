@@ -205,7 +205,8 @@ export class Garden {
     return this.sim.inside(cx, cy) ? [cx, cy] : null;
   }
 
-  down(x, y) {
+  /** A click or tap at (x, y). A finger (`coarse`) gets more room to hit a flower, a light or a machine. */
+  down(x, y, coarse = false) {
     if (!this.sim) return;
     const h = this.host.hole?.(); // the lesson's box sits over the garden
     if (h && x >= h[0] && x < h[2] && y >= h[1] && y < h[3]) return;
@@ -216,7 +217,7 @@ export class Garden {
     // A flower gives up its seeds to a click, whatever tool is in hand
     // (unless the click is on a light or machine, to take it away).
     const machine = s.owner[i] >= 0 && !s.plants.has(s.owner[i]);
-    const flower = machine ? null : s.flowerAt(i);
+    const flower = machine ? null : s.flowerAt(i, coarse ? 6 : 3);
     if (flower) { this.gather(s.harvest(flower), x, y); this.pointer = null; return; }
     if (this.tool === 'seed') {
       const k = this.seed;
@@ -233,7 +234,7 @@ export class Garden {
       // Click a light or machine with its own tool to take it away again.
       this.pointer = null;
       const t = this.tool;
-      if (s.remove(i, t)) { this.say(`${t.toUpperCase()} REMOVED.`, 2); this.host.changed(); return; }
+      if (this.removeNear(c, t, coarse ? 3 : 0)) { this.say(`${t.toUpperCase()} REMOVED.`, 2); this.host.changed(); return; }
       const placed = t === 'agent' ? s.agents.length : t === 'light' ? s.lights.length : s.devices.filter((d) => d.type === t).length;
       if (placed >= LIMIT[t]) { this.say(`THAT'S ALL THE ${t.toUpperCase()}S FOR NOW (${LIMIT[t]}).`, 3); return; }
       const ok = t === 'agent' ? s.addAgent(c[0] - 2, c[1] - 2) : t === 'light' ? s.hang(c[0] - 1, c[1] - 1) : s.place(t, c[0] - 2, c[1] - 2, this.seed);
@@ -242,6 +243,20 @@ export class Garden {
       this.host.changed(); // the lesson may have moved on
       if (t === 'sower') this.say(`A ${COLOURS[this.seed]} SOWER.${PRIMARY.includes(this.seed) || this.progress.seeds[this.seed] ? '' : ` IT WAITS FOR ${COLOURS[this.seed]} SEEDS.`}`, 4);
     }
+  }
+
+  /** Take away a light or machine of this tool at a cell, or the nearest within `r` cells of it. */
+  removeNear([cx, cy], tool, r) {
+    const s = this.sim;
+    for (let d = 0; d <= r; d++) {
+      for (let dy = -d; dy <= d; dy++) {
+        for (let dx = -d; dx <= d; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== d || !s.inside(cx + dx, cy + dy)) continue;
+          if (s.remove(s.idx(cx + dx, cy + dy), tool)) return true;
+        }
+      }
+    }
+    return false;
   }
 
   /**

@@ -78,9 +78,9 @@ function footer(state, S, count) {
 // ---------------------------------------------------------------- garden
 
 /** One colour of the spectrum: a swatch to pick its seeds, with how many you hold. */
-function seedChip(v, k, hv) {
+function seedChip(v, k, hv, size = 28) {
   return custom((w, ctx) => {
-    const size = 28, key = `gd-seed-${k}`;
+    const key = `gd-seed-${k}`;
     // Unknown: a "?". Seeds in hand: a small square, like a seed. Bloomed: full colour.
     const n = v.seeds[k], have = n === Infinity || n > 0;
     const known = v.found[k] || have;
@@ -103,32 +103,36 @@ function seedChip(v, k, hv) {
     }
     const name = COLOURS[k].toLowerCase();
     const aria = !known ? `${name}: not found yet` : `${name}${v.found[k] ? ' (bloomed)' : ''}: ${n === Infinity ? 'seeds always in stock' : `${n} seeds`}`;
-    els.push(ctx.el({ key, w: size, h: size, hit: { action: `gd:seed:${k}`, label: aria, pressed: sel } }));
+    els.push(ctx.el({ key, w: size, h: size + 20, hit: { action: `gd:seed:${k}`, label: aria, pressed: sel } }));
     return { w: size, h: size + 20, els };
   });
 }
 
 /** The garden's toolbar: tools, the spectrum's seeds, and what to do next. */
-function gardenBar(state, S) {
+function gardenBar(state, S, small) {
   const v = state.garden;
   const hv = (k) => state.hover === k;
   const tools = v.tools.map((t) => button({ key: `gd-tool-${t}`, label: t.toUpperCase(), small: true, action: `gd:tool:${t}`, active: v.tool === t, pressed: v.tool === t, hover: hv(`gd-tool-${t}`) }));
-  // On a phone the first lesson lives down here, in the hint's place, with
-  // its button where START OVER goes (no box over the garden to get in the way).
-  const lesson = S.mobile && v.tutorial;
+  // On a phone or a short screen the first lesson lives down here, in the
+  // hint's place, with its button where START OVER goes (no box over the
+  // garden to get in the way).
+  const lesson = small && v.tutorial;
   const done = lesson
     ? button({ key: 'gd-done', label: v.tutorial.button, small: true, action: 'gd:skip', hover: hv('gd-done'), aria: v.tutorial.button === 'SKIP' ? 'Skip the garden lesson' : 'Close the garden lesson' })
-    : button({ key: 'gd-done', label: 'START OVER', small: true, action: 'gd:restart', hover: hv('gd-done'), aria: 'Start the garden over: fresh soil, empty pots (your colours and seeds stay)' });
-  const chips = row(COLOURS.map((_, k) => seedChip(v, k, hv)), { gap: S.mobile ? 4 : 6 });
+    : button({ key: 'gd-done', label: S.mobile ? 'RESTART' : 'START OVER', small: true, action: 'gd:restart', hover: hv('gd-done'), aria: 'Start the garden over: fresh soil, empty pots (your colours and seeds stay)' });
+  const chips = row(COLOURS.map((_, k) => seedChip(v, k, hv, S.mobile ? 24 : 28)), { gap: S.mobile ? 4 : 6 });
   // The hint has room for a set number of lines, whatever it says, so the
   // toolbar (and the ground and pots on it) never move as it changes.
-  const lines = S.mobile ? 4 : 2, line = typeset('A', S.small).height, room = lines * line + (S.mobile ? 4 : 0);
-  const said = lesson
-    ? col([text(v.tutorial.label, S.small, { key: 'gd-hint-step', tone: 0.55 }), text(v.tutorial.text, S.small, { key: 'gd-hint', tone: 1, mt: 4, attrs: { 'aria-live': 'polite' } })])
-    : text(v.hint, S.small, { key: 'gd-hint', tone: 1, attrs: { 'aria-live': 'polite' } });
-  const hint = custom((w, ctx) => { const b = layout(said, w, ctx); return { w: b.w, h: room, els: b.els }; });
+  const lines = S.mobile ? 3 : 2, line = typeset('A', S.small).height;
+  const step = lesson && v.tutorial.label.startsWith('STEP') ? `${v.tutorial.label.replace('STEP ', '').replace(' OF ', '/')} · ` : '';
+  const said = text(lesson ? step + v.tutorial.text : v.hint, S.small, { key: 'gd-hint', tone: 1, attrs: { 'aria-live': 'polite' } });
+  const hint = custom((w, ctx) => { const b = layout(said, w, ctx); return { w: b.w, h: lines * line, els: b.els }; });
   if (S.mobile) {
-    return col([row([...tools, done], { gap: 4, wrap: true, rowGap: 4 }), { ...chips, mt: 10 }, { ...hint, mt: 2 }]);
+    return col([
+      row(tools, { gap: 4, wrap: true, rowGap: 4 }),
+      { ...row([chips, done], { justify: 'between', valign: 'top' }), mt: 10 },
+      { ...hint, mt: 2 },
+    ]);
   }
   return col([
     row([row(tools, { gap: 4 }), done], { justify: 'between' }),
@@ -141,9 +145,9 @@ function gardenBar(state, S) {
  * as tall as it will be with every tool unlocked (so unlocking one doesn't
  * move the ground).
  */
-function gardenBand(state, S, ctx, vp) {
-  const b = layout(gardenBar(state, S), S.cw, ctx);
-  const full = layout(gardenBar({ ...state, garden: { ...state.garden, tools: state.garden.every, tutorial: null } }, S), S.cw, new Ctx('gd-size', state));
+function gardenBand(state, S, ctx, vp, small) {
+  const b = layout(gardenBar(state, S, small), S.cw, ctx);
+  const full = layout(gardenBar({ ...state, garden: { ...state.garden, tools: state.garden.every, tutorial: null } }, S, small), S.cw, new Ctx('gd-size', state));
   const pad = S.mobile ? 12 : 16, bandH = Math.max(b.h, full.h) + pad * 2, top = vp.h - bandH;
   shift(b.els, S.left, top + pad);
   const band = ctx.el({ key: 'gd-band', sig: `gdb|${vp.w}|${bandH}`, w: vp.w, h: bandH, blocks: fillBlocks(vp.w, bandH, 4, 0, 0), flat: true });
@@ -159,8 +163,8 @@ function gardenBand(state, S, ctx, vp) {
 }
 
 /** The ground and pots (garden/bed.js) between the heading and the toolbar, as page blocks. */
-function gardenBed(S, ctx, top, bottom) {
-  const { pots, beds } = bed({ left: S.left, width: S.cw, top, bottom, y0: Math.ceil(S.navClip / CELL) * CELL });
+function gardenBed(S, ctx, top, bottom, compact) {
+  const { pots, beds } = bed({ left: S.left, width: S.cw, top, bottom, y0: Math.ceil(S.navClip / CELL) * CELL, compact });
   const els = pots.map((p, i) => {
     const b = p.blocks;
     let x0 = Infinity, y0 = Infinity, x1 = 0, y1 = 0;
@@ -182,7 +186,7 @@ const cells = (rows, c, tone = 1) => Float32Array.from(rows.flatMap((r, y) => [.
 const nudge = (b, dy) => { const o = b.slice(); for (let i = 1; i < o.length; i += 5) o[i] += dy; return o; };
 const blink = (w, h, b) => ({ frames: [frameBlocks(w, h, b), frameBlocks(w, h, b, 0.15)], period: 0.45, phase: 0 });
 
-function gardenLesson(state, S, ctx, band, top) {
+function gardenLesson(state, S, ctx, band, top, small) {
   const t = state.garden?.tutorial;
   if (!t) return { els: [], hole: null };
   const els = [];
@@ -213,7 +217,7 @@ function gardenLesson(state, S, ctx, band, top) {
     }
     return ay;
   };
-  if (S.mobile) {
+  if (small) { // the words are in the toolbar
     if (point) arrowAt(...point);
     return { els, hole: null };
   }
@@ -249,8 +253,11 @@ function gardenLesson(state, S, ctx, band, top) {
   return { els, hole: [x, y, x + W, y + H] };
 }
 
-function gardenPage(state, S) {
-  return pageHead(S, gardenText.eyebrow, gardenText.title, { h1: 'Grow the spectrum: a falling-sand garden', intro: gardenText.intro });
+/** The garden's heading: on a phone or a short screen just the title, to leave the garden the room. */
+function gardenPage(state, S, compact) {
+  const h1 = 'Grow the spectrum: a falling-sand garden';
+  if (compact) return text(gardenText.title, S.h2, { key: 'page-title', tag: 'h1', label: h1 });
+  return pageHead(S, gardenText.eyebrow, gardenText.title, { h1, intro: gardenText.intro });
 }
 
 // ---------------------------------------------------------------- pieces
@@ -766,17 +773,18 @@ export function buildScene(state, vp) {
     return { elements: resolve([...(state.fullscreen ? [] : nav.els), ...pic]), height: vp.h, S };
   }
 
-  const pageNode = state.menuOpen ? menu(state, S) : PAGES[state.route.name](state, S, state.route.slug);
+  const compact = state.route.name === 'garden' && (S.mobile || vp.h < 720);
+  const pageNode = state.menuOpen ? menu(state, S) : compact ? gardenPage(state, S, true) : PAGES[state.route.name](state, S, state.route.slug);
   const page = layout(pageNode, S.cw, ctx);
-  const top = S.navClip + S.top;
+  const top = S.navClip + (compact && !state.menuOpen ? S.sp(2) : S.top);
   shift(page.els, S.left, top);
 
   // The garden is one screen: its heading, then the ground and pots down to
   // the toolbar, and no footer. `beds` tell garden/mode.js where the soil goes.
   if (state.route.name === 'garden' && !state.menuOpen) {
-    const bar = state.garden ? gardenBand(state, S, ctx, vp) : { els: [], top: vp.h };
-    const ground = gardenBed(S, ctx, top + page.h, bar.top);
-    const lesson = gardenLesson(state, S, ctx, bar, top + page.h + 8);
+    const bar = state.garden ? gardenBand(state, S, ctx, vp, compact) : { els: [], top: vp.h };
+    const ground = gardenBed(S, ctx, top + page.h, bar.top, compact);
+    const lesson = gardenLesson(state, S, ctx, bar, top + page.h + 8, compact);
     return {
       elements: resolve([...nav.els, ...page.els, ...ground.els, ...bar.els, ...lesson.els]),
       height: vp.h, S, gardenTop: bar.top, beds: ground.beds, gardenHole: lesson.hole,
