@@ -110,6 +110,13 @@ const DOLOMITES = [[-1.2, 0.44], [-1.0, 0.36], [-0.94, 0.3], [-0.9, 0.31], [-0.8
   [0.46, 0.22], [0.49, 0.2], [0.51, 0.17], [0.54, 0.18], [0.57, 0.3], [0.66, 0.34], [0.72, 0.28], [0.78, 0.24],
   [0.84, 0.25], [0.9, 0.2], [0.95, 0.22], [1.0, 0.3], [1.2, 0.38]];
 
+// A blouse as a sewing pattern piece (Drapewright), right half: x >= 0, y
+// down in image heights, closed past the centre line so the middle isn't an
+// edge. Its notches: [x, y, direction out].
+const BLOUSE = [[-0.1, 0.2], [0, 0.2], [0.05, 0.19], [0.085, 0.13], [0.22, 0.17], [0.34, 0.28], [0.29, 0.37], [0.2, 0.31],
+  [0.165, 0.5], [0.175, 0.58], [0.27, 0.86], [0.14, 0.88], [0, 0.885], [-0.1, 0.885]];
+const NOTCHES = [[0.165, 0.5, 1, 0], [0.28, 0.225, 0.68, -0.73]];
+
 export const GENERATORS = {
   orb(x, y, ar, s, dark) {
     const px = (x - 0.5) * ar, py = y - 0.46;
@@ -338,6 +345,39 @@ export const GENERATORS = {
     const top = ay + (cy - ay) * clamp((px - ax) / (cx - ax));
     if (y < top || cy <= ay) return 0;
     return clamp((dark ? 0.24 : 0.3) * (1 - smooth(0.04, 0.2, y - top)) * (0.8 + 0.4 * fbm(px * 30, y * 3, 13, 2)));
+  },
+
+  drape(x, y, ar, s, dark) {
+    // Drapewright: a blouse pattern piece sewn as cloth, its folds opening
+    // out to the hem, with its grainline and notches, on a cutting mat.
+    const px = (x - 0.5) * ar, ax = Math.abs(px);
+    const shape = (u, v) => polyDist(Math.abs(u), v, BLOUSE);
+    const d = shape(px, y);
+    if (d < 0) {
+      // The grainline: a line with an arrowhead at each end.
+      if (ax < 0.006 && y > 0.34 && y < 0.76) return 0.85;
+      const head = (y0, dir) => { const t = (y - y0) * dir; return t > 0 && t < 0.05 && ax < t * 0.7 && ax > t * 0.7 - 0.016; };
+      if (head(0.34, 1) || head(0.76, -1)) return 0.85;
+      // The cloth: rounded at its cut edges, folds fanning out below the waist.
+      const e = 0.003;
+      const gx = shape(px + e, y) - shape(px - e, y), gy = shape(px, y + e) - shape(px, y - e);
+      const g = Math.hypot(gx, gy) || 1, o = 1 - clamp(-d / 0.05);
+      const low = smooth(0.52, 0.9, y);
+      const nx = (gx / g) * o + Math.sin((px / (0.55 + low * 0.6)) * 46) * low * 0.75, ny = (gy / g) * o;
+      const nz = Math.sqrt(Math.max(0.05, 1 - Math.min(1, nx * nx + ny * ny))), m = Math.hypot(nx, ny, nz);
+      const lam = lambert(nx / m, ny / m, nz / m);
+      return dark ? clamp(0.08 + lam * 0.92) : clamp(0.97 - lam * 0.6);
+    }
+    for (const [nx0, ny0, ex, ey] of NOTCHES) {
+      if (segDist(ax, y, nx0, ny0, nx0 + ex * 0.035, ny0 + ey * 0.035) < 0.008) return 0.85;
+    }
+    if (d < 0.05) return 0; // a clear margin round the piece
+    // The cutting mat: a grid, every fifth line heavier.
+    const gs = 0.1, lx = Math.abs(px / gs - Math.round(px / gs)) * gs, ly = Math.abs(y / gs - Math.round(y / gs)) * gs;
+    const major = (v) => Math.abs(Math.round(v / gs)) % 5 === 0;
+    if (lx < 0.004) return major(px) ? 0.38 : 0.22;
+    if (ly < 0.004) return major(y) ? 0.38 : 0.22;
+    return 0;
   },
 
   pose(x, y, ar) {

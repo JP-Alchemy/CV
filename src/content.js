@@ -2,7 +2,7 @@
 // the pixel font; `seo` strings are what search engines and link previews see.
 //
 // Images: each project has `image: { kind }` (a procedural render: moon,
-// terrain, waves, duck, cyber, earth, motorcycle, switchbacks, pose, cubes,
+// terrain, waves, duck, cyber, earth, motorcycle, drape, switchbacks, pose, cubes,
 // rings, bars, globe, portrait, orb). To use a real image, drop it in
 // /public/images and use `image: { src: '/images/name.jpg' }`.
 
@@ -110,6 +110,38 @@ export const projects = [
           { lead: 'Transparent model', text: 'Every figure is computed in code (CO₂e, cost split, fuel, food waste, treatment) from cited sources: DEFRA, GLEC, Poore & Nemecek, FAO and RIVM. A model-check script verifies every product × route × chain combination.' },
           { lead: 'Light on resources', text: 'No backend, store data from OpenStreetMap, location and basket kept on the device, and heavy calculations spread across animation frames so the interface stays smooth.' },
           { lead: 'Deployment', text: 'GitHub Actions to GitHub Pages on a custom domain. MapLibre is split into its own cached file, and link-preview images are included.' },
+        ],
+      },
+    ],
+  },
+  {
+    slug: 'drapewright',
+    title: 'DRAPEWRIGHT',
+    name: 'Drapewright',
+    seoTitle: 'Drapewright — Free Sewing Pattern Software with 3D Fitting | JP Bothma',
+    when: 'LIVE',
+    role: 'Maker',
+    stack: 'Rust · WebAssembly · wgpu · React · TypeScript · MCP',
+    tags: ['SEWING', '3D WEB', 'CLOTH SIMULATION', 'FREE'],
+    summary: 'Free sewing pattern software for the iPad or any browser: open the patterns you already own, fit them to your measurements, see them draped in 3D, and print at true size.',
+    line: 'Sewing patterns fitted in 3D before you cut. Free, in the browser.',
+    url: 'https://drapewright.com/',
+    image: { kind: 'drape' },
+    schema: { '@type': 'SoftwareApplication', applicationCategory: 'DesignApplication', operatingSystem: 'Any (web browser); iPad' },
+    body: [
+      'Drapewright started at home. My wife sews from PDF patterns on an iPad at the sewing table, which means printing and taping pages, finding the right size, and hoping it fits before cutting into good fabric. The software that shows a garment on a body before you cut does exist, but it is made for fashion studios: priced for them, built for a desk and a mouse, and slow to learn.',
+      'So I am building the one I wished she had. It opens the patterns you already own, adds seam allowance, notches and grainlines, fits the pattern to your measurements, sews it up on a 3D figure in your fabric, and prints it at exactly the right size. It is free, needs no account, works offline, and your patterns never leave your device. She tests every step and tells me where it is wrong.',
+    ],
+    sections: [
+      {
+        title: 'HOW IT WORKS',
+        items: [
+          { lead: 'Opens real patterns', text: 'Tiled A4 and US Letter PDFs are put back together, A0 copy-shop files open whole, and every size of a multi-size pattern is kept apart. SVG from Inkscape or FreeSewing, and DXF from garment CAD.' },
+          { lead: 'A Rust engine', text: 'The pattern geometry and the cloth simulation are Rust, compiled to WebAssembly. The 3D view draws with wgpu: WebGPU where the browser has it, WebGL2 where it doesn’t.' },
+          { lead: 'Sewn and draped', text: 'It finds which edges are sewn together, places the pieces round a figure built from open body data in your measurements, and settles them as cloth, in the fabric you choose.' },
+          { lead: 'True scale', text: 'Tiled PDFs with a test square, A0 for the copy shop, or the pieces projected onto a cutting mat, calibrated to the millimetre.' },
+          { lead: 'Yours, offline', text: 'Touch and Apple Pencil first, and it works offline. Projects stay on the device, and a backup is a .drapewright file: a zip of plain JSON with a published schema.' },
+          { lead: 'Works with AI assistants', text: 'An MCP server lets assistants such as Claude open, check and change projects: import patterns, name the pieces, and set allowances, notches and grainlines.' },
         ],
       },
     ],
