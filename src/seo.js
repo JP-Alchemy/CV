@@ -4,10 +4,10 @@
 // at runtime it keeps <head> in sync and backs the print view of the CV.
 
 import {
-  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills, colophon, story, gardenText,
+  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills, colophon, story, gardenText, slimeText,
 } from './content.js';
 import { ICONS } from './icons.js';
-import { parseRoute, PAGES } from './router.js';
+import { parseRoute, PAGES, SLIME_PATH } from './router.js';
 import { book, tripStats, gpxFile, eur, ROADBOOK_PATH } from './roadbook.js';
 import { THEMES, SPECTRUM, COLOURS, FONT } from './brand.js';
 import { ADVENTURER, blocks as sprite } from './story/art.js';
@@ -31,6 +31,7 @@ export const allRoutes = () => [
   ...PAGES.map((p) => parseRoute(`/${p}/`)),
   ...projects.map((p) => parseRoute(`/work/${p.slug}/`)),
   parseRoute(ROADBOOK_PATH),
+  parseRoute(SLIME_PATH),
 ];
 
 // ---------------------------------------------------------------- meta
@@ -138,6 +139,17 @@ function describe(route) {
         text: 'A d20, a small ship, seven unknown worlds, a dragon, and the colours coming home.',
         // The adventurer, staff raised.
         picture: { blocks: sprite(ADVENTURER.cheer, 18, { star: 6 }), w: 12 * 18, h: 16 * 18 },
+      },
+    };
+    case 'slime': return {
+      ...base,
+      type: 'article',
+      title: 'Slime Mould Railways — A Physarum Model of the Dutch Rail Network | JP Bothma',
+      description: 'A slime mould’s rules for growing a network (Tero et al., Science 2010), run live on the Netherlands: 40 cities, the real coast and lakes, and the real railway to compare.',
+      card: {
+        eyebrow: 'EXPERIMENT', title: slimeText.title,
+        text: 'A slime mould’s network-growing rules, run on the Netherlands and measured against the real railway.',
+        picture: { image: { kind: 'slime' } },
       },
     };
     case 'roadbook': {
@@ -513,6 +525,14 @@ const BODIES = {
     <h1>Grow the spectrum</h1>
     <p class="lead">${esc(gardenText.intro)}</p>
     <p>A falling-sand garden: sand piles, water soaks in, and each of the seven colours wants its own water and light. It plays with JavaScript and WebGL2. ${a('/', 'Back home →')}</p>`,
+
+  slime: () => `
+    <p>${a('/work/', '← Work')}</p>
+    <p class="eyebrow">${esc(sentence(slimeText.eyebrow))}</p>
+    <h1>Slime mould railways</h1>
+    <p class="lead">${esc(slimeText.intro)}</p>
+    <p>The experiment runs live with JavaScript and WebGL2: the mould grows on a map of the Netherlands, and its network is scored against the real railway and the minimum spanning tree.</p>
+    ${slimeText.sections.map((sec) => `<h2>${esc(sentence(sec.title))}</h2>${sec.paras.map((t) => `<p>${esc(t)}</p>`).join('')}${sec.cite ? `<p>${a(sec.cite.href, 'Tero et al., Rules for biologically inspired adaptive network design, Science 327 (2010)', true)}</p>` : ''}`).join('')}`,
 
   notFound: () => `
     <h1>Page not found</h1>

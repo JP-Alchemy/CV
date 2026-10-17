@@ -20,7 +20,7 @@ Debug: append `?slow=5` to the URL to run every animation 5× slower.
 
 - **Copy, projects, services, CV, links**: all in [`src/content.js`](src/content.js). Display copy is upper-case (it's set in the pixel font); body copy is normal sentence case.
 - **Email**: `site.email` is `null`, so the contact page leads with LinkedIn. Set it to an address to show it with a copy button.
-- **Images**: each project has `image: { kind: 'terrain' }` (procedural: `moon`, `terrain`, `waves`, `duck`, `cyber`, `earth`, `motorcycle`, `drape`, `switchbacks`, `pose`, `cubes`, `rings`, `bars`, `globe`, `portrait`, `orb`). For real images, put files in `public/images/` and use `image: { src: '/images/photo.jpg' }`; they are halftoned into blocks automatically (and re-toned for dark mode).
+- **Images**: each project has `image: { kind: 'terrain' }` (procedural: `moon`, `terrain`, `waves`, `duck`, `cyber`, `earth`, `motorcycle`, `drape`, `slime`, `switchbacks`, `pose`, `cubes`, `rings`, `bars`, `globe`, `portrait`, `orb`). For real images, put files in `public/images/` and use `image: { src: '/images/photo.jpg' }`; they are halftoned into blocks automatically (and re-toned for dark mode).
 - **Case studies**: a project can add `sections` under its body. Each section has a `title` and any of `text` (a paragraph), `items` (a grid of `{ lead, text }`; `cols` sets the columns), `stats` (big numbers, `{ value, label }`), `steps` (a numbered story), `gallery` (screenshots, `{ src, alt, caption }`) and `note` (a closing paragraph). Optional `line` (short one-liner for home rows), `seoTitle` and `schema` (extra JSON-LD, e.g. `VideoGame`).
 - **Photo treatment**: image specs accept `levels: [black, white]` (contrast), `cutout: { warm }` (drop a neutral grey backdrop, keeping warm skin and clothes, as on the About portrait), `minInk` / `darkMaxInk` (tone limits for the subject), and `lumaInk` (for dark-background images such as game art, so bright subjects become the blocks). Pass `style: 'dither'` and a small `cell` for a 1-bit look.
 - **Pages / layout**: [`src/scene.js`](src/scene.js) builds each page from small layout nodes (`text`, `col`, `row`, `grid`, `button`, `image`, `icon` …).
@@ -30,7 +30,7 @@ Debug: append `?slow=5` to the URL to run every animation 5× slower.
 
 ## SEO and deploying
 
-The site uses real paths (`/work/`, `/work/interfarm/`, `/services/`, `/about/`, `/cv/`, `/contact/`, `/colophon/`, `/story/`, `/garden/`). Old `#/…` links redirect to them.
+The site uses real paths (`/work/`, `/work/interfarm/`, `/services/`, `/about/`, `/cv/`, `/contact/`, `/colophon/`, `/story/`, `/garden/`, `/projects/moto-tour/`, `/projects/slime-mould/`). Old `#/…` links redirect to them.
 
 `npm run build` runs [`scripts/prerender.mjs`](scripts/prerender.mjs) after Vite, which writes for every route a real `dist/<path>/index.html` with:
 
@@ -91,6 +91,16 @@ It opens on the title card with a PLAY button under it (in blocks, like the home
 ### The roadbook
 
 [`/projects/moto-tour/`](src/roadbook.js) keeps the address it had on the old site. It is drawn from [`src/data/roadbook.js`](src/data/roadbook.js): the route map is projected from the days' via points, each day expands to its elevation profile and stay, and the build writes the GPX files (all routes plus one per riding day) to `dist/projects/moto-tour/gpx/`.
+
+### Slime mould railways
+
+[`/projects/slime-mould/`](src/slime) runs the slime mould network model of Tero et al. (*Rules for biologically inspired adaptive network design*, Science 327, 2010) live on the Netherlands, and scores it against the real railway the way the paper scored Tokyo's.
+
+- **The model** ([`physarum.js`](src/slime/physarum.js)). A jittered triangular mesh of tubes 2.5 km apart over the land ([`map.js`](src/slime/map.js): ~6,500 junctions, ~18,500 tubes). Flow between two cities follows Kirchhoff and Poiseuille; each tube adapts as `dD/dt = f(|Q|) − D`, `f(Q) = Q^γ / (1 + Q^γ)`. The paper drives one random pair of cities per step; by default each step here averages over all 780 pairs, which is what many small random steps converge to (`batch: 2` is the paper's scheme exactly). `f` comes from a table on the float's bits, because `Math.pow` was most of a step.
+- **The solver** ([`cholesky.js`](src/slime/cholesky.js)). Every step needs the pressures for every city. The mesh is planar, so ordered by nested dissection on the nodes' positions its Cholesky factor stays sparse (~30 entries a node): one up-looking factorisation per step, then two triangular solves per city. When half the tubes have died, it rebuilds on the living ones, so steps speed up as the network forms.
+- **The scores** ([`networks.js`](src/slime/networks.js)). Total length, mean shortest route between cities, and fault tolerance (the share of the network's length where one cut leaves every city linked, from a bridge search), each against the minimum spanning tree over land. The railway is snapped onto the same mesh and trimmed of branches that don't reach one of the 40 cities, so all three networks are measured on the same tubes.
+- **On the page.** [`worker.js`](src/slime/worker.js) runs it in a Web Worker, paced to at most 5 units of model time a second so the thinning out can be watched, and stops once it settles. [`mode.js`](src/slime/mode.js) draws the tubes into a texture of 4 px cells that the renderer puts under the page's blocks (`setSlime`), so the frame, the city squares and their names (with a paper outline) stay on top; [`page.js`](src/slime/page.js) is the page around it.
+- **The data.** [`scripts/slime-map.py`](scripts/slime-map.py) makes `src/slime/nl.json` (the land, the cities and the rail lines, 91 KB, for the worker) and `src/slime/places.js` (the map's frame and the cities, for the page) from the [toy-netherlands](../toy-netherlands) project's PDOK border, AHN/OSM water masks and OSM places and railways. Run it with that project's Python: `~/Source/toy-netherlands/.venv/bin/python -I scripts/slime-map.py ~/Source/toy-netherlands`. Then `node scripts/slime-picture.mjs` runs the model once and writes `src/slime/picture.js`, the settled network that the `slime` image (the project's picture and link preview) is drawn from.
 
 ## How it works
 

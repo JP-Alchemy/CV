@@ -2,7 +2,7 @@
 // the pixel font; `seo` strings are what search engines and link previews see.
 //
 // Images: each project has `image: { kind }` (a procedural render: moon,
-// terrain, waves, duck, cyber, earth, motorcycle, drape, switchbacks, pose, cubes,
+// terrain, waves, duck, cyber, earth, motorcycle, drape, slime, switchbacks, pose, cubes,
 // rings, bars, globe, portrait, orb). To use a real image, drop it in
 // /public/images and use `image: { src: '/images/name.jpg' }`.
 
@@ -217,6 +217,38 @@ export const projects = [
       {
         title: 'MY ROLE',
         text: 'I led the product: the concept, the game design calls, playtesting and balance feedback, the name and domain, hosting, and the CrazyGames submission. I built it with Claude Code as an AI pair-programmer, directing the work feature by feature and reviewing the results.',
+      },
+    ],
+  },
+  {
+    slug: 'slime-mould-railways',
+    title: 'SLIME MOULD RAILWAYS',
+    name: 'Slime Mould Railways',
+    seoTitle: 'Slime Mould Railways — A Physarum Model of the Dutch Rail Network | JP Bothma',
+    when: 'LIVE',
+    role: 'Maker',
+    stack: 'JavaScript · Web Workers · Sparse Cholesky · WebGL2 · Python · OpenStreetMap',
+    tags: ['SIMULATION', 'BIOLOGY', 'DATA VISUALISATION', 'MAPS'],
+    summary: 'A slime mould’s rules for growing a network, run live on the Netherlands and measured against the real railway.',
+    line: 'A slime mould designs the Dutch railway, live in your browser.',
+    url: '/projects/slime-mould/',
+    cta: 'GROW IT',
+    image: { kind: 'slime' },
+    schema: { '@type': 'SoftwareApplication', applicationCategory: 'EducationalApplication', operatingSystem: 'Any (web browser)' },
+    body: [
+      'In 2010 a slime mould grew a network of tubes between oat flakes laid out like the cities around Tokyo, and it came out a lot like the Tokyo railway. The scientists behind it wrote down the rules it seems to follow. I took their model and ran it on the Netherlands: 40 cities, the real coast and lakes, and the real railway to measure it against.',
+      'It is the model itself, running in your browser, not an animation of it. With the paper’s settings the mould builds about half as much track as the railway and still gets you between two cities a little faster. And every time, it lays a line north from Lelystad across the Noordoostpolder, where the proposed Lelylijn would run.',
+    ],
+    sections: [
+      {
+        title: 'HOW IT WORKS',
+        items: [
+          { lead: 'The model', text: 'Tero et al.’s, from Science (2010): about 18,500 tubes over the land, flow between pairs of cities by Kirchhoff and Poiseuille, and tubes that grow with the flow through them and wither without it.' },
+          { lead: 'A solver of its own', text: 'Every step solves the pressures for every city over the whole country. A sparse Cholesky factorisation, in nested-dissection order and written for this, does it in milliseconds, in a Web Worker.' },
+          { lead: 'The real map', text: 'The national border from PDOK, water from AHN height data and OpenStreetMap, and every passenger line from OpenStreetMap, double tracks merged, prepared in Python with numpy and scipy.' },
+          { lead: 'Scored like the paper', text: 'Length, average trip and the chance of surviving a cut, against the minimum spanning tree. The mould, the railway and the tree are all measured on the same mesh.' },
+          { lead: 'Drawn in blocks', text: 'The live map is one texture of pixel cells under the page, in the same ink, paper and light as the rest of this site.' },
+        ],
       },
     ],
   },
@@ -518,6 +550,63 @@ export const gardenText = {
   eyebrow: 'GARDEN',
   title: 'GROW THE SPECTRUM',
   intro: 'Plant a seed in a pot, water it and hang a light over it. There are seven colours to find, and flowers that bloom side by side cross when you collect their seeds.',
+};
+
+// The slime mould experiment (/projects/slime-mould/): Tero et al.'s model on
+// the Netherlands. The page is src/slime/page.js; the numbers are the model's.
+export const slimeText = {
+  eyebrow: 'EXPERIMENT · BIOLOGY × INFRASTRUCTURE',
+  title: 'SLIME MOULD RAILWAYS',
+  intro: 'In 2010 a team of Japanese and British scientists put oat flakes on a map where the cities around Tokyo are, set a slime mould down on Tokyo and let it eat. It grew a network of tubes between the flakes that came out a lot like the Tokyo railway, and they wrote down the rules it seems to follow. This is their model, running live on the Netherlands: 40 cities, the real coast and lakes, and the real railway to measure it against.',
+  map: 'A map of the Netherlands with 40 cities on it. The slime mould’s tubes start out covering the land and thin out into a network between the cities.',
+  seeing: 'It starts as a sheet of tubes over the whole country. All the time, flow runs between the cities; busy tubes thicken and idle ones wither, until only a network is left.',
+  settings: 'I₀ is how hard flow is pushed between two cities: more keeps more routes alive. γ is how much the busiest tubes win: more prunes harder, towards the shortest tree. A new setting grows it again from scratch.',
+  presets: [
+    { id: 'paper', label: 'THE PAPER’S RUN', I0: 2, gamma: 1.8 },
+    { id: 'tokyo', label: 'THE TOKYO MATCH', I0: 0.2, gamma: 1.15 },
+    { id: 'flow', label: 'MORE FLOW', I0: 4, gamma: 1.8 },
+  ],
+  sections: [
+    {
+      id: 'experiment', title: 'THE EXPERIMENT',
+      paras: [
+        'Physarum polycephalum is a slime mould: a single cell, bright yellow and big enough to see, that feeds by spreading out. Behind its edge it hollows into a web of tubes, and the protoplasm inside sloshes back and forth every minute or two. Tubes that carry a lot get wider and tubes that carry little close up. Nothing is in charge.',
+        'Atsushi Tero and colleagues put 36 oat flakes where the cities around Tokyo are, with bright light over the sea, the lakes and the mountains, which the mould avoids. It reached every flake and thinned into a network close to the railway’s: about the same length (1.75 times the shortest possible tree, against the railway’s 1.8), the same average trip, and only a little more fragile.',
+      ],
+      cite: { label: 'TERO ET AL., SCIENCE 327 (2010)', href: 'https://doi.org/10.1126/science.1177894' },
+    },
+    {
+      id: 'model', title: 'THE MODEL',
+      paras: [
+        'The mould becomes a mesh of tubes over the land: here about 18,500 of them, 2.5 km apart, between 6,500 junctions. Each tube has a length L and a conductivity D. One city pushes a flow I₀ into the network and another takes it out. What flows into a junction has to flow out again (Kirchhoff), and the flow through a tube is D times the pressure difference over L (Poiseuille), which settles every pressure.',
+        'Then every tube adapts: dD/dt = f(|Q|) − D, where f(Q) = Q^γ / (1 + Q^γ). A tube grows towards how busy it is and shrinks when it isn’t. That is the whole model. The network is whatever is left.',
+        'The paper picks a random pair of cities at each moment. Over many moments that comes to all 780 pairs at once, so that is what each step here does: one sparse Cholesky factorisation of the whole country’s pressures, then a solve per city, in a Web Worker. A run takes a few seconds.',
+      ],
+    },
+    {
+      id: 'scored', title: 'HOW IT’S SCORED',
+      paras: [
+        'The way the paper scored Tokyo. Cost is the network’s total length. Transport is the average shortest route between two cities, over all 780 pairs. Fault tolerance is the chance it still links every city after one cut at a random point along it. Cost and transport are multiples of the minimum spanning tree’s: the shortest network that links all 40 over land, and so the least you could build. Benefit for cost, α, is fault tolerance over cost.',
+        'Every network is drawn onto the same mesh before it’s measured, the railway included, so the mesh’s kinks count the same for all three. The railway is every passenger line in the country, with the branches that don’t lead to one of the 40 cities cut off.',
+      ],
+    },
+    {
+      id: 'finds', title: 'WHAT IT FINDS',
+      paras: [
+        'With the paper’s settings the mould builds about half as much track as the railway: 1.3 times the shortest tree, where the railway is 2.5. Its average trip is shorter too, 0.77 of the tree’s against the railway’s 0.83. It is a little more fragile: 86% of single cuts leave it in one piece, 91% for the railway.',
+        'With the settings that matched Tokyo best, it beats the railway on trips (0.69) and on surviving a cut (93%), with about two-thirds of the track. Push the flow up to 4 and no single cut can isolate a city, with a quarter less track than the railway.',
+        'In every run, at every setting I tried, it lays a line north from Lelystad across the Noordoostpolder, past Emmeloord, where no railway runs. That is the corridor of the Lelylijn, the line from Lelystad to Groningen by way of Emmeloord, Heerenveen and Drachten that has been proposed in one form or another for twenty years.',
+        'None of this makes the railway badly designed. It serves around 400 stations, not 40 cities, it grew over 180 years around rivers, money and politics, and trains need gentle curves. A mould doesn’t care about any of that, which is rather the point.',
+      ],
+    },
+    {
+      id: 'data', title: 'THE DATA',
+      paras: [
+        'Land and water: the national border from PDOK (Kadaster, CC BY 4.0) and the water from AHN height data and OpenStreetMap, which I had already prepared for a toy model of the country. Water narrower than about 2 km stays crossable, the way a bridge would; the sea, the Wadden, the IJsselmeer, the Markermeer and the Zeeland estuaries are not. The islands are left out.',
+        'The cities are the twelve provincial capitals and Amsterdam, then the largest places with a station, skipping any within 13 km of a bigger one, 40 in all. The places and the railway come from OpenStreetMap (© OpenStreetMap contributors, ODbL): every passenger line, with double and quadruple tracks merged into one.',
+      ],
+    },
+  ],
 };
 
 // The colophon (/colophon/): how the site is made, and the rules it keeps.

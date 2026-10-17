@@ -424,6 +424,67 @@ void main() {
   o = vec4(col, 1.0);
 }`;
 
+// The slime mould experiment (src/slime/): one texel per cell of its map,
+// drawn under the page's blocks so the city markers and names stay on top.
+// R what the ground is (1 land, 2 water it may cross, 3 water it may not,
+// 4 an island), G the thickest tube through the cell (0-1, as D^1/4), B the
+// railway (1) and the spanning tree (2), each drawn when it's switched on.
+const FS_SLIME = `#version 300 es
+precision highp float;
+precision highp int;
+uniform sampler2D u_sMap;
+uniform vec2 u_sOrigin; // the map's top-left, doc px
+uniform float u_sCell;
+uniform vec2 u_sSize;
+uniform vec2 u_sShow;   // railway, tree
+uniform float u_sFade;  // 0-1 as it arrives: a pixel dissolve
+uniform float u_sStill; // 1 with reduced motion: no pulse
+uniform float u_navClip;
+uniform float u_scroll;
+uniform float u_time;
+out vec4 o;
+${THEME_GLSL}
+${LIGHT_GLSL}
+void main() {
+  vec2 sp = vec2(gl_FragCoord.x, u_viewDev.y - gl_FragCoord.y) / u_dpr;
+  if (sp.y < u_navClip) discard;
+  vec2 g = (sp + vec2(0.0, u_scroll) - u_sOrigin) / u_sCell;
+  if (g.x < 0.0 || g.y < 0.0 || g.x >= u_sSize.x || g.y >= u_sSize.y) discard;
+  ivec2 c = ivec2(g);
+  if (hash12(vec2(c) + 7.0) >= u_sFade) discard;
+  vec4 t = texelFetch(u_sMap, c, 0);
+  int k = int(t.r * 255.0 + 0.5);
+  float v = t.g;
+  int ov = int(t.b * 255.0 + 0.5);
+  vec2 f = g - vec2(c);
+  float tk = themeK();
+  vec3 bg = mix(u_bgA, u_bgB, tk), fg = mix(u_fgA, u_fgB, tk);
+  bool paper = dot(bg, vec3(0.299, 0.587, 0.114)) > 0.5;
+  if (v > 0.0) {
+    // A tube: a block that grows with its thickness, from a one-pixel thread
+    // to the whole cell, in the light's yellow, with a slow pulse running
+    // through it the way the protoplasm shuttles back and forth.
+    float s = v > 0.7 ? 1.0 : v > 0.5 ? 0.75 : v > 0.34 ? 0.5 : 0.25;
+    if (f.x < s && f.y < s) {
+      float b = u_sStill > 0.5 ? 0.5 : 0.5 + 0.5 * sin(u_time * 1.3 - (g.x + g.y) * 0.09);
+      o = vec4(paper ? mix(SPECTRUM[1], SPECTRUM[2], 0.12 + 0.38 * b) * 0.96 : mix(SPECTRUM[2], vec3(1.0), 0.08 + 0.22 * b), 1.0);
+      return;
+    }
+  }
+  vec3 col = fg;
+  bool mid = f.x >= 0.25 && f.x < 0.75 && f.y >= 0.25 && f.y < 0.75;
+  bool on = false;
+  if ((ov & 1) != 0 && u_sShow.x > 0.5) on = mid;                                                  // the railway: a 2px dot a cell
+  else if ((ov & 2) != 0 && u_sShow.y > 0.5) on = mid && ((c.x + c.y) & 1) == 0;                   // the tree: every other
+  else if (k == 1 || k == 4) { on = f.x < 0.25 && f.y < 0.25; col = mix(bg, fg, k == 4 ? 0.2 : 0.4); } // land: a 1px dot
+  if (!on) discard;
+  if (u_pulseN > 0) {
+    vec4 L = lightAt(u_sOrigin + (vec2(c) + 0.5) * u_sCell, vec2(c));
+    col = mix(col, L.rgb, L.a);
+  }
+  o = vec4(col, 1.0);
+}`;
+
 function compile(gl, type, src) {
   const s = gl.createShader(type);
   gl.shaderSource(s, src);
@@ -463,6 +524,8 @@ export class Renderer {
     this.dots = program(gl, VS_DOTS, FS_BLOCK);
     this.gardenProg = program(gl, VS_BG, FS_GARDEN);
     this.garden = null;
+    this.slimeProg = program(gl, VS_BG, FS_SLIME);
+    this.slime = null;
 
     this.vao = gl.createVertexArray();
     gl.bindVertexArray(this.vao);
@@ -576,6 +639,32 @@ export class Renderer {
 
   clearGarden() { this.garden = null; }
 
+  /**
+   * Show the slime mould's map: cols × rows RGBA cells of `cell` px with the
+   * top-left at (x0, y0) in doc px. `buf` only when it has changed; `show`:
+   * [railway, tree]; `fade`: 0-1; `still`: no pulse (reduced motion).
+   */
+  setSlime(s) {
+    const gl = this.gl;
+    if (!this.stex) this.stex = gl.createTexture();
+    if (s.buf) {
+      gl.bindTexture(gl.TEXTURE_2D, this.stex);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      if (!this.slime || this.slime.cols !== s.cols || this.slime.rows !== s.rows) {
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, s.cols, s.rows, 0, gl.RGBA, gl.UNSIGNED_BYTE, s.buf);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      } else {
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, s.cols, s.rows, gl.RGBA, gl.UNSIGNED_BYTE, s.buf);
+      }
+    } else if (!this.slime) return; // nothing uploaded yet
+    this.slime = { cols: s.cols, rows: s.rows, x0: s.x0, y0: s.y0, cell: s.cell, show: s.show || [0, 0], fade: s.fade ?? 1, still: !!s.still };
+  }
+
+  clearSlime() { this.slime = null; }
+
   draw(f) {
     const gl = this.gl;
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
@@ -641,6 +730,29 @@ export class Renderer {
     gl.uniform1f(u.u_dotAlpha, f.dotAlpha);
     gl.bindVertexArray(this.dotVao);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, cols * rows);
+
+    const M = this.slime; // under the blocks, over the dot grid
+    if (M) {
+      ({ u, p } = this.slimeProg);
+      gl.useProgram(p);
+      setTheme(u);
+      setLight(u);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, this.stex);
+      gl.uniform1i(u.u_sMap, 0);
+      gl.uniform2f(u.u_sOrigin, M.x0, M.y0);
+      gl.uniform1f(u.u_sCell, M.cell);
+      gl.uniform2f(u.u_sSize, M.cols, M.rows);
+      gl.uniform2f(u.u_sShow, M.show[0] ? 1 : 0, M.show[1] ? 1 : 0);
+      gl.uniform1f(u.u_sFade, M.fade);
+      gl.uniform1f(u.u_sStill, M.still ? 1 : 0);
+      gl.uniform1f(u.u_navClip, f.navClip);
+      gl.uniform1f(u.u_scroll, f.scroll);
+      gl.uniform1f(u.u_time, f.time);
+      gl.bindVertexArray(this.bgVao);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.bindVertexArray(null);
+    }
 
     const blocks = (vao, count, time, navClip, trail, pulses) => {
       if (!count) return;

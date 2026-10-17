@@ -3,6 +3,7 @@ import { tokens, label, rule, button, link, image, icon, hitArea, pressRow, fram
 import { iconFrames } from './icons.js';
 import { typeset } from './engine/typeset.js';
 import { roadbookPage } from './roadbook.js';
+import { slimePage } from './slime/page.js';
 import { puzzle, board, boardWidth } from './puzzle.js';
 import { COLOURS, PRIMARY, CELL } from './garden/sim.js';
 import { bed } from './garden/bed.js';
@@ -18,7 +19,7 @@ const UP = (s) => s.toUpperCase();
 // ---------------------------------------------------------------- navigation
 
 export const NAV = [
-  { label: 'WORK', href: '/work/', match: ['work', 'project', 'roadbook'] },
+  { label: 'WORK', href: '/work/', match: ['work', 'project', 'roadbook', 'slime'] },
   { label: 'SERVICES', href: '/services/', match: ['services'] },
   { label: 'ABOUT', href: '/about/', match: ['about'] },
   { label: 'CV', href: '/cv/', match: ['cv'] },
@@ -755,7 +756,7 @@ function notFound(state, S) {
   return row([{ ...col([...intro, ...help]), grow: true }, { ...play, basis: boardWidth(1e4) }], { gap: S.sp(6) });
 }
 
-const PAGES = { home, work, project, services: servicesPage, about: aboutPage, cv: cvPage, contact, colophon: colophonPage, notFound, roadbook: roadbookPage, garden: gardenPage };
+const PAGES = { home, work, project, services: servicesPage, about: aboutPage, cv: cvPage, contact, colophon: colophonPage, notFound, roadbook: roadbookPage, garden: gardenPage, slime: slimePage };
 
 export function buildScene(state, vp) {
   const S = tokens(vp.w);
@@ -797,6 +798,8 @@ export function buildScene(state, vp) {
   const fy = Math.max(top + page.h + S.sp(10), vp.h - foot.h - S.sp(3));
   shift(foot.els, S.left, fy);
 
+  // Where slime/mode.js draws the mould's map: the area inside its frame.
+  const map = state.route.name === 'slime' && !state.menuOpen ? page.els.find((e) => e.key === 'sm-map') : null;
   const elements = resolve([...nav.els, ...page.els, ...foot.els]);
-  return { elements, height: fy + foot.h + S.sp(3), S };
+  return { elements, height: fy + foot.h + S.sp(3), S, slime: map && { x: map.x, y: map.y, w: map.w, h: map.h } };
 }

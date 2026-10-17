@@ -3,6 +3,8 @@
 // Procedural "renders" stand in for real project imagery; real images can be
 // passed as { src } and are sampled through a canvas once loaded.
 
+import SLIME from '../slime/picture.js';
+
 const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v);
 const smooth = (a, b, v) => { const t = clamp((v - a) / (b - a)); return t * t * (3 - 2 * t); };
 
@@ -116,6 +118,24 @@ const DOLOMITES = [[-1.2, 0.44], [-1.0, 0.36], [-0.94, 0.3], [-0.9, 0.31], [-0.8
 const BLOUSE = [[-0.1, 0.2], [0, 0.2], [0.05, 0.19], [0.085, 0.13], [0.22, 0.17], [0.34, 0.28], [0.29, 0.37], [0.2, 0.31],
   [0.165, 0.5], [0.175, 0.58], [0.27, 0.86], [0.14, 0.88], [0, 0.885], [-0.1, 0.885]];
 const NOTCHES = [[0.165, 0.5, 1, 0], [0.28, 0.225, 0.68, -0.73]];
+
+// The slime mould's settled network (src/slime/picture.js, km, y down) as
+// segments with radii, in 12 km buckets so a sample only checks the few
+// near it, and its land mask as rows of 0s and 1s.
+const MOULD = (() => {
+  const [X0, Y0, W, H] = SLIME.box, B = 12, bw = Math.ceil(W / B), bh = Math.ceil(H / B);
+  const buckets = Array.from({ length: bw * bh }, () => []);
+  for (const [d, ...xy] of SLIME.lines) {
+    for (let i = 0; i + 3 < xy.length; i += 2) {
+      const seg = [xy[i], xy[i + 1], xy[i + 2], xy[i + 3], 2.2 + 4.6 * d];
+      const pad = 7;
+      const i0 = Math.floor((Math.min(seg[0], seg[2]) - pad - X0) / B), i1 = Math.floor((Math.max(seg[0], seg[2]) + pad - X0) / B);
+      const j0 = Math.floor((Math.min(seg[1], seg[3]) - pad - Y0) / B), j1 = Math.floor((Math.max(seg[1], seg[3]) + pad - Y0) / B);
+      for (let j = Math.max(0, j0); j <= Math.min(bh - 1, j1); j++) for (let k = Math.max(0, i0); k <= Math.min(bw - 1, i1); k++) buckets[j * bw + k].push(seg);
+    }
+  }
+  return { X0, Y0, W, H, B, bw, bh, buckets, land: SLIME.land.map((h) => BigInt(`0x${h}`).toString(2).slice(1)) };
+})();
 
 export const GENERATORS = {
   orb(x, y, ar, s, dark) {
@@ -378,6 +398,36 @@ export const GENERATORS = {
     if (lx < 0.004) return major(px) ? 0.38 : 0.22;
     if (ly < 0.004) return major(y) ? 0.38 : 0.22;
     return 0;
+  },
+
+  slime(x, y, ar, s, dark) {
+    // Slime mould railways: the network the mould settled on over the
+    // Netherlands (one real run), its tubes round and lit, the cities as
+    // beads in a ring of paper, on the land in a light tone.
+    const M = MOULD;
+    const k = Math.min(0.94 / M.H, (0.94 * ar) / M.W); // image heights per km
+    const X = M.X0 + M.W / 2 + ((x - 0.5) * ar) / k, Y = M.Y0 + M.H / 2 + (y - 0.5) / k;
+    for (const [cx, cy] of SLIME.cities) {
+      const d = Math.hypot(X - cx, Y - cy);
+      if (d < 3.4) return 1;
+      if (d < 5) return 0;
+    }
+    const bi = Math.floor((X - M.X0) / M.B), bj = Math.floor((Y - M.Y0) / M.B);
+    if (bi >= 0 && bj >= 0 && bi < M.bw && bj < M.bh) {
+      let best = 1, nx = 0, ny = 0;
+      for (const [ax, ay, bx, by, r] of M.buckets[bj * M.bw + bi]) {
+        const vx = bx - ax, vy = by - ay;
+        const t = clamp(((X - ax) * vx + (Y - ay) * vy) / (vx * vx + vy * vy || 1));
+        const qx = X - ax - vx * t, qy = Y - ay - vy * t, u = Math.hypot(qx, qy) / r;
+        if (u < best) { best = u; nx = qx / r; ny = qy / r; }
+      }
+      if (best < 1) {
+        const lam = lambert(nx, ny, Math.sqrt(1 - best * best));
+        return dark ? clamp(0.35 + lam * 0.65) : clamp(0.98 - lam * 0.5);
+      }
+    }
+    const li = Math.floor((X - M.X0) / SLIME.cell), lj = Math.floor((Y - M.Y0) / SLIME.cell);
+    return M.land[lj]?.[li] === '1' ? 0.2 : 0;
   },
 
   pose(x, y, ar) {

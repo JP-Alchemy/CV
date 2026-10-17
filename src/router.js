@@ -8,6 +8,9 @@
 //   /story/          The Adventurer (src/story/), played under the nav
 //   /garden/         the falling-sand garden (src/garden/)
 //   /projects/moto-tour/  the motorcycle roadbook (address kept from the old site)
+//   /projects/slime-mould/  the slime mould experiment (src/slime/)
+
+export const SLIME_PATH = '/projects/slime-mould/';
 
 export const PAGES = ['work', 'services', 'about', 'cv', 'contact', 'colophon', 'story', 'garden'];
 
@@ -16,6 +19,7 @@ export function parseRoute(pathname = location.pathname) {
   if (parts.length === 0) return { name: 'home', path: '/' };
   if (parts[0] === 'work' && parts.length === 2) return { name: 'project', slug: parts[1], path: `/work/${parts[1]}/` };
   if (parts[0] === 'projects' && parts[1] === 'moto-tour' && parts.length === 2) return { name: 'roadbook', path: '/projects/moto-tour/' };
+  if (parts[0] === 'projects' && parts[1] === 'slime-mould' && parts.length === 2) return { name: 'slime', path: SLIME_PATH };
   if (PAGES.includes(parts[0]) && parts.length === 1) return { name: parts[0], path: `/${parts[0]}/` };
   return { name: 'notFound', path: `/${parts.join('/')}/` };
 }

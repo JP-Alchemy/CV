@@ -8,6 +8,7 @@ import { site, experience } from './content.js';
 import { tokens } from './ui.js';
 import { puzzle } from './puzzle.js';
 import { Garden } from './garden/mode.js';
+import { Mould } from './slime/mode.js';
 import { THEMES as BRAND, unit } from './brand.js';
 import { animateFavicon } from './favicon.js';
 import './style.css';
@@ -248,6 +249,7 @@ function frame() {
   const lit = updatePulses(t);
   if (state.garden && !garden.on && !state.menuOpen && t > gardenAt) startGarden(); // the page has arrived
   if (garden.on && !state.menuOpen) garden.frame(t, pulses, { speed: 1100, width: scene.S.mobile ? 110 : 150 });
+  const growing = mould.frame(t);
   const d = renderer.dpr;
   let tt = (t - themeStart) / 0.9;
   let look = { a: themeFrom, b: themeTo, t: tt >= 1 ? 2 : Math.max(0, tt), origin: themeOrigin };
@@ -297,7 +299,7 @@ function frame() {
     pulseWidth: scene.S.mobile ? 110 : 150,
     layers,
   });
-  if (story || garden.on || t < engine.animUntil + 0.05 || tt < 1 || pushing || lit) { kick(); return; }
+  if (story || garden.on || growing || t < engine.animUntil + 0.05 || tt < 1 || pushing || lit) { kick(); return; }
   clearTimeout(timer);
   const next = engine.nextTick();
   if (next < Infinity) timer = setTimeout(kick, Math.max(16, (next - engine.now()) * 1000));
@@ -384,6 +386,23 @@ function goGarden() {
 }
 let cameToGarden = false;
 
+// ---------------------------------------------------------------- slime mould
+//
+// The slime mould experiment (/projects/slime-mould/, src/slime): the model
+// runs in a worker while the page is open, and its map is drawn under the
+// page's blocks once the page has arrived.
+
+const mould = new Mould({
+  renderer,
+  now: () => engine.now(),
+  changed: () => { if (state.route.name === 'slime') { state.slime = mould.view(); render('local'); } },
+  scene: () => scene,
+  kick: () => kick(),
+  calm: () => engine.calm,
+});
+/** The map comes in once the morph that's just begun has landed. */
+const mouldAfterMorph = () => { if (state.route.name === 'slime') mould.arriveAt(engine.animUntil + 0.05); };
+
 // ---------------------------------------------------------------- 404 puzzle
 
 const PLAY_KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
@@ -446,14 +465,17 @@ function runAction(action, node) {
       menuReturnScroll = window.scrollY;
       if (story) storyOut(true);
       if (garden.on) { renderer.clearGarden(); garden.up(); document.documentElement.classList.remove('gardening'); } // it waits under the menu
+      mould.hide(true);
       state.menuOpen = true;
       render('page', { scrollTo: 0, origin: centerOf(node) });
     } else {
       state.menuOpen = false;
       if (story) storyIn();
       if (garden.on) document.documentElement.classList.add('gardening');
+      mould.hide(false);
       render('page', { scrollTo: menuReturnScroll, origin: centerOf(node) });
       gardenAfterMorph();
+      mouldAfterMorph();
     }
   } else if (action === 'top') {
     window.scrollTo({ top: 0, behavior: engine.calm ? 'auto' : 'smooth' });
@@ -470,6 +492,8 @@ function runAction(action, node) {
     kick();
   } else if (action.startsWith('gd:')) {
     garden.select(action);
+  } else if (action.startsWith('sm:')) {
+    mould.action(action);
   } else if (action === 'pz:undo') {
     play(() => puzzle.undo());
   } else if (action === 'pz:restart') {
@@ -531,8 +555,10 @@ async function navigate(route, push) {
   if (route.name === 'story' && canGL()) storyIn();
   if (route.name === 'garden' && !fromGarden) { cameToGarden = push; openGarden(); }
   if (route.name !== 'garden') state.garden = null;
+  if (route.name === 'slime') { mould.open(); state.slime = mould.view(); } else { mould.close(); state.slime = null; }
   render('page', { scrollTo: target, origin: lastOrigin || [vp.w / 2, vp.h / 2] });
   if (route.name === 'garden') gardenAfterMorph();
+  mouldAfterMorph();
   if (fromGarden && route.name !== 'garden') stopGarden(); // its grains fly into the new page
   if (navByKeyboard) docEl.querySelector('h1')?.focus({ preventScroll: true });
   navByKeyboard = false;
@@ -602,8 +628,10 @@ function onResize() {
     vp.w = w2;
     if (relayout) {
       layoutH = h2;
+      if (!state.menuOpen) { mould.hide(true); mould.hide(false); } // out, and back in at the new size
       render('resize');
       gardenAfterMorph();
+      mouldAfterMorph();
     }
   }, 140);
 }
@@ -619,7 +647,8 @@ applyMeta(state.route);
 syncStatic();
 renderer.resize(vp.w, vp.h, dpr());
 if (state.route.name === 'garden') openGarden();
-const boot = () => { render('intro', { scrollTo: 0 }); gardenAfterMorph(); };
+if (state.route.name === 'slime') { mould.open(); state.slime = mould.view(); }
+const boot = () => { render('intro', { scrollTo: 0 }); gardenAfterMorph(); mouldAfterMorph(); };
 if (state.route.name === 'story' && canGL()) {
   loadStory().then(() => { storyIn(); boot(); });
 } else {
@@ -633,4 +662,4 @@ animateFavicon();
 window.addEventListener('photo-loaded', () => render('local'));
 
 // Debug/inspection handle.
-window.__site = { engine, state, render, impulses, pulses, kick, frame, puzzle, garden, navigate, get scene() { return scene; }, get story() { return story; } };
+window.__site = { engine, state, render, impulses, pulses, kick, frame, puzzle, garden, mould, navigate, get scene() { return scene; }, get story() { return story; } };
