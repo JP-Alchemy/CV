@@ -623,7 +623,7 @@ export const colophon = {
     { label: 'HEART', text: "Care how it's made." },
     { label: 'SMILE', text: 'For people.' },
   ],
-  motion: 'Nothing loads. When you change page, the blocks on both pages travel to their new places and the rest dissolve or arrive. Icons tumble between shapes and the pointer pushes text out of its way. Click anywhere and a ring of light runs out from it, red at the front and violet at the back. If your system asks for less motion, the blocks snap into place, the icons hold still and the light stays off.',
+  motion: 'Nothing loads. A visit opens on the mark, large, running through its five shapes until the smile breaks up into the first page. When you change page, the blocks on both pages travel to their new places and the rest dissolve or arrive. Icons tumble between shapes and the pointer pushes text out of its way. Click anywhere and a ring of light runs out from it, red at the front and violet at the back. If your system asks for less motion, the blocks snap into place, the mark doesn\'t open the visit, the icons hold still and the light stays off.',
   build: [
     'One WebGL2 draw call. Every block on the page is an instance, and the GPU works out all the motion; the CPU only rewrites buffers when the page changes.',
     'Real HTML under the canvas, positioned over each block, so links, keyboards and screen readers work.',

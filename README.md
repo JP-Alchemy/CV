@@ -125,6 +125,8 @@ Every re-render produces a full scene, and the engine diffs it against what is o
 
 Content that is off screen after a page change assembles from grid squares as it scrolls into view.
 
+The first page of a visit opens on the mark instead: `hello()` in [`src/main.js`](src/main.js) places the mark, large and in 4 px blocks, in the middle of the screen and runs it through its five shapes (JP, prompt, target, heart, smile, about 0.26 s each; `HELLO` sets the timing), then the smile morphs into the page like any page change. A click, scroll or key skips straight to the page. Once a visit (`sessionStorage`), so a refresh gets the plain intro, and never with reduced motion or on the story.
+
 ### Pushing blocks with the cursor
 
 The mouse (or pen) leaves a short trail of impulses — where it was, how far it moved, and when. In the vertex shader every block (and every dot of the background grid, which is drawn as tiny blocks too) sums damped-spring responses to the nearby impulses: blocks are shoved forward and outward, spin a little depending on which side of the path they are on, overshoot, and settle within ~0.6s. Clicking sends a radial burst. Bigger blocks move further than body-text pixels, and slow, aiming movements barely disturb anything, so buttons stay readable.

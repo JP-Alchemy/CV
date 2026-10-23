@@ -6,6 +6,8 @@ import { parseRoute, fromHash } from './router.js';
 import { applyMeta, pageHTML } from './seo.js';
 import { site, experience } from './content.js';
 import { tokens } from './ui.js';
+import { ICONS } from './icons.js';
+import { even } from './engine/layout.js';
 import { puzzle } from './puzzle.js';
 import { Garden } from './garden/mode.js';
 import { Mould } from './slime/mode.js';
@@ -649,10 +651,72 @@ renderer.resize(vp.w, vp.h, dpr());
 if (state.route.name === 'garden') openGarden();
 if (state.route.name === 'slime') { mould.open(); state.slime = mould.view(); }
 const boot = () => { render('intro', { scrollTo: 0 }); gardenAfterMorph(); mouldAfterMorph(); };
+
+// The first page of a visit opens on the mark, large in the middle of the
+// screen: it runs through its five shapes (JP, prompt, target, heart, smile)
+// and the smile breaks up into the page. Once a visit (a refresh gets the
+// plain intro), never with reduced motion, and not on the story, which opens
+// on a picture of its own. A click, scroll or key goes straight to the page.
+const HELLO = { hold: 0.3, step: 0.26 }; // s on JP first, then per shape
+function hello() {
+  try {
+    if (sessionStorage.getItem('hello')) return false;
+    sessionStorage.setItem('hello', '1');
+  } catch { /* no storage: say hello every time */ }
+  if (engine.calm || !canGL()) return false;
+  const cell = Math.max(16, Math.floor(Math.min((vp.w * 0.5) / 7, (vp.h * 0.36) / 5, 56) / 4) * 4);
+  const x0 = even((vp.w - 7 * cell) / 2), y0 = even((vp.h - 5 * cell) / 2);
+  // Each shape's pixels in 4px blocks, so there are enough to build a page
+  // from, all padded to the same count so one shape can turn into the next.
+  const shapes = ICONS.logo.map((rows) => {
+    const out = [];
+    rows.forEach((r, y) => [...r].forEach((c, x) => {
+      if (c !== '#') return;
+      for (let sy = 0; sy < cell; sy += 4) for (let sx = 0; sx < cell; sx += 4) out.push([x0 + x * cell + sx, y0 + y * cell + sy]);
+    }));
+    return out;
+  });
+  const n = Math.max(...shapes.map((p) => p.length));
+  const mark = (k) => {
+    const pts = shapes[k], blocks = new Float32Array(n * 5);
+    for (let j = 0; j < n; j++) blocks.set([...pts[Math.floor((j * pts.length) / n)], 4, 4, 1], j * 5);
+    return { key: 'hello:mark', sig: `hello|${k}`, x: 0, y: 0, w: 0, h: 0, blocks, z: 0, flat: false, fixed: false, motion: 'step' };
+  };
+  const S = tokens(vp.w);
+  scene = { elements: [mark(0)], height: vp.h, S };
+  engine.vw = vp.w;
+  engine.vh = vp.h;
+  engine.place(scene.elements);
+  kick();
+  const timers = [];
+  const later = (s, fn) => timers.push(setTimeout(fn, s * 1000 * engine.slow));
+  for (let k = 1; k < shapes.length; k++) {
+    later(HELLO.hold + (k - 1) * HELLO.step, () => {
+      scene = { elements: [mark(k)], height: vp.h, S };
+      engine.morphTo(scene, { mode: 'local', scrollFrom: 0, scrollTo: 0 });
+      kick();
+    });
+  }
+  let done = false;
+  const go = () => {
+    if (done) return;
+    done = true;
+    timers.forEach(clearTimeout);
+    for (const t of SKIP) removeEventListener(t, go, true);
+    render('page', { scrollTo: 0, origin: [vp.w / 2, vp.h / 2] });
+    gardenAfterMorph();
+    mouldAfterMorph();
+  };
+  const SKIP = ['pointerdown', 'wheel', 'keydown', 'touchstart'];
+  for (const t of SKIP) addEventListener(t, go, { capture: true, passive: true });
+  later(HELLO.hold + (shapes.length - 1) * HELLO.step + 0.1, go);
+  return true;
+}
+
 if (state.route.name === 'story' && canGL()) {
   loadStory().then(() => { storyIn(); boot(); });
 } else {
-  boot();
+  if (!hello()) boot();
   setTimeout(loadStory, 4000); // the story's code, ready for when it's wanted
 }
 
