@@ -4,10 +4,10 @@
 // at runtime it keeps <head> in sync and backs the print view of the CV.
 
 import {
-  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills, colophon, story, gardenText, slimeText,
+  site, links, projects, services, onRequest, about, principles, stats, cv, experience, education, skills, colophon, story, gardenText, slimeText, powersText,
 } from './content.js';
 import { ICONS } from './icons.js';
-import { parseRoute, PAGES, SLIME_PATH } from './router.js';
+import { parseRoute, PAGES, SLIME_PATH, POWERS_PATH } from './router.js';
 import { book, tripStats, gpxFile, eur, ROADBOOK_PATH } from './roadbook.js';
 import { THEMES, SPECTRUM, COLOURS, FONT } from './brand.js';
 import { ADVENTURER, blocks as sprite } from './story/art.js';
@@ -32,6 +32,7 @@ export const allRoutes = () => [
   ...projects.map((p) => parseRoute(`/work/${p.slug}/`)),
   parseRoute(ROADBOOK_PATH),
   parseRoute(SLIME_PATH),
+  parseRoute(POWERS_PATH),
 ];
 
 // ---------------------------------------------------------------- meta
@@ -150,6 +151,17 @@ function describe(route) {
         eyebrow: 'EXPERIMENT', title: slimeText.title,
         text: 'A slime mould’s network-growing rules, run on the Netherlands and measured against the real railway.',
         picture: { image: { kind: 'slime' } },
+      },
+    };
+    case 'powers': return {
+      ...base,
+      type: 'article',
+      title: 'Powers of Ten — From My CV Out to the Universe and Down Inside a Proton | JP Bothma',
+      description: 'One continuous zoom across forty-four powers of ten, every scale a live simulation in your browser: your screen’s pixels, bacteria, Brownian proteins and DNA, a slime mould growing on the Netherlands, the Earth lit as it is now with its satellites, the planets, Voyager 1 at the edge of the Sun’s wind, the Oort cloud, our radio bubble, a galaxy under gravity, the cosmic web, one base pair of DNA, a carbon atom’s orbitals and the quarks in a proton.',
+      card: {
+        eyebrow: 'EXPERIMENT · 10⁻¹⁵ TO 10³⁰ M', title: powersText.title,
+        text: 'One zoom from my CV out to bubble universes and in to the quarks in a proton. Every power of ten is a real simulation.',
+        picture: { image: { kind: 'slits' } },
       },
     };
     case 'roadbook': {
@@ -533,6 +545,14 @@ const BODIES = {
     <p class="lead">${esc(slimeText.intro)}</p>
     <p>The experiment runs live with JavaScript and WebGL2: the mould grows on a map of the Netherlands, and its network is scored against the real railway and the minimum spanning tree.</p>
     ${slimeText.sections.map((sec) => `<h2>${esc(sentence(sec.title))}</h2>${sec.paras.map((t) => `<p>${esc(t)}</p>`).join('')}${sec.cite ? `<p>${a(sec.cite.href, 'Tero et al., Rules for biologically inspired adaptive network design, Science 327 (2010)', true)}</p>` : ''}`).join('')}`,
+
+  powers: () => `
+    <p>${a('/work/', '← Work')}</p>
+    <p class="eyebrow">${esc(sentence(powersText.eyebrow))}</p>
+    <h1>Powers of Ten</h1>
+    <p class="lead">${esc(powersText.intro)}</p>
+    <p>The zoom runs live with JavaScript and WebGL2, and only the scale you’re looking at runs.</p>
+    ${powersText.sections.map((sec) => `<h2>${esc(sentence(sec.title))}</h2>${sec.paras.map((t) => `<p>${esc(t)}</p>`).join('')}${sec.cite ? `<p>${a(sec.cite.href, sec.cite.full, true)}</p>` : ''}`).join('')}`,
 
   notFound: () => `
     <h1>Page not found</h1>

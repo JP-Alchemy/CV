@@ -11,6 +11,7 @@ import { even } from './engine/layout.js';
 import { puzzle } from './puzzle.js';
 import { Garden } from './garden/mode.js';
 import { Mould } from './slime/mode.js';
+import { Zoom } from './powers/zoom.js';
 import { THEMES as BRAND, unit } from './brand.js';
 import { animateFavicon } from './favicon.js';
 import './style.css';
@@ -82,7 +83,13 @@ function applyThemeCss() {
 const dpr = () => Math.min(window.devicePixelRatio || 1, 3);
 
 function render(mode = 'local', o = {}) {
+  if (state.route.name === 'powers' && zoom.on && !state.menuOpen) state.zoom = zoom.view(); // the panel's words, before it's laid out
   scene = buildScene(state, { w: vp.w, h: layoutH });
+  if (scene.zoom) {
+    zoom.layout(scene.zoom);
+    // The first time, the panel's words only exist once the zoom knows its view: lay it out again with them.
+    if (!state.zoom) { state.zoom = zoom.view(); scene = buildScene(state, { w: vp.w, h: layoutH }); zoom.layout(scene.zoom); }
+  }
   // A garden is laid on the page as it was: if its ground has moved, it starts again.
   const moved = garden.on && scene.gardenTop !== garden.bottom;
   if (moved) stopGarden(false);
@@ -251,6 +258,9 @@ function frame() {
   const lit = updatePulses(t);
   if (state.garden && !garden.on && !state.menuOpen && t > gardenAt) startGarden(); // the page has arrived
   if (garden.on && !state.menuOpen) garden.frame(t, pulses, { speed: 1100, width: scene.S.mobile ? 110 : 150 });
+  const zooming = zoom.frame(t);
+  const cam = zoom.camera();
+  document.documentElement.classList.toggle('zoomed', !!cam && !zoom.atHome);
   const growing = mould.frame(t);
   const d = renderer.dpr;
   let tt = (t - themeStart) / 0.9;
@@ -284,7 +294,8 @@ function frame() {
     time: t,
     scroll: Math.round(window.scrollY * d) / d,
     shrink: SHRINK,
-    navClip: Math.min(window.scrollY, scene.S.navClip),
+    navClip: cam ? scene.S.navClip : Math.min(window.scrollY, scene.S.navClip),
+    cam,
     themeA: look.a,
     themeB: look.b,
     themeT: look.t,
@@ -292,8 +303,8 @@ function frame() {
     gridOrigin: [scene.S.left, 0],
     gridStep: 16,
     mouse,
-    dotAlpha: 0.075,
-    trail,
+    dotAlpha: cam ? 0.075 * Math.max(0, 1 - Math.abs(Math.log10(cam.s)) * 2) : 0.075,
+    trail: cam && cam.s !== 1 ? null : trail,
     pushR: scene.S.mobile ? 100 : 130,
     pushGain: 0.45,
     pulses: pulseData,
@@ -301,7 +312,7 @@ function frame() {
     pulseWidth: scene.S.mobile ? 110 : 150,
     layers,
   });
-  if (story || garden.on || growing || t < engine.animUntil + 0.05 || tt < 1 || pushing || lit) { kick(); return; }
+  if (story || garden.on || growing || zooming || t < engine.animUntil + 0.05 || tt < 1 || pushing || lit) { kick(); return; }
   clearTimeout(timer);
   const next = engine.nextTick();
   if (next < Infinity) timer = setTimeout(kick, Math.max(16, (next - engine.now()) * 1000));
@@ -398,12 +409,68 @@ const mould = new Mould({
   renderer,
   now: () => engine.now(),
   changed: () => { if (state.route.name === 'slime') { state.slime = mould.view(); render('local'); } },
-  scene: () => scene,
+  scene: () => (state.route.name === 'powers' ? { slime: zoom.slimeRect() } : scene),
   kick: () => kick(),
   calm: () => engine.calm,
 });
 /** The map comes in once the morph that's just begun has landed. */
-const mouldAfterMorph = () => { if (state.route.name === 'slime') mould.arriveAt(engine.animUntil + 0.05); };
+const mouldAfterMorph = () => {
+  if (state.route.name === 'slime') mould.arriveAt(engine.animUntil + 0.05);
+};
+
+// ---------------------------------------------------------------- powers of ten
+//
+const zoom = new Zoom({
+  renderer,
+  now: () => engine.now(),
+  kick: () => kick(),
+  changed: () => { if (state.route.name === 'powers' && !state.menuOpen) render('local'); },
+  calm: () => engine.calm,
+  touch: state.touch,
+  dpr: () => window.devicePixelRatio || 1, // the screen's real pixels, for the pixels under a block
+  dark: () => state.theme === 'dark',
+  mould,
+});
+/** Powers of Ten (/projects/powers-of-ten/): the zoom, and the slime mould on its map. */
+const openPowers = (on) => {
+  if (on) { zoom.open(); mould.open(); document.documentElement.classList.add('zooming'); }
+  else {
+    zoom.close(); state.zoom = null;
+    if (state.route.name !== 'slime') mould.close();
+    document.documentElement.classList.remove('zooming', 'zoomed');
+  }
+};
+const zoomOn = () => state.route.name === 'powers' && zoom.on && !state.menuOpen;
+
+// Wheel and trackpad zoom it (a pinch on a trackpad comes as a wheel with ctrl);
+// on touch, one finger drags it in and out and two pinch.
+window.addEventListener('wheel', (e) => {
+  if (!zoomOn()) return;
+  e.preventDefault();
+  const d = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
+  zoom.wheel(e.ctrlKey ? d * 5 : d);
+}, { passive: false });
+let touches = null;
+const spread = (t) => (t.length > 1 ? Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY) : 0);
+window.addEventListener('touchstart', (e) => {
+  if (!zoomOn()) return;
+  touches = { y: e.touches[0].clientY, d: spread(e.touches), n: e.touches.length };
+}, { passive: true });
+window.addEventListener('touchmove', (e) => {
+  if (!zoomOn() || !touches) return;
+  e.preventDefault();
+  if (e.touches.length !== touches.n) { touches = { y: e.touches[0].clientY, d: spread(e.touches), n: e.touches.length }; return; }
+  if (e.touches.length > 1) {
+    const d = spread(e.touches);
+    if (touches.d > 0 && d > 0) zoom.pinch(d / touches.d);
+    touches.d = d;
+  } else {
+    const y = e.touches[0].clientY;
+    zoom.wheel((touches.y - y) * 2.2);
+    touches.y = y;
+  }
+}, { passive: false });
+window.addEventListener('touchend', (e) => { if (touches) touches = e.touches.length ? { y: e.touches[0].clientY, d: spread(e.touches), n: e.touches.length } : null; }, { passive: true });
 
 // ---------------------------------------------------------------- 404 puzzle
 
@@ -468,6 +535,7 @@ function runAction(action, node) {
       if (story) storyOut(true);
       if (garden.on) { renderer.clearGarden(); garden.up(); document.documentElement.classList.remove('gardening'); } // it waits under the menu
       mould.hide(true);
+      zoom.hide(true);
       state.menuOpen = true;
       render('page', { scrollTo: 0, origin: centerOf(node) });
     } else {
@@ -475,6 +543,7 @@ function runAction(action, node) {
       if (story) storyIn();
       if (garden.on) document.documentElement.classList.add('gardening');
       mould.hide(false);
+      zoom.hide(false);
       render('page', { scrollTo: menuReturnScroll, origin: centerOf(node) });
       gardenAfterMorph();
       mouldAfterMorph();
@@ -496,6 +565,8 @@ function runAction(action, node) {
     garden.select(action);
   } else if (action.startsWith('sm:')) {
     mould.action(action);
+  } else if (action.startsWith('zm:')) {
+    zoom.action(action);
   } else if (action === 'pz:undo') {
     play(() => puzzle.undo());
   } else if (action === 'pz:restart') {
@@ -557,7 +628,9 @@ async function navigate(route, push) {
   if (route.name === 'story' && canGL()) storyIn();
   if (route.name === 'garden' && !fromGarden) { cameToGarden = push; openGarden(); }
   if (route.name !== 'garden') state.garden = null;
-  if (route.name === 'slime') { mould.open(); state.slime = mould.view(); } else { mould.close(); state.slime = null; }
+  if (state.route.name !== 'powers' || route.name !== 'powers') openPowers(false);
+  if (route.name === 'slime') { mould.open(); state.slime = mould.view(); } else if (route.name !== 'powers') { mould.close(); state.slime = null; }
+  if (route.name === 'powers') openPowers(true);
   render('page', { scrollTo: target, origin: lastOrigin || [vp.w / 2, vp.h / 2] });
   if (route.name === 'garden') gardenAfterMorph();
   mouldAfterMorph();
@@ -581,8 +654,15 @@ document.addEventListener('pointerdown', (e) => {
   if (e.pointerType !== 'touch' && e.button === 0) pulse(e.clientX, e.clientY);
 }, { capture: true });
 // Touch: pulse on tap (click), not on touch-down, which also starts scrolls.
-document.addEventListener('click', (e) => { if (e.pointerType === 'touch' && e.target !== capture) pulse(e.clientX, e.clientY); }, { capture: true });
-document.addEventListener('pointermove', (e) => { mouse = [e.clientX, e.clientY]; onPointer(e); kick(); }, { passive: true });
+document.addEventListener('click', (e) => {
+  if (e.pointerType !== 'touch' || e.target === capture) return;
+  pulse(e.clientX, e.clientY);
+}, { capture: true });
+document.addEventListener('pointermove', (e) => {
+  mouse = [e.clientX, e.clientY];
+  onPointer(e);
+  kick();
+}, { passive: true });
 document.documentElement.addEventListener('pointerleave', () => { mouse = [-1e4, -1e4]; pointer = null; pending = [0, 0]; kick(); });
 window.addEventListener('scroll', () => { engine.reveal(window.scrollY); kick(); }, { passive: true });
 document.addEventListener('keydown', (e) => {
@@ -594,6 +674,13 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (garden.on && SCROLL_KEYS.has(e.key) && !(e.key === ' ' && e.target.closest?.('a, button'))) e.preventDefault();
+  // Powers of Ten: + and the down arrow go in, − and up come out, Home goes back to the CV.
+  if (zoomOn() && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    const k = e.key;
+    const step = k === '+' || k === '=' || k === 'ArrowDown' || k === 'PageDown' ? -1 : k === '-' || k === '_' || k === 'ArrowUp' || k === 'PageUp' ? 1 : 0;
+    if (step) { e.preventDefault(); zoom.by(step); return; }
+    if (k === 'Home') { e.preventDefault(); zoom.home(); return; }
+  }
   // The 404 puzzle: arrows or WASD move, Z undoes, R restarts.
   if (state.route.name !== 'notFound' || state.menuOpen || e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
@@ -630,7 +717,7 @@ function onResize() {
     vp.w = w2;
     if (relayout) {
       layoutH = h2;
-      if (!state.menuOpen) { mould.hide(true); mould.hide(false); } // out, and back in at the new size
+      if (!state.menuOpen && state.route.name !== 'powers') { mould.hide(true); mould.hide(false); } // out, and back in at the new size
       render('resize');
       gardenAfterMorph();
       mouldAfterMorph();
@@ -650,6 +737,7 @@ syncStatic();
 renderer.resize(vp.w, vp.h, dpr());
 if (state.route.name === 'garden') openGarden();
 if (state.route.name === 'slime') { mould.open(); state.slime = mould.view(); }
+if (state.route.name === 'powers') openPowers(true);
 const boot = () => { render('intro', { scrollTo: 0 }); gardenAfterMorph(); mouldAfterMorph(); };
 
 // The first page of a visit opens on the mark, large in the middle of the
@@ -726,4 +814,4 @@ animateFavicon();
 window.addEventListener('photo-loaded', () => render('local'));
 
 // Debug/inspection handle.
-window.__site = { engine, state, render, impulses, pulses, kick, frame, puzzle, garden, mould, navigate, get scene() { return scene; }, get story() { return story; } };
+window.__site = { engine, state, render, impulses, pulses, kick, frame, puzzle, garden, mould, zoom, navigate, get scene() { return scene; }, get story() { return story; } };

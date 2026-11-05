@@ -609,6 +609,72 @@ export const slimeText = {
   ],
 };
 
+// Powers of Ten (/projects/powers-of-ten/): one continuous zoom from the CV
+// out past the edge of the universe and down inside a proton, every scale a
+// real simulation. The zoom is src/powers/.
+export const powersText = {
+  eyebrow: 'POWERS OF TEN',
+  title: 'POWERS OF TEN',
+  intro: 'One zoom with no cuts, forty-four powers of ten from end to end. It starts on my CV, as big as it really is on your screen. Zoom in and you go into a letter, into one block, into the pixels under it, onto the glass, into a bacterium, among its proteins and its DNA, to one rung of the DNA’s ladder, one of its carbon atoms, that atom’s nucleus and the quarks in a proton. Zoom out and the CV shrinks into the screen on my desk, then it’s my room, the house, a neighbourhood like mine, the Netherlands with a slime mould growing on it, the Earth and its satellites, the planets, Voyager 1 at the edge of the Sun’s wind, the Oort cloud, the nearest stars, the bubble our radio has filled, the galaxy, the cosmic web, the edge of what we can see and, past that, a guess. Every scale is a real simulation, running in your browser, and only the one you’re looking at runs. It’s after Charles and Ray Eames’s film of 1977, which did it with a picnic.',
+  // What the panel says at each scale ({SIZE}, {BLOCK}, {HOW} and {ACT} filled in by powers/zoom.js).
+  scales: {
+    how: 'SCROLL TO ZOOM, OR USE + AND −.',
+    howTouch: 'DRAG UP OR DOWN TO ZOOM, OR PINCH.',
+    page: 'MY CV, ABOUT {SIZE} ACROSS ON YOUR SCREEN. {HOW} EVERY POWER OF TEN IS A LIVE SIMULATION.',
+    letter: 'ONE LETTER, MADE OF THE SAME SQUARE BLOCKS AS EVERYTHING ELSE HERE.',
+    block: 'ONE BLOCK, {BLOCK} ACROSS. UNDER IT, THE SCREEN’S OWN PIXELS.',
+    pixels: 'THE PIXELS: EACH ONE THREE LIGHTS, RED, GREEN AND BLUE, AND WHITE IS ALL THREE AT ONCE. A LAPTOP’S ARE IN STRIPES LIKE THESE; A PHONE’S OFTEN AREN’T.',
+    glass: 'THE GLASS. ANY SCREEN THAT GETS TOUCHED HAS BACTERIA ON IT, SWIMMING THE WAY E. COLI DOES: RUN, TUMBLE, RUN.',
+    cell: 'ONE BACTERIUM, 2 MICROMETRES LONG. WE’RE SWIMMING ALONG WITH IT, AT TEN BODY LENGTHS A SECOND.',
+    proteins: 'INSIDE IT: PROTEINS, PACKED TIGHT AND KNOCKED ABOUT BY WATER. BROWNIAN MOTION, A MILLION TIMES SLOWER.',
+    dna: 'DNA, 2 NANOMETRES WIDE, WITH A POLYMERASE COPYING A GENE INTO RNA. IT READS FIFTY LETTERS A SECOND, WHICH, A MILLION TIMES SLOWER, LOOKS LIKE NOT AT ALL.',
+    pair: 'ONE RUNG OF THE LADDER, TURNED TO FACE US: GUANINE AND CYTOSINE, HELD BY THREE HYDROGEN BONDS (DOTTED), WEAK ENOUGH TO UNZIP FOR READING. THE SMALL BLOCKS ARE HYDROGEN.',
+    atom: 'ONE OF ITS CARBON ATOMS. EACH DOT IS SOMEWHERE ONE OF ITS SIX ELECTRONS WOULD BE FOUND IF YOU LOOKED, DRAWN FROM ITS ORBITAL. THERE IS NO ORBIT.',
+    inside: 'NEARLY NOTHING. IF THE NUCLEUS WERE A PEA, THE ATOM AROUND IT WOULD BE A STADIUM, AND THE REST IS ELECTRONS’ MAYBE.',
+    nucleus: 'THE NUCLEUS: SIX PROTONS (FILLED) AND SIX NEUTRONS (OPEN), HELD BY THE STRONG FORCE. ABOUT FIVE FEMTOMETRES ACROSS.',
+    proton: 'ONE PROTON: TWO UP QUARKS AND A DOWN ON STRINGS OF GLUON FIELD. THE FIELD IS ENERGY, SO IT’S LIGHT, AND IT’S NEARLY ALL THE MASS. AS FAR AS ANYONE KNOWS, THE BOTTOM.',
+    desk: 'MY DESK IN LEIDEN, MORE OR LESS. THE CLOCK IS RIGHT, AND THE COFFEE’S STEAM IS A SIMULATION OF ITS OWN.',
+    room: 'MY ROOM. THE SKY THROUGH THE WINDOW IS LEIDEN’S, RIGHT NOW: DAY OR NIGHT, IT’S THE REAL ONE.',
+    house: 'A TALL, NARROW HOUSE ON A CANAL, AS THEY ARE IN LEIDEN. THE RIPPLES ARE A WAVE EQUATION; THE CYCLISTS ARE JUST LATE.',
+    town: 'FROM ABOVE NOW. A NEIGHBOURHOOD LIKE MINE, BUT NOT MY STREET: THE INTERNET HAS ENOUGH ADDRESSES. THE MOVING DOTS ARE BIKES.',
+    edge: 'THE EDGE OF TOWN, AND THEN THE POLDERS: LONG FIELDS BETWEEN DITCHES, DRAINED LAND, MOSTLY BELOW SEA LEVEL.',
+    nl: 'THE NETHERLANDS, WITH A SLIME MOULD GROWING A RAILWAY BETWEEN ITS 40 BIGGEST CITIES, LIVE.',
+    earth: 'THE EARTH, WITH THE NIGHT WHERE IT IS RIGHT NOW. THE COASTS AND BORDERS ARE NATURAL EARTH’S, FINER THE CLOSER YOU GET. THE MOVING DOTS ARE SATELLITES.',
+    orbits: 'SATELLITES, A MINUTE A SECOND. THE LOW ONES LAP THE EARTH IN 90 MINUTES, GPS TWICE A DAY, AND THE FAR RING ONCE A DAY, AS FAST AS THE EARTH TURNS: IT HANGS STILL.',
+    europe: 'NORTH-WEST EUROPE. THE NETHERLANDS IS THE ONE FILLED IN: SMALL, FLAT, AND ABOUT A QUARTER OF IT BELOW SEA LEVEL.',
+    country: 'THE NETHERLANDS. LEIDEN IS THE RED CROSS IN THE MIDDLE, A FEW KILOMETRES IN FROM THE NORTH SEA.',
+    moon: 'THE MOON’S ORBIT, 384,000 KM OUT. FROM HERE ON, TIME RUNS AT A DAY A SECOND.',
+    planets: 'THE PLANETS ON CIRCLES, STARTING FROM WHERE THEY ARE TODAY. A DAY A SECOND.',
+    voyager: 'THE KUIPER BELT, THEN THE EDGE OF THE SUN’S WIND. VOYAGER 1 WENT THROUGH IT IN 2012; A MESSAGE TO IT NOW TAKES {V1}. NOTHING WE’VE MADE HAS GONE FURTHER.',
+    oort: 'THE OORT CLOUD, WHERE COMETS COME FROM, OUT TO A LIGHT YEAR OR MORE. NOBODY HAS EVER SEEN ANYTHING IN IT: THE COMETS ARE THE EVIDENCE.',
+    stars: 'THE NEAREST STARS, FLATTENED ONTO THE GALAXY’S PLANE. ALPHA CENTAURI IS 4.4 LIGHT YEARS AWAY.',
+    radio: 'OUR RADIO, SPREADING AT THE SPEED OF LIGHT SINCE THE FIRST BROADCAST IN 1920: {RADIO} ACROSS NOW, GROWING HERE A YEAR A SECOND. NEARLY ALL TOO FAINT TO HEAR.',
+    galaxy: 'THE MILKY WAY: 500 STARS PULLING ON EACH OTHER IN A HALO OF DARK MATTER. THIRTY MILLION YEARS A SECOND. THE RED SPECK IN THE MIDDLE IS EVERYWHERE OUR RADIO HAS REACHED.',
+    group: 'THE LOCAL GROUP: US, ANDROMEDA, TRIANGULUM AND THE DWARFS, PULLING ON EACH OTHER. THE RINGS ARE THEIR DARK MATTER. A HUNDRED MILLION YEARS A SECOND.',
+    web: 'THE COSMIC WEB: GALAXIES ALONG FILAMENTS ROUND EMPTY VOIDS, GROWN FROM ALMOST SMOOTH BY GRAVITY, IN ZEL’DOVICH’S APPROXIMATION OF IT.',
+    universe: 'THE OBSERVABLE UNIVERSE, 93 BILLION LIGHT YEARS ACROSS. THE RED RING IS THE OLDEST LIGHT THERE IS. WE’RE IN THE MIDDLE, AS EVERYONE IS.',
+    bubbles: 'FROM HERE IT’S A GUESS. IN ETERNAL INFLATION, UNIVERSES FORM LIKE BUBBLES IN A SPACE THAT NEVER STOPS INFLATING, AND OURS IS ONE. NOBODY KNOWS.',
+  },
+  sections: [
+    {
+      id: 'scales', title: 'THE SCALES',
+      paras: [
+        'In: the CV, a letter of its title, one block, the pixels under it (three lights each, at your screen’s real size), the glass of your screen and the bacteria on it (rods about two micrometres long, swimming the way E. coli does, running straight and tumbling), the proteins inside one (Brownian dynamics: each one jostled by a random step the size of √(2DΔt), with D from Stokes–Einstein, and pushed apart where they touch), a strand of DNA with a polymerase reading it, one of its base pairs, one of that pair’s carbon atoms, the atom’s nucleus, and one proton.',
+        'Out: my desk, with the clock telling the time and steam off the coffee; the Netherlands, with the slime mould from my other page growing a railway; the Earth, lit where the Sun is right now, with satellites in their real kinds of orbit, a minute a second; the planets on their orbits, a day a second; the Kuiper belt, the edge of the Sun’s wind and the Voyagers where they are today; the Oort cloud, which nobody has seen; the nearest stars; the bubble our radio has filled since 1920, a year a second; the galaxy, 500 stars pulling on each other in a halo of dark matter, thirty million years a second; the Local Group, Andromeda falling towards us; the cosmic web, grown in Zel’dovich’s approximation; the edge of the observable universe; and, labelled as a guess, bubble universes in eternal inflation.',
+        'Some honesty about the joins. Under one block the screen’s pixels are real, but nothing lives in a pixel, so past them we go onto the glass. And the neighbourhood on the way up is made up, on purpose: it’s like mine, but it isn’t my street.',
+      ],
+    },
+    {
+      id: 'small', title: 'THE SMALL END',
+      paras: [
+        'The base pair is guanine and cytosine, paired the way Watson and Crick worked out: the rings drawn as regular polygons with bonds 0.14 nm long, which real ones are within a few hundredths of, and the three hydrogen bonds between them about 0.29 nm from atom to atom. Every atom shivers with heat, about a hundredth of a nanometre, hydrogens more. Those hydrogen bonds are the weak link on purpose: weak enough for the cell to unzip the two strands and read them, strong enough to hold the rest of the time.',
+        'The carbon atom’s six electrons are drawn as places they would be found if you looked: two in the inner shell, two in the next and two in dumbbell-shaped orbitals, each dot sampled from that orbital’s probability, a thousand a second, fading after two. The orbitals are hydrogen-like ones with Slater’s screened charges, which is a simplification, but a respectable one. There is no orbit, and no little planet going round.',
+        'The nucleus is carbon-12’s six protons and six neutrons, jostling. The proton is two up quarks and a down, each pulled towards where three strings of gluon field meet by a force that doesn’t weaken with distance, which is why nobody has ever pulled a quark out on its own. That part is a classical toy of the real theory, quantum chromodynamics, which nobody can solve live in a browser, or for that matter in a supercomputer without a lot of help.',
+      ],
+    },
+  ],
+};
+
 // The colophon (/colophon/): how the site is made, and the rules it keeps.
 export const colophon = {
   intro: 'Everything here is made of one material: square blocks of ink on a dot grid. Colour only shows up as light, when something happens. These are the rules I keep, and the parts, in case you want to borrow any.',

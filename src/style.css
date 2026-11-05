@@ -96,6 +96,18 @@ body {
   display: block;
 }
 
+/* Powers of Ten: drags and pinches zoom instead of scrolling the page; once
+   zoomed away from the CV, its links underneath stop taking clicks. */
+.zooming,
+.zooming body {
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+.zoomed #doc {
+  pointer-events: none;
+}
+
 /* The 404 puzzle board: swipes move instead of scrolling. */
 .m[data-board] {
   touch-action: none;

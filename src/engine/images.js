@@ -193,6 +193,20 @@ export const GENERATORS = {
     return clamp(Math.pow(v, 1.6));
   },
 
+  slits(x, y, ar) {
+    // Two slits: plane wavefronts in from the left, a plate, rings out of
+    // both slits, and the stripes they make on the screen at the right.
+    const px = x * ar, bx = 0.3 * ar, sy = 0.12, k = 44;
+    if (px > bx - 0.02 && px < bx + 0.02) return Math.abs(Math.abs(y - 0.5) - sy) < 0.035 ? 0 : 1;
+    if (px < bx) return Math.abs(y - 0.5) < 0.3 && Math.sin(px * k) > 0.55 ? 0.8 : 0;
+    const r1 = Math.hypot(px - bx, y - 0.5 + sy), r2 = Math.hypot(px - bx, y - 0.5 - sy);
+    const fringe = Math.cos((k * (r1 - r2)) / 2) ** 2;
+    if (px > ar - 0.08) return fringe > 0.45 ? fringe : 0;
+    if (px > ar - 0.12) return 0;
+    const crest = Math.sin((k * (r1 + r2)) / 2) > 0.2;
+    return crest ? 0.9 * fringe : 0.18 * fringe;
+  },
+
   cubes(x, y, ar, s, dark) {
     // Tumbling blocks: pointy hexagons split into three shaded rhombi.
     const R = 0.115;

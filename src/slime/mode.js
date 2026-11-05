@@ -209,21 +209,23 @@ export class Mould {
   frame(t) {
     if (!this.on || this.hidden || !this.ready) return false;
     const rect = this.host.scene()?.slime;
-    if (!rect) return false;
+    if (!rect) { this.host.renderer.clearSlime?.(); return false; }
+    // Powers of Ten draws the map at any size: laid out at `ref`, scaled to `rect`.
+    const ref = rect.ref || rect, k = rect.w / ref.w;
     if (this.waiting) {
       if (t < this.arrive) return true;
       this.waiting = false;
       this.grow(false);
     }
     if (!this.D) return true;
-    if (!this.grid || this.grid.rw !== rect.w || this.grid.rh !== rect.h) this.layout(rect);
-    const fade = Math.max(0, Math.min(1, (t - this.arrive) / 0.6));
+    if (!this.grid || this.grid.rw !== ref.w || this.grid.rh !== ref.h) this.layout(ref);
+    const fade = Math.min(rect.fade ?? 1, Math.max(0, Math.min(1, (t - this.arrive) / 0.6)));
     if (fade <= 0) return true;
     const changed = this.dirty;
     if (changed) { this.paint(); this.dirty = false; }
     const g = this.grid;
     this.host.renderer.setSlime?.({
-      cols: g.cols, rows: g.rows, x0: rect.x + INSET, y0: rect.y + INSET, cell: CELL,
+      cols: g.cols, rows: g.rows, x0: rect.x + INSET * k, y0: rect.y + INSET * k, cell: CELL * k,
       buf: changed || !this.uploaded ? g.buf : null, show: [this.rail, this.tree], fade, still: this.host.calm?.(),
     });
     this.uploaded = true;

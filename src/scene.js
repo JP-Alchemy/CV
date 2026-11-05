@@ -4,6 +4,7 @@ import { iconFrames } from './icons.js';
 import { typeset } from './engine/typeset.js';
 import { roadbookPage } from './roadbook.js';
 import { slimePage } from './slime/page.js';
+import { powersHud } from './powers/hud.js';
 import { puzzle, board, boardWidth } from './puzzle.js';
 import { COLOURS, PRIMARY, CELL } from './garden/sim.js';
 import { bed } from './garden/bed.js';
@@ -19,7 +20,7 @@ const UP = (s) => s.toUpperCase();
 // ---------------------------------------------------------------- navigation
 
 export const NAV = [
-  { label: 'WORK', href: '/work/', match: ['work', 'project', 'roadbook', 'slime'] },
+  { label: 'WORK', href: '/work/', match: ['work', 'project', 'roadbook', 'slime', 'powers'] },
   { label: 'SERVICES', href: '/services/', match: ['services'] },
   { label: 'ABOUT', href: '/about/', match: ['about'] },
   { label: 'CV', href: '/cv/', match: ['cv'] },
@@ -756,7 +757,7 @@ function notFound(state, S) {
   return row([{ ...col([...intro, ...help]), grow: true }, { ...play, basis: boardWidth(1e4) }], { gap: S.sp(6) });
 }
 
-const PAGES = { home, work, project, services: servicesPage, about: aboutPage, cv: cvPage, contact, colophon: colophonPage, notFound, roadbook: roadbookPage, garden: gardenPage, slime: slimePage };
+const PAGES = { home, work, project, services: servicesPage, about: aboutPage, cv: cvPage, contact, colophon: colophonPage, notFound, roadbook: roadbookPage, garden: gardenPage, slime: slimePage, powers: cvPage };
 
 export function buildScene(state, vp) {
   const S = tokens(vp.w);
@@ -792,6 +793,28 @@ export function buildScene(state, vp) {
     };
   }
 
+  // Powers of Ten: the CV, one screen of it, zoomed by the renderer's camera
+  // (powers/zoom.js) about a letter of its title, over the panel's readout.
+  if (state.route.name === 'powers' && !state.menuOpen) {
+    const hud = powersHud(state, S, ctx, vp);
+    const title = page.els.find((e) => e.key === 'page-title');
+    let focus = [vp.w / 2, vp.h / 2, 4];
+    if (title && title.blocks.length) {
+      // The block nearest the middle of the title's first letter.
+      const b = title.blocks, size = b[2], want = [title.x + size * 2.5, title.y + size * 3.5];
+      let best = 0, bd = Infinity;
+      for (let i = 0; i < b.length; i += 5) {
+        const d = Math.hypot(title.x + b[i] + b[i + 2] / 2 - want[0], title.y + b[i + 1] + b[i + 3] / 2 - want[1]);
+        if (d < bd) { bd = d; best = i; }
+      }
+      focus = [title.x + b[best] + b[best + 2] / 2, title.y + b[best + 1] + b[best + 3] / 2, b[best + 2]];
+    }
+    return {
+      elements: resolve([...nav.els, ...page.els, ...hud.els]), height: vp.h, S,
+      zoom: { area: [0, S.navClip, vp.w, vp.h - hud.h - S.navClip], focus, cell: S.mobile ? 3 : 4 },
+    };
+  }
+
   const count = (els) => els.reduce((n, e) => n + e.blocks.length / 5, 0);
   const approx = count(nav.els) + count(page.els) + 900;
   const foot = layout(footer(state, S, Math.round(approx / 10) * 10), S.cw, ctx);
@@ -801,5 +824,8 @@ export function buildScene(state, vp) {
   // Where slime/mode.js draws the mould's map: the area inside its frame.
   const map = state.route.name === 'slime' && !state.menuOpen ? page.els.find((e) => e.key === 'sm-map') : null;
   const elements = resolve([...nav.els, ...page.els, ...foot.els]);
-  return { elements, height: fy + foot.h + S.sp(3), S, slime: map && { x: map.x, y: map.y, w: map.w, h: map.h } };
+  return {
+    elements, height: fy + foot.h + S.sp(3), S,
+    slime: map && { x: map.x, y: map.y, w: map.w, h: map.h },
+  };
 }
