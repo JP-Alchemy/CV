@@ -83,6 +83,7 @@ const dpr = () => Math.min(window.devicePixelRatio || 1, 3);
 
 function render(mode = 'local', o = {}) {
   if (zoomOn()) state.zoom = zoom.view(); // the panel's words, before it's laid out
+  document.documentElement.classList.toggle('pinchable', ZOOMABLE.has(state.route.name) && !state.menuOpen); // pinches are the zoom's here
   scene = buildScene(state, { w: vp.w, h: layoutH });
   if (scene.zoom && zoom) {
     zoom.layout(scene.zoom);
@@ -429,7 +430,7 @@ const mouldAfterMorph = () => {
 // Powers of Ten (src/powers/): one zoom from a proton to past the edge of
 // the universe. At /projects/powers-of-ten/ it's the page, opening on the
 // CV. On any other page in ZOOMABLE (router.js), a trackpad pinch, ctrl and
-// the wheel, + or −, a pinch in on a phone, or the menu's ZOOM goes into it, about the block you
+// the wheel, + or −, a pinch on a phone, or the menu's ZOOM goes into it, about the block you
 // pinched, and back at the page's own size it scrolls again
 // (state.zoomFrom: where it was scrolled to and the point zoomed about).
 // The zoom's code loads the first time it's wanted.
@@ -533,30 +534,25 @@ window.addEventListener('touchmove', (e) => {
 }, { passive: false });
 window.addEventListener('touchend', (e) => { if (touches) touches = e.touches.length ? { y: e.touches[0].clientY, d: spread(e.touches), n: e.touches.length } : null; }, { passive: true });
 
-// On a phone, any other page: a pinch *in* (fingers together, out past the
-// page) goes into Powers of Ten. A pinch out is left to the browser, so
-// pinching to read small text still works, and so is anything at all while
-// the page is already magnified. Which way it's going is decided on the
-// first move, because after that the browser won't let go of a pinch.
-let claim = null; // { d: last spread, on: claimed (or false: the browser's), pending: ratio not yet applied }
+// On a phone, any other page: a two-finger pinch, either way, goes into
+// Powers of Ten (the .pinchable class tells the browser not to pinch-zoom
+// these pages itself); one finger still scrolls.
+let claim = null; // { d: last spread, on: in the zoom yet, pending: ratio not yet applied }
 const claimEnd = (e) => { if (claim && e.touches.length < 2) claim = null; };
 window.addEventListener('touchstart', (e) => {
   if (e.touches.length !== 2 || zoomOn() || !canZoomHere()) return;
-  if ((window.visualViewport?.scale ?? 1) > 1.01) return; // magnified: pinching back out of it is the browser's
-  claim = { d: spread(e.touches), on: null, pending: 1 };
+  claim = { d: spread(e.touches), on: false, pending: 1 };
 }, { passive: true });
 window.addEventListener('touchmove', (e) => {
   if (!claim || e.touches.length !== 2) return;
+  e.preventDefault();
   const d = spread(e.touches);
-  if (claim.on === null) {
+  if (!claim.on) {
     if (Math.abs(d - claim.d) < 0.5) return; // not moving yet
-    claim.on = d < claim.d;
-    if (!claim.on) return; // spreading: the browser's magnifier
+    claim.on = true;
     const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2, my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
     enterZoom(mx, my, (z) => { if (claim && claim.pending !== 1) z.pinch(claim.pending); if (claim) claim.pending = 1; });
   }
-  if (!claim.on) return;
-  e.preventDefault();
   const r = claim.d > 0 && d > 0 ? d / claim.d : 1;
   claim.d = d;
   if (zoomOn()) zoom.pinch(r); else claim.pending *= r; // still loading: kept for when it's open
