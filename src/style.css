@@ -96,6 +96,13 @@ body {
   display: block;
 }
 
+/* Pages you can pinch into (router.js ZOOMABLE): two fingers are Powers of
+   Ten's, so the browser doesn't pinch-zoom them itself; one still scrolls. */
+.pinchable,
+.pinchable body {
+  touch-action: pan-x pan-y;
+}
+
 /* Powers of Ten: drags and pinches zoom instead of scrolling the page; once
    zoomed away from the CV, its links underneath stop taking clicks. */
 .zooming,
