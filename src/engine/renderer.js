@@ -24,7 +24,7 @@ export const MOSAIC = 4; // three-step path through grid cells
 export const TRAIL = 48; // pointer samples kept for the push field
 export const PULSES = 4; // simultaneous click light pulses
 
-const THEME_GLSL = `
+export const THEME_GLSL = `
 uniform vec3 u_bgA, u_fgA, u_bgB, u_fgB;
 uniform float u_themeT;
 uniform vec2 u_themeOrigin;
@@ -139,7 +139,7 @@ vec4 lightAt(vec2 p, vec2 seed) {
 }
 `;
 
-const VS_BLOCK = `#version 300 es
+export const VS_BLOCK = `#version 300 es
 precision highp float;
 precision highp int;
 layout(location=0) in vec2 a_corner;
@@ -548,7 +548,7 @@ function compile(gl, type, src) {
   return s;
 }
 
-function program(gl, vs, fs) {
+export function program(gl, vs, fs) {
   const p = gl.createProgram();
   gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vs));
   gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, fs));
@@ -866,7 +866,7 @@ export class Renderer {
       gl.uniform4f(u.u_camClip, C.clip[0], C.clip[1], C.clip[2], C.clip[3]);
       gl.uniform1f(u.u_camFade, C.fade);
       gl.bindVertexArray(vao);
-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count);
+      gl.drawArraysInstanced(this.prim ?? gl.TRIANGLE_STRIP, 0, this.verts ?? 4, count); // a subclass may draw more corners (lab/3d)
       gl.bindVertexArray(null);
     };
     blocks(this.vao, this.count, f.time, f.navClip, f.trail, f.pulses, f.cam);

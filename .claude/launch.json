@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "preview", "--", "--port", "5180", "--strictPort"],
       "port": 5180
+    },
+    {
+      "name": "lab3d",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "5183", "--strictPort", "--host"],
+      "port": 5183
     }
   ]
 }
