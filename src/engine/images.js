@@ -193,18 +193,16 @@ export const GENERATORS = {
     return clamp(Math.pow(v, 1.6));
   },
 
-  slits(x, y, ar) {
-    // Two slits: plane wavefronts in from the left, a plate, rings out of
-    // both slits, and the stripes they make on the screen at the right.
-    const px = x * ar, bx = 0.3 * ar, sy = 0.12, k = 44;
-    if (px > bx - 0.02 && px < bx + 0.02) return Math.abs(Math.abs(y - 0.5) - sy) < 0.035 ? 0 : 1;
-    if (px < bx) return Math.abs(y - 0.5) < 0.3 && Math.sin(px * k) > 0.55 ? 0.8 : 0;
-    const r1 = Math.hypot(px - bx, y - 0.5 + sy), r2 = Math.hypot(px - bx, y - 0.5 - sy);
-    const fringe = Math.cos((k * (r1 - r2)) / 2) ** 2;
-    if (px > ar - 0.08) return fringe > 0.45 ? fringe : 0;
-    if (px > ar - 0.12) return 0;
-    const crest = Math.sin((k * (r1 + r2)) / 2) > 0.2;
-    return crest ? 0.9 * fringe : 0.18 * fringe;
+  powers(x, y, ar) {
+    // Powers of Ten: squares inside squares, each a third of a power of ten
+    // smaller than the last, round one dot in the middle.
+    const px = Math.abs(x * ar - ar / 2), py = Math.abs(y - 0.5), d = Math.max(px, py);
+    if (d < 0.012) return 1;
+    for (let k = 0; k < 7; k++) {
+      const h = 0.44 * Math.pow(10, -k / 3);
+      if (Math.abs(d - h) < Math.max(0.004, 0.022 * Math.pow(10, -k / 6))) return 0.95 - k * 0.08;
+    }
+    return 0;
   },
 
   cubes(x, y, ar, s, dark) {

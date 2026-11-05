@@ -161,7 +161,7 @@ function describe(route) {
       card: {
         eyebrow: 'EXPERIMENT · 10⁻¹⁵ TO 10³⁰ M', title: powersText.title,
         text: 'One zoom from my CV out to bubble universes and in to the quarks in a proton. Every power of ten is a real simulation.',
-        picture: { image: { kind: 'slits' } },
+        picture: { image: { kind: 'powers' } },
       },
     };
     case 'roadbook': {

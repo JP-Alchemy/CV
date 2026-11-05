@@ -501,93 +501,6 @@ void main() {
   o = vec4(col, 1.0);
 }`;
 
-// Powers of Ten, the quantum end (src/quantum/): one electron's wave, solved
-// on the GPU (quantum/solver.js), drawn straight from its float texture as
-// blocks that grow with the amplitude. The slit plate is solid ink, the
-// screen keeps a dot for every electron that landed, and each new hit
-// flashes in the colour of the electron's energy, red (slow) to violet
-// (fast), before it settles to ink. Transposed on a portrait screen, so the
-// beam runs down the page.
-const FS_QUANTUM = `#version 300 es
-precision highp float;
-precision highp int;
-uniform highp sampler2D u_qField; // R, I, absorbed
-uniform sampler2D u_qWalls;       // rim, damping, screen, barrier
-uniform sampler2D u_qHits;        // the screen's dots
-uniform vec2 u_qO;      // the box's top-left, doc px
-uniform vec2 u_qS;      // its size, px
-uniform float u_qB;     // block size, px
-uniform float u_qT;     // 1: transposed (the beam runs down)
-uniform vec2 u_qGrid;   // NX, NY
-uniform float u_qScreenX;
-uniform float u_qPeak;  // the brightest |psi|^2 just now
-uniform vec3 u_qGun;    // x, y of its muzzle, and its half height (cells)
-uniform float u_qFade;
-uniform vec4 u_qFlash[8]; // x, y (cells), start time, colour
-uniform int u_qFlashN;
-uniform float u_navClip;
-uniform float u_scroll;
-uniform float u_time;
-out vec4 o;
-${THEME_GLSL}
-${LIGHT_GLSL}
-void main() {
-  vec2 sp = vec2(gl_FragCoord.x, u_viewDev.y - gl_FragCoord.y) / u_dpr;
-  if (sp.y < u_navClip) discard;
-  vec2 q = sp + vec2(0.0, u_scroll) - u_qO;
-  if (q.x < 0.0 || q.y < 0.0 || q.x >= u_qS.x || q.y >= u_qS.y) discard;
-  vec2 bi = floor(q / u_qB);
-  if (hash12(bi + 3.0) >= u_qFade) discard;
-  vec2 f = q / u_qB - bi;
-  vec2 uv = (bi + 0.5) * u_qB / u_qS;
-  vec2 g = u_qT > 0.5 ? vec2(uv.y, uv.x) * u_qGrid : uv * u_qGrid;
-  ivec2 c = ivec2(g);
-  float tk = themeK();
-  vec3 bg = mix(u_bgA, u_bgB, tk), fg = mix(u_fgA, u_fgB, tk);
-  vec4 w = texelFetch(u_qWalls, c, 0);
-  vec3 col = fg;
-  float size = 0.0;
-  vec2 dg = g - u_qGun.xy;
-  if (w.a > 0.5) size = 1.0;                                                            // the slit plate
-  else if (dg.x > -14.0 && dg.x < 0.0 && abs(dg.y) < (dg.x > -4.0 ? 0.45 : 1.0) * u_qGun.z) size = 1.0; // the gun
-  else if (float(c.x) >= u_qScreenX) {
-    // The screen: the dots, the newest ones lit.
-    // Each dot is two cells square, stored at its top-left (even) cell.
-    ivec2 h = c - ivec2(int(u_qScreenX), 0);
-    if (texelFetch(u_qHits, h & ~1, 0).r > 0.5) size = 0.75;
-    for (int i = 0; i < 8; i++) {
-      if (i >= u_qFlashN) break;
-      vec4 F = u_qFlash[i];
-      float age = u_time - F.z;
-      float r = length(g - F.xy);
-      if (age < 0.0 || age > 1.6 || r > 1.5 + 6.0 * age) continue;
-      float k = r < 1.5 ? 1.0 - smoothstep(0.4, 1.6, age) : (1.0 - age / 0.45) * step(abs(r - 6.0 * age), 1.2);
-      if (k <= 0.0) continue;
-      col = mix(fg, SPECTRUM[int(F.w)], k);
-      size = max(size, r < 1.5 ? 1.0 : 0.5);
-    }
-    if (size == 0.0 && c.x == int(u_qScreenX) && (c.y & 1) == 0) size = 0.5;                // its face
-    else if (size == 0.0 && ((c.x + c.y) & 3) == 0 && (c.y & 1) == 0) { col = mix(bg, fg, 0.3); size = 0.25; }
-  }
-  if (size < 0.5 && w.a < 0.5) {
-    // The wave: a block as big as the amplitude, |psi| over the brightest,
-    // a size smaller in the troughs of its phase, so the wavefronts show.
-    vec4 p = texelFetch(u_qField, c, 0);
-    float a = sqrt((p.r * p.r + p.g * p.g) / max(u_qPeak, 1e-6));
-    if (p.r < 0.0) a *= 0.6;
-    float s = a > 0.72 ? 1.0 : a > 0.46 ? 0.75 : a > 0.24 ? 0.5 : a > 0.09 ? 0.25 : 0.0;
-    if (s > size) { size = s; col = fg; }
-  }
-  if (size == 0.0) discard;
-  vec2 d = abs(f - 0.5);
-  if (max(d.x, d.y) >= size * 0.5) discard;
-  if (u_pulseN > 0) {
-    vec4 L = lightAt(u_qO + (bi + 0.5) * u_qB, bi);
-    col = mix(col, L.rgb, L.a);
-  }
-  o = vec4(col, 1.0);
-}`;
-
 // Powers of Ten, the scales drawn in JS (powers/scenes.js): a grid of
 // u_zB px cells over the screen, one texel each. R the block's size (0-255 as
 // 0 to the whole cell), G its colour (0 ink; 1-7 the spectrum, red to violet),
@@ -666,7 +579,6 @@ export class Renderer {
     this.garden = null;
     this.slimeProg = program(gl, VS_BG, FS_SLIME);
     this.slime = null;
-    this.quantum = null; // compiled when first wanted
 
     this.vao = gl.createVertexArray();
     gl.bindVertexArray(this.vao);
@@ -806,29 +718,6 @@ export class Renderer {
 
   clearSlime() { this.slime = null; }
 
-  /**
-   * Show the electron (quantum/mode.js): `field` and `walls` are the solver's
-   * textures; `hits` (cols × NY RGBA8, the screen's dots) only when it changed.
-   * rect: [x, y, w, h] in doc px; the rest as FS_QUANTUM's uniforms.
-   */
-  setQuantum(q) {
-    const gl = this.gl;
-    if (!this.quantumProg) this.quantumProg = program(gl, VS_BG, FS_QUANTUM);
-    if (!this.htex) this.htex = gl.createTexture();
-    if (q.hits) {
-      gl.bindTexture(gl.TEXTURE_2D, this.htex);
-      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, q.hitCols, q.grid[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, q.hits);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    }
-    this.quantum = { ...q, hits: null };
-  }
-
-  clearQuantum() { this.quantum = null; }
-
   /** Powers of Ten's grid (see FS_ZOOM): cols × rows RGBA8 in `buf`, at (x, y) on screen, `cell` px a cell. */
   setZoom(z) {
     const gl = this.gl;
@@ -955,39 +844,6 @@ export class Renderer {
       gl.bindVertexArray(this.bgVao);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.bindVertexArray(null);
-    }
-
-    const Q = this.quantum; // under the blocks too
-    if (Q) {
-      ({ u, p } = this.quantumProg);
-      gl.useProgram(p);
-      setTheme(u);
-      setLight(u);
-      [Q.field, Q.walls, this.htex].forEach((t, i) => {
-        gl.activeTexture(gl.TEXTURE0 + i);
-        gl.bindTexture(gl.TEXTURE_2D, t);
-      });
-      gl.uniform1i(u.u_qField, 0);
-      gl.uniform1i(u.u_qWalls, 1);
-      gl.uniform1i(u.u_qHits, 2);
-      gl.uniform2f(u.u_qO, Q.rect[0], Q.rect[1]);
-      gl.uniform2f(u.u_qS, Q.rect[2], Q.rect[3]);
-      gl.uniform1f(u.u_qB, Q.block);
-      gl.uniform1f(u.u_qT, Q.transposed ? 1 : 0);
-      gl.uniform2f(u.u_qGrid, Q.grid[0], Q.grid[1]);
-      gl.uniform1f(u.u_qScreenX, Q.screenX);
-      gl.uniform1f(u.u_qPeak, Q.peak);
-      gl.uniform3f(u.u_qGun, Q.gun[0], Q.gun[1], Q.gun[2]);
-      gl.uniform1f(u.u_qFade, Q.fade);
-      gl.uniform1i(u.u_qFlashN, Q.flashN);
-      if (Q.flashN) gl.uniform4fv(u.u_qFlash, Q.flash, 0, Q.flashN * 4);
-      gl.uniform1f(u.u_navClip, f.navClip);
-      gl.uniform1f(u.u_scroll, f.scroll);
-      gl.uniform1f(u.u_time, f.time);
-      gl.bindVertexArray(this.bgVao);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
-      gl.bindVertexArray(null);
-      for (const i of [2, 1, 0]) { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, null); }
     }
 
     const blocks = (vao, count, time, navClip, trail, pulses, cam = null) => {

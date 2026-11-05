@@ -7,7 +7,7 @@
 // while it's on screen.
 //
 // The page itself, the slime mould and the electron are drawn by their own
-// passes (the renderer's camera, FS_SLIME, FS_QUANTUM).
+// passes (the renderer's camera, FS_SLIME).
 
 import { land } from './world.js';
 
