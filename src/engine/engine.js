@@ -11,7 +11,7 @@ export function ease(p) {
 const lerp = (a, b, t) => a + (b - a) * t;
 const smoothstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
-const cur = { x: 0, y: 0, w: 0, h: 0, tone: 0, p: 1 };
+const cur = { x: 0, y: 0, w: 0, h: 0, tone: 0, p: 1, z: 0 };
 
 /** CPU mirror of the vertex shader (without rotation) — where a block is now. */
 export function evalInst(a, o, t, out = cur) {
@@ -47,6 +47,7 @@ export function evalInst(a, o, t, out = cur) {
     tone = lerp(a[o + 16], a[o + 17], e);
   }
   out.x = cx - w / 2; out.y = cy - h / 2; out.w = w; out.h = h; out.tone = tone; out.p = p;
+  out.z = lerp(a[o + 22], a[o + 23], ease(p)); // depth (renderer3d.js); 0 on a flat page
   return out;
 }
 
@@ -128,12 +129,13 @@ export class Engine {
   now() { return (performance.now() - this.start) / 1000 / this.slow; }
 
   /** Write one instance. Pass cells [Ax, Ay, As, Bx, By, Bs] for a mosaic path. */
-  w(a, o, fx, fy, fw, fh, ft, tx, ty, tw, th, tt, t0, dur, arc, tumble, z, flags, cells) {
+  w(a, o, fx, fy, fw, fh, ft, tx, ty, tw, th, tt, t0, dur, arc, tumble, z, flags, cells, fz = 0, tz = 0) {
     if (this.calm) { t0 = dur > 0 ? this.now() : t0; dur = Math.min(dur, 0.16); arc = 0; tumble = 0; cells = null; }
     a[o] = fx; a[o + 1] = fy; a[o + 2] = fw; a[o + 3] = fh;
     a[o + 4] = tx; a[o + 5] = ty; a[o + 6] = tw; a[o + 7] = th;
     a[o + 12] = t0; a[o + 13] = dur; a[o + 14] = arc; a[o + 15] = tumble;
     a[o + 16] = ft; a[o + 17] = tt; a[o + 18] = z;
+    a[o + 22] = fz; a[o + 23] = tz;
     if (cells) {
       a[o + 8] = cells[0]; a[o + 9] = cells[1]; a[o + 20] = cells[2];
       a[o + 10] = cells[3]; a[o + 11] = cells[4]; a[o + 21] = cells[5];
@@ -145,19 +147,25 @@ export class Engine {
     if (t0 + dur > this.animUntil) this.animUntil = t0 + dur;
   }
 
-  pushDying(fx, fy, fw, fh, ft, tx, ty, tw, th, tt, t0, dur, arc, tumble, z, flags, cells) {
+  pushDying(fx, fy, fw, fh, ft, tx, ty, tw, th, tt, t0, dur, arc, tumble, z, flags, cells, fz = 0, tz = 0) {
     if ((this.dyingCount + 1) * STRIDE > this.dying.length) {
       const next = new Float32Array(this.dying.length * 2);
       next.set(this.dying);
       this.dying = next;
     }
     const o = this.dyingCount++ * STRIDE;
-    this.w(this.dying, o, fx, fy, fw, fh, ft, tx, ty, tw, th, tt, t0, dur, arc, tumble, z, flags, cells);
+    this.w(this.dying, o, fx, fy, fw, fh, ft, tx, ty, tw, th, tt, t0, dur, arc, tumble, z, flags, cells, fz, tz);
     const end = this.dying[o + 12] + this.dying[o + 13];
     if (end > this.dyingUntil) this.dyingUntil = end;
   }
 
   flagsOf(E) { return (E.fixed ? FIXED : 0) | (E.flat ? FLAT : 0); }
+
+  // 3D (renderer3d.js): an element may give each block a depth (front-face
+  // z, px towards you) and an occlusion mask (renderer3d.js bake()), which
+  // rides in the layer's fraction. Without them a block is flat: 0 and the layer.
+  dz(R, j) { return R.D ? R.D[j] : 0; }
+  lz(R, j) { return R.A ? R.z + R.A[j] / 1048576 : R.z; }
 
   /** Absolute target blocks for a scene element (icons pick their current frame). */
   targets(E, anim) {
@@ -188,16 +196,18 @@ export class Engine {
     const next = new Map();
     const list = [];
 
-    const poolOld = []; // flat [x, y, w, h, tone, z, flags]
+    const poolOld = []; // flat [x, y, w, h, tone, layer, flags, depth]
     const poolNewRec = [];
     const poolNewIdx = [];
 
     const curArr = (O) => {
       const out = new Float32Array(O.n * 5);
+      out.z = new Float32Array(O.n); // depth, beside the 5-number blocks
       const dy = O.fixed ? 0 : shift;
       for (let i = 0; i < O.n; i++) {
         const c = evalInst(O.inst, i * STRIDE, t);
         out[i * 5] = c.x; out[i * 5 + 1] = c.y + dy; out[i * 5 + 2] = c.w; out[i * 5 + 3] = c.h; out[i * 5 + 4] = c.tone;
+        out.z[i] = c.z;
       }
       return out;
     };
@@ -214,6 +224,7 @@ export class Engine {
       const rec = {
         key: E.key, sig: E.sig, x: E.x, y: E.y, fixed: !!E.fixed, flat: !!E.flat, z: E.z || 0,
         n, anim, motion: E.motion, match: E.match, sweep: E.sweep, order: E.order, inst: null, off: 0, T,
+        D: E.depth || null, A: E.ao || null,
       };
 
       if (sameSig && O.x === E.x && O.y === E.y && (shift === 0 || E.fixed)) {
@@ -235,7 +246,7 @@ export class Engine {
             C[b], C[b + 1], C[b + 2], C[b + 3], C[b + 4],
             T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4],
             t + d * stagger + rnd(0, P.jitter * 0.5), rnd(P.dur[0], P.dur[1]),
-            sgn() * rnd(0.2, 1) * P.arc * 0.5, sgn() * rnd(0.2, 1) * P.tumble * 0.5, rec.z, flags);
+            sgn() * rnd(0.2, 1) * P.arc * 0.5, sgn() * rnd(0.2, 1) * P.tumble * 0.5, this.lz(rec, i), flags, null, C.z[i], this.dz(rec, i));
         }
       } else if (O) {
         const P = PROFILES[E.motion || (mode === 'page' ? 'shared' : 'local')];
@@ -250,7 +261,7 @@ export class Engine {
           const b = i * 5;
           const visible = !pooled || E.fixed || (T[b + 1] + T[b + 3] > vis0 && T[b + 1] < vis1);
           if (visible) { poolNewRec.push(rec); poolNewIdx.push(i); continue; }
-          this.w(rec.inst, i * STRIDE, T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], 0, 0, 0, 0, rec.z, flags);
+          this.w(rec.inst, i * STRIDE, T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], 0, 0, 0, 0, this.lz(rec, i), flags, null, this.dz(rec, i), this.dz(rec, i));
         }
       }
       next.set(E.key, rec);
@@ -266,7 +277,7 @@ export class Engine {
         const b = i * 5;
         if (pooled && !O.fixed && (C[b + 1] + C[b + 3] < vis0 || C[b + 1] > vis1)) continue;
         if (C[b + 2] < 0.05) continue;
-        poolOld.push(C[b], C[b + 1], C[b + 2], C[b + 3], C[b + 4], O.z, fl);
+        poolOld.push(C[b], C[b + 1], C[b + 2], C[b + 3], C[b + 4], O.z, fl, C.z[i]);
       }
     }
     // Blocks still merging from a previous morph join the pool too.
@@ -275,7 +286,7 @@ export class Engine {
       if (c.p >= 1 || c.w < 0.05) continue;
       const fl = this.dying[i * STRIDE + 19] & ~MOSAIC;
       const dy = (fl & FIXED) ? 0 : shift;
-      poolOld.push(c.x, c.y + dy, c.w, c.h, c.tone, this.dying[i * STRIDE + 18], fl);
+      poolOld.push(c.x, c.y + dy, c.w, c.h, c.tone, this.dying[i * STRIDE + 18], fl, c.z);
     }
     this.dyingCount = 0;
     this.dyingUntil = 0;
@@ -313,7 +324,7 @@ export class Engine {
     for (let i = 0; i < rec.n; i++) {
       const b = i * 5;
       const cx = T[b] + T[b + 2] / 2, cy = T[b + 1] + T[b + 3] / 2;
-      this.w(rec.inst, i * STRIDE, cx, cy, 0, 0, T[b + 4], cx, cy, 0, 0, T[b + 4], 0, 0, 0, 0, rec.z, flags);
+      this.w(rec.inst, i * STRIDE, cx, cy, 0, 0, T[b + 4], cx, cy, 0, 0, T[b + 4], 0, 0, 0, 0, this.lz(rec, i), flags, null, this.dz(rec, i), this.dz(rec, i));
     }
     rec.hidden = true;
   }
@@ -353,7 +364,7 @@ export class Engine {
         for (const i of c.items) {
           const b = i * 5;
           this.w(R.inst, i * STRIDE, c.x, c.y, 0, 0, T[b + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4],
-            t0, dur, 0, tum, R.z, flags, [c.x, c.y, sz, c.x, c.y, sz]);
+            t0, dur, 0, tum, this.lz(R, i), flags, [c.x, c.y, sz, c.x, c.y, sz], this.dz(R, i), this.dz(R, i));
         }
       }
       this.upload(R);
@@ -365,7 +376,7 @@ export class Engine {
     const T = R.T, flags = this.flagsOf(R);
     for (let i = 0; i < R.n; i++) {
       const b = i * 5;
-      this.w(R.inst, i * STRIDE, T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], 0, 0, 0, 0, R.z, flags);
+      this.w(R.inst, i * STRIDE, T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], 0, 0, 0, 0, this.lz(R, i), flags, null, this.dz(R, i), this.dz(R, i));
     }
     this.upload(R);
   }
@@ -397,7 +408,7 @@ export class Engine {
         const b = i * 5;
         const [t0, dur, , tum] = pick();
         const cx = C[b] + C[b + 2] / 2, cy = C[b + 1] + C[b + 3] / 2;
-        this.pushDying(C[b], C[b + 1], C[b + 2], C[b + 3], C[b + 4], cx, cy, 0, 0, C[b + 4], t0, dur, 0, tum, O.z, this.flagsOf(O));
+        this.pushDying(C[b], C[b + 1], C[b + 2], C[b + 3], C[b + 4], cx, cy, 0, 0, C[b + 4], t0, dur, 0, tum, O.z, this.flagsOf(O), null, C.z[i], C.z[i]);
       }
       return inst;
     }
@@ -406,7 +417,7 @@ export class Engine {
         const b = j * 5;
         const [t0, dur, , tum] = pick(j);
         const cx = T[b] + T[b + 2] / 2, cy = T[b + 1] + T[b + 3] / 2;
-        this.w(inst, j * STRIDE, cx, cy, 0, 0, T[b + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, 0, tum, z, flags);
+        this.w(inst, j * STRIDE, cx, cy, 0, 0, T[b + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, 0, tum, this.lz(rec, j), flags, null, this.dz(rec, j), this.dz(rec, j));
       }
       return inst;
     }
@@ -427,8 +438,8 @@ export class Engine {
     const emit = (i, j, survivor) => {
       const a = i * 5, b = j * 5;
       const [t0, dur, arc, tum] = pick(j);
-      if (survivor) this.w(inst, j * STRIDE, C[a], C[a + 1], C[a + 2], C[a + 3], C[a + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, arc, tum, z, flags);
-      else this.pushDying(C[a], C[a + 1], C[a + 2], C[a + 3], C[a + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, arc, tum, z, flags);
+      if (survivor) this.w(inst, j * STRIDE, C[a], C[a + 1], C[a + 2], C[a + 3], C[a + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, arc, tum, this.lz(rec, j), flags, null, C.z[i], this.dz(rec, j));
+      else this.pushDying(C[a], C[a + 1], C[a + 2], C[a + 3], C[a + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, arc, tum, z, flags, null, C.z[i], this.dz(rec, j));
     };
     if (m >= n) {
       for (let r = 0; r < m; r++) emit(oi(Math.floor((r * n) / m)), ni(r), true);
@@ -452,7 +463,7 @@ export class Engine {
    */
   mosaic(old, recs, idx, t, mode, o, top) {
     const cs = this.cell, gx0 = this.gridX;
-    const N = old.length / 7, M = recs.length;
+    const N = old.length / 8, M = recs.length;
     if (M === 0) return this.mapPools(old, recs, idx, t, mode, o, top);
     const P = PROFILES[N === 0 ? 'intro' : 'page'];
     const diag = Math.hypot(this.vw, this.vh);
@@ -482,15 +493,15 @@ export class Engine {
       }
       return cells;
     };
-    const oc = bucket(N, (i) => [old[i * 7], old[i * 7 + 1], old[i * 7 + 2], old[i * 7 + 3], old[i * 7 + 6] & FIXED]);
+    const oc = bucket(N, (i) => [old[i * 8], old[i * 8 + 1], old[i * 8 + 2], old[i * 8 + 3], old[i * 8 + 6] & FIXED]);
     const nc = bucket(M, (j) => { const T = recs[j].T, b = idx[j] * 5; return [T[b], T[b + 1], T[b + 2], T[b + 3], recs[j].fixed]; });
 
     const place = (R, j, from, A, B, g) => {
       const b = idx[j] * 5, T = R.T;
       const ay = R.fixed ? A.y - top : A.y, by = R.fixed ? B.y - top : B.y;
       this.w(R.inst, idx[j] * STRIDE, from[0], from[1], from[2], from[3], from[4],
-        T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], g.t0, g.dur, g.arc, g.tum, R.z, this.flagsOf(R),
-        [A.x, ay, A.s, B.x, by, B.s]);
+        T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], g.t0, g.dur, g.arc, g.tum, this.lz(R, idx[j]), this.flagsOf(R),
+        [A.x, ay, A.s, B.x, by, B.s], from[5] ?? this.dz(R, idx[j]), this.dz(R, idx[j]));
     };
 
     // Intro: invent scattered source squares, one per destination cell.
@@ -558,29 +569,29 @@ export class Engine {
       for (let k = 0; k < nB; k++) {
         const i = A.items[Math.floor((k * nA) / nB)];
         used[i] = 1;
-        const j = B.items[k], R = recs[j], s = i * 7;
+        const j = B.items[k], R = recs[j], s = i * 8;
         let fy = old[s + 1];
         const srcFixed = (old[s + 6] & FIXED) !== 0;
         if (srcFixed && !R.fixed) fy += top;
         if (!srcFixed && R.fixed) fy -= top;
-        place(R, j, [old[s], fy, old[s + 2], old[s + 3], old[s + 4]], A, B, g);
+        place(R, j, [old[s], fy, old[s + 2], old[s + 3], old[s + 4], old[s + 7]], A, B, g);
       }
     }
     // Leftover source blocks ride along with their cell and vanish into it.
     for (let a = 0; a < Nc; a++) {
       const A = oc[a], b = firstB[a], B = nc[b], g = group(a, b);
       for (const i of A.items) {
-        const s = i * 7;
+        const s = i * 8;
         if (used[i] || old[s + 6] & FIXED) continue;
         this.pushDying(old[s], old[s + 1], old[s + 2], old[s + 3], old[s + 4], B.x, B.y, 0, 0, old[s + 4],
-          g.t0, g.dur, g.arc, g.tum, old[s + 5], old[s + 6], [A.x, A.y, A.s, B.x, B.y, B.s]);
+          g.t0, g.dur, g.arc, g.tum, old[s + 5], old[s + 6], [A.x, A.y, A.s, B.x, B.y, B.s], old[s + 7], old[s + 7]);
       }
     }
   }
 
   /** Non-page changes: pair leftovers along a Hilbert curve, or grow/shrink in place. */
   mapPools(old, recs, idx, t, mode, o, top) {
-    const N = old.length / 7;
+    const N = old.length / 8;
     const M = recs.length;
     const P = PROFILES[mode === 'page' || mode === 'intro' ? 'page' : 'grow'];
     const diag = Math.hypot(this.vw, this.vh);
@@ -588,12 +599,12 @@ export class Engine {
 
     if (M === 0) {
       for (let i = 0; i < N; i++) {
-        const a = i * 7;
+        const a = i * 8;
         const cx = old[a] + old[a + 2] / 2, cy = old[a + 1] + old[a + 3] / 2;
         const sy = old[a + 6] & FIXED ? cy : cy - top;
         const delay = P.wave * Math.min(1, Math.hypot(cx - origin[0], sy - origin[1]) / diag);
         this.pushDying(old[a], old[a + 1], old[a + 2], old[a + 3], old[a + 4], cx, cy, 0, 0, old[a + 4],
-          t + delay + rnd(0, P.jitter), rnd(P.dur[0], P.dur[1]) * 0.6, 0, sgn() * rnd(0.3, 1) * P.tumble, old[a + 5], old[a + 6]);
+          t + delay + rnd(0, P.jitter), rnd(P.dur[0], P.dur[1]) * 0.6, 0, sgn() * rnd(0.3, 1) * P.tumble, old[a + 5], old[a + 6], null, old[a + 7], old[a + 7]);
       }
       return;
     }
@@ -603,7 +614,7 @@ export class Engine {
         const R = recs[j], b = idx[j] * 5, T = R.T;
         const cx = T[b] + T[b + 2] / 2, cy = T[b + 1] + T[b + 3] / 2;
         this.w(R.inst, idx[j] * STRIDE, cx, cy, 0, 0, T[b + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4],
-          t + rnd(0, P.jitter), rnd(P.dur[0], P.dur[1]), 0, sgn() * rnd(0.3, 1) * P.tumble, R.z, this.flagsOf(R));
+          t + rnd(0, P.jitter), rnd(P.dur[0], P.dur[1]), 0, sgn() * rnd(0.3, 1) * P.tumble, this.lz(R, idx[j]), this.flagsOf(R), null, this.dz(R, idx[j]), this.dz(R, idx[j]));
       }
       return;
     }
@@ -612,7 +623,7 @@ export class Engine {
     const nx = new Float32Array(M), ny = new Float32Array(M);
     const box = boxOf();
     for (let i = 0; i < N; i++) {
-      const a = i * 7;
+      const a = i * 8;
       ox[i] = old[a] + old[a + 2] / 2;
       oy[i] = old[a + 1] + old[a + 3] / 2 - (old[a + 6] & FIXED ? 0 : top);
       box.add(ox[i], oy[i]);
@@ -627,7 +638,7 @@ export class Engine {
     const sn = hilbertOrder(nx, ny, M, box);
 
     const emit = (i, j, survivor) => {
-      const a = i * 7;
+      const a = i * 8;
       const R = recs[j], b = idx[j] * 5, T = R.T;
       const flags = this.flagsOf(R);
       let fy = old[a + 1];
@@ -642,10 +653,10 @@ export class Engine {
       const tum = sgn() * rnd(0.3, 1) * P.tumble;
       if (survivor) {
         this.w(R.inst, idx[j] * STRIDE, old[a], fy, old[a + 2], old[a + 3], old[a + 4],
-          T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, arc, tum, R.z, flags);
+          T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, arc, tum, this.lz(R, idx[j]), flags, null, old[a + 7], this.dz(R, idx[j]));
       } else {
         this.pushDying(old[a], fy, old[a + 2], old[a + 3], old[a + 4],
-          T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, arc, tum, R.z, flags);
+          T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], t0, dur, arc, tum, R.z, flags, null, old[a + 7], this.dz(R, idx[j]));
       }
     };
 
@@ -709,7 +720,7 @@ export class Engine {
         const b = i * 5;
         this.w(R.inst, i * STRIDE, c.x, c.y, c.w, c.h, c.tone,
           f[b] + R.x, f[b + 1] + R.y, f[b + 2], f[b + 3], f[b + 4],
-          t + rnd(0, P.jitter), rnd(P.dur[0], P.dur[1]), sgn() * rnd(0.3, 1) * P.arc, sgn() * rnd(0.3, 1) * P.tumble, R.z, flags);
+          t + rnd(0, P.jitter), rnd(P.dur[0], P.dur[1]), sgn() * rnd(0.3, 1) * P.arc, sgn() * rnd(0.3, 1) * P.tumble, this.lz(R, i), flags, null, c.z, this.dz(R, i));
       }
       this.upload(R);
     }
@@ -749,11 +760,12 @@ export class Engine {
       const rec = {
         key: E.key, sig: E.sig, x: E.x, y: E.y, fixed: !!E.fixed, flat: !!E.flat, z: E.z || 0,
         n, anim: null, motion: E.motion, inst: new Float32Array(n * STRIDE), off: 0, T,
+        D: E.depth || null, A: E.ao || null,
       };
       const flags = this.flagsOf(rec);
       for (let i = 0; i < n; i++) {
         const b = i * 5;
-        this.w(rec.inst, i * STRIDE, T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], 0, 0, 0, 0, rec.z, flags);
+        this.w(rec.inst, i * STRIDE, T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], T[b], T[b + 1], T[b + 2], T[b + 3], T[b + 4], 0, 0, 0, 0, this.lz(rec, i), flags, null, this.dz(rec, i), this.dz(rec, i));
       }
       if (this.els.has(E.key)) this.list = this.list.filter((R) => R.key !== E.key);
       this.els.set(E.key, rec);

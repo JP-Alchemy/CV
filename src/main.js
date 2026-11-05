@@ -123,15 +123,21 @@ let pointer = null; // last screen position of a mouse/pen pointer
 let pending = [0, 0]; // motion since the last impulse
 let lastImpulse = -1;
 
+// Where the pointer is on the page: the screen point, or with the page tilted (src/tilt.js) where it meets the page.
+let tilt = null;
+const onPage = (e) => (tilt ? tilt.pointer(e.clientX, e.clientY) : [e.clientX, e.clientY]);
+
 function onPointer(e) {
   if (e.pointerType === 'touch' || garden.on) return; // the garden's terrain holds still
-  if (pointer) { pending[0] += e.clientX - pointer[0]; pending[1] += e.clientY - pointer[1]; }
-  pointer = [e.clientX, e.clientY];
+  const [x, y] = onPage(e);
+  if (pointer) { pending[0] += x - pointer[0]; pending[1] += y - pointer[1]; }
+  pointer = [x, y];
 }
 
 function burst(e) {
   if (e.pointerType === 'touch' || engine.calm) return;
-  impulses.push({ x: e.clientX, y: e.clientY + window.scrollY, dx: 0, dy: 0, t: engine.now(), burst: 34 });
+  const [x, y] = onPage(e);
+  impulses.push({ x, y: y + window.scrollY, dx: 0, dy: 0, t: engine.now(), burst: 34 });
   kick();
 }
 
@@ -747,12 +753,12 @@ document.addEventListener('pointerdown', (e) => {
   if (e.target === capture) return; // the garden's own tools handle it
   lastOrigin = [e.clientX, e.clientY];
   burst(e);
-  if (e.pointerType !== 'touch' && e.button === 0) pulse(e.clientX, e.clientY);
+  if (e.pointerType !== 'touch' && e.button === 0) pulse(...onPage(e));
 }, { capture: true });
 // Touch: pulse on tap (click), not on touch-down, which also starts scrolls.
 document.addEventListener('click', (e) => {
   if (e.pointerType !== 'touch' || e.target === capture) return;
-  pulse(e.clientX, e.clientY);
+  pulse(...onPage(e));
 }, { capture: true });
 document.addEventListener('pointermove', (e) => {
   mouse = [e.clientX, e.clientY];
@@ -915,6 +921,14 @@ animateFavicon();
 
 // Real photos re-render once loaded.
 window.addEventListener('photo-loaded', () => render('local'));
+
+// The page in 3D, while it's an experiment: only with ?3d in the address. 3 tilts it, a drag turns it.
+if (new URLSearchParams(location.search).has('3d') && !document.documentElement.classList.contains('no-gl')) {
+  import('./tilt.js').then((m) => {
+    tilt = m.tilt3d({ renderer, engine, kick, surface: document, doc: docEl, fixed: fixedEl, height: () => scene.height });
+    window.__site.tilt = tilt;
+  });
+}
 
 // Debug/inspection handle.
 window.__site = { engine, state, render, impulses, pulses, kick, frame, puzzle, garden, mould, get zoom() { return zoom; }, navigate, get scene() { return scene; }, get story() { return story; } };
