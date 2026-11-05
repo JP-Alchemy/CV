@@ -10,7 +10,77 @@
 // takes the 2D renderer's own sums, so the page comes out pixel for pixel
 // the same. Measured against a ray-cast quad in /lab/3d/ (commit 99628aa).
 
-import { VS_BLOCK, THEME_GLSL, STRIDE, program } from './renderer.js';
+import { VS_BLOCK, THEME_GLSL, LIGHT_GLSL, STRIDE, program } from './renderer.js';
+
+const SHADE = `
+// Which face of a cube: its own axis is exactly ±1 across it, even past its edge (where MSAA shades edge pixels).
+vec3 face(vec3 q) {
+  vec3 a = abs(abs(q) - 1.0);
+  return a.z <= min(a.x, a.y) ? vec3(0, 0, sign(q.z)) : a.x <= a.y ? vec3(sign(q.x), 0, 0) : vec3(0, sign(q.y), 0);
+}
+// Faces by tone, so they read on paper and on ink alike: sides and the bottom
+// fade towards the paper, the top towards white; tilted, the front a little.
+vec3 shade(vec3 col, vec3 bg, vec3 wn, float k) {
+  col = mix(col, bg, 0.1 * k * max(wn.z, 0.0) + 0.28 * abs(wn.x) + 0.45 * max(wn.y, 0.0));
+  return mix(col, vec3(1.0), 0.4 * max(-wn.y, 0.0));
+}`;
+
+// Powers of Ten's scales (FS_ZOOM in renderer.js) as cubes: one instance per
+// cell of its grid, the same size, colour and tone, standing on the page's
+// plane. A height in the grid's alpha (cells, ×16) raises a cell; until the
+// scenes give one, everything stands one cell deep.
+const VS_ZOOM = `#version 300 es
+precision highp float;
+precision highp int;
+uniform sampler2D u_zGrid;
+uniform vec4 u_zArea; // x, y, cols, rows
+uniform float u_zB, u_scroll, u_time, u_s, u_k;
+uniform mat4 u_vp;
+uniform vec3 u_eye, u_piv;
+out vec3 v_q;
+flat out vec4 v_light;
+flat out vec2 v_kt; // colour (0 ink, 1-7 the spectrum), tone
+${LIGHT_GLSL}
+void main() {
+  int cols = int(u_zArea.z);
+  ivec2 g = ivec2(gl_InstanceID % cols, gl_InstanceID / cols);
+  vec4 t = texelFetch(u_zGrid, g, 0);
+  // Tilted, the painted area's edge shows: dissolve the outer eighth of it, a cell at a time.
+  vec2 e = min(vec2(g) + 0.5, u_zArea.zw - vec2(g) - 0.5) / (u_zArea.zw * 0.12);
+  float keep = clamp(min(e.x, e.y), 0.0, 1.0);
+  if (t.r <= 0.0 || hashL(vec2(g) + 3.7) >= keep) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+  vec3 h = vec3(t.r * u_zB * 0.5);
+  vec2 c = u_zArea.xy + (vec2(g) + 0.5) * u_zB;
+  vec3 C = vec3(c, t.a * 255.0 / 16.0 * u_zB - h.z - 0.5); // a hair behind the page's blocks
+  vec3 dl = u_eye + u_s * (u_piv - C);
+  vec3 s = vec3(greaterThanEqual(dl, vec3(0.0))) * 2.0 - 1.0;
+  int j = gl_VertexID, k = (s.x * s.y * s.z > 0.0 ? j + 5 : 7 - j) % 6;
+  vec3 q = j == 0 ? s : s * (k == 0 ? vec3(-1, 1, 1) : k == 1 ? vec3(-1, -1, 1) : k == 2 ? vec3(1, -1, 1) : k == 3 ? vec3(1, -1, -1) : k == 4 ? vec3(1, 1, -1) : vec3(-1, 1, -1));
+  gl_Position = u_vp * vec4(C + q * h, 1.0);
+  v_q = q;
+  v_kt = vec2(t.g * 255.0, t.b);
+  v_light = u_pulseN > 0 ? lightAt(c + vec2(0.0, u_scroll), vec2(g)) : vec4(0.0);
+}`;
+
+const FS_ZOOM = `#version 300 es
+precision highp float;
+precision highp int;
+in vec3 v_q;
+flat in vec4 v_light;
+flat in vec2 v_kt;
+uniform float u_k, u_time;
+out vec4 o;
+${THEME_GLSL}
+${LIGHT_GLSL}
+${SHADE}
+void main() {
+  float t = themeK();
+  vec3 bg = mix(u_bgA, u_bgB, t), fg = mix(u_fgA, u_fgB, t);
+  int k = int(v_kt.x + 0.5);
+  vec3 col = k > 0 ? SPECTRUM[clamp(k - 1, 0, 6)] : mix(bg, fg, v_kt.y);
+  col = mix(col, v_light.rgb, v_light.a);
+  o = vec4(shade(col, bg, face(v_q), u_k), 1.0);
+}`;
 
 const VS = (() => {
   const i = VS_BLOCK.indexOf('  vec2 lp ='), j = VS_BLOCK.indexOf('  v_cam =');
@@ -21,14 +91,18 @@ uniform float u_s, u_k, u_flat; // perspective (1 / distance); how tilted (0-1);
 out vec3 v_q;
 flat out mat3 v_R;
 flat out float v_ao, v_k;
+uniform vec4 u_camClip;
 const float PI`)
     .replace('  if (u_trailN > 0) {', '  float lift = 0.0;\n  if (u_trailN > 0) {')
     .replace('      c += ps.xy;', '      c += ps.xy;\n      lift = pl;');
   return `${head}
   float zc = mix(a_csize.z, a_csize.w, ease(p));
-  vec3 h = vec3(sz * 0.5, min(sz.x, sz.y) * 0.5);
-  float F = zc + floor(a_meta.z) * 0.25 + (fixed_ ? 0.0 : lift * 0.9 * u_k); // tilted, a push lifts blocks off the page
+  float camS = fixed_ ? 1.0 : u_camS; // Powers of Ten: the page scales about u_cam.xy, which lands at u_cam.zw
+  vec3 h = vec3(sz * 0.5, min(sz.x, sz.y) * 0.5) * camS;
+  float F = (zc + floor(a_meta.z) * 0.25 + (fixed_ ? 0.0 : lift * 0.9 * u_k)) * camS; // tilted, a push lifts blocks off the page
   vec3 C = vec3(c.x, fixed_ ? c.y : c.y - u_scroll, F - h.z);
+  if (camS != 1.0) C.xy = u_cam.zw + (C.xy - u_cam.xy) * camS;
+  bool gone = camS != 1.0 && (C.x < u_camClip.x || C.y < u_camClip.y || C.x >= u_camClip.z || C.y >= u_camClip.w); // outside the screen on the desk
   bool fl = fixed_ || u_flat > 0.5;
   mat4 VP = fixed_ ? u_vp0 : u_vp;
   vec3 ax = normalize(vec3((fixed_ ? 0.0 : u_k) * (fract(a_to.xy * 0.0137 + a_to.yx * 0.071) - 0.5) * 2.0, 1.0)); // tilted, tumbles go 3D
@@ -45,7 +119,7 @@ const float PI`)
     if (!fixed_) pos.y -= u_scroll;
     if (rest) pos = floor(pos * u_dpr + 0.5) / u_dpr;
     gl_Position = vec4(pos.x / u_view.x * 2.0 - 1.0, 1.0 - pos.y / u_view.y * 2.0, (VP * vec4(0.0, 0.0, F, 1.0)).z, 1.0);
-  } else gl_Position = VP * vec4(C + R * (q * h), 1.0);
+  } else gl_Position = gone ? vec4(2.0, 2.0, 2.0, 1.0) : VP * vec4(C + R * (q * h), 1.0);
   v_q = q; v_R = R; v_k = fixed_ ? 0.0 : u_k;
   v_ao = fract(a_meta.z);
   v_half = sz * 0.5 * u_dpr;
@@ -60,13 +134,15 @@ flat in vec4 v_light;
 in vec3 v_q;
 flat in mat3 v_R;
 flat in float v_ao, v_k;
+flat in float v_cam;
+uniform float u_camFade;
 out vec4 o;
 ${THEME_GLSL}
+${SHADE}
 void main() {
   if ((u_viewDev.y - gl_FragCoord.y) / u_dpr < v_clip) discard;
-  // Which face: its own axis is exactly ±1 across it, even past its edge (where MSAA shades edge pixels).
-  vec3 q = v_q, a = abs(abs(q) - 1.0);
-  vec3 nl = a.z <= min(a.x, a.y) ? vec3(0, 0, sign(q.z)) : a.x <= a.y ? vec3(sign(q.x), 0, 0) : vec3(0, sign(q.y), 0);
+  if (v_cam > 0.5 && u_camFade < 1.0 && hash12(floor(gl_FragCoord.xy / u_dpr / 6.0) + 11.0) >= u_camFade) discard; // the zoomed page dissolves
+  vec3 q = v_q, nl = face(q);
   if (v_round > 0.001 && nl.z > 0.5) { // mid-tumble, rounded like the 2D renderer's
     vec2 Q = abs(q.xy) * v_half;
     float r = v_round * min(v_half.x, v_half.y);
@@ -85,9 +161,7 @@ void main() {
   float ao = min(0.7, 0.5 * (e.x + e.y + e.z + e.w));
   // Faces by tone, so they read on paper and on ink alike: sides and the bottom
   // fade towards the paper, the top towards white; tilted, the front a little.
-  vec3 wn = v_R * nl;
-  col = mix(col, bg, 0.1 * v_k * max(wn.z, 0.0) + 0.28 * abs(wn.x) + 0.45 * max(wn.y, 0.0));
-  o = vec4(mix(col, vec3(1.0), 0.4 * max(-wn.y, 0.0)) * (1.0 - ao), 1.0);
+  o = vec4(shade(col, bg, v_R * nl, v_k) * (1.0 - ao), 1.0);
 }`;
 
 // 4×4s, row-major (uploaded transposed).
@@ -147,8 +221,51 @@ export function attach3D(r) {
     gl.uniform1f(u.u_k, V.k);
     gl.uniform1f(u.u_flat, !V.tilt && !V.yaw && !V.s ? 1 : 0);
     r.blocks = P; r.vao = vao; r.verts = 8; r.prim = gl.TRIANGLE_FAN;
-    return draw(f);
+    // Screen-space layers don't tilt: the zoom's scales become cubes after the
+    // blocks (same depth buffer); the slime mould's map waits until flat again.
+    const Z = r.zoom, M = r.slime;
+    r.zoom = r.slime = null;
+    try { draw(f); } finally { r.zoom = Z; r.slime = M; }
+    if (Z) zoomCubes(f, Z, c);
   };
+
+  let ZP = null;
+  const zvao = gl.createVertexArray();
+  function zoomCubes(f, Z, c) {
+    ZP ||= program(gl, VS_ZOOM, FS_ZOOM);
+    const z = ZP.u;
+    gl.useProgram(ZP.p);
+    gl.uniform3fv(z.u_bgA, f.themeA.bg); gl.uniform3fv(z.u_fgA, f.themeA.fg);
+    gl.uniform3fv(z.u_bgB, f.themeB.bg); gl.uniform3fv(z.u_fgB, f.themeB.fg);
+    gl.uniform1f(z.u_themeT, f.themeT);
+    gl.uniform2f(z.u_themeOrigin, f.themeOrigin[0], f.themeOrigin[1]);
+    gl.uniform2f(z.u_viewDev, r.canvas.width, r.canvas.height);
+    gl.uniform1f(z.u_dpr, r.dpr);
+    const n = f.pulses ? f.pulses.n : 0;
+    gl.uniform1i(z.u_pulseN, n);
+    if (n) {
+      gl.uniform4fv(z.u_pulse, f.pulses.data, 0, n * 4);
+      gl.uniform1f(z.u_pulseSpeed, f.pulseSpeed);
+      gl.uniform1f(z.u_pulseWidth, f.pulseWidth);
+    }
+    gl.uniform1f(z.u_time, f.time);
+    gl.uniform1f(z.u_scroll, f.scroll);
+    gl.uniformMatrix4fv(z.u_vp, true, c.vp);
+    gl.uniform3fv(z.u_eye, c.eye);
+    gl.uniform3fv(z.u_piv, c.piv);
+    gl.uniform1f(z.u_s, c.s);
+    gl.uniform1f(z.u_k, cam.view.k);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, r.ztex);
+    gl.uniform1i(z.u_zGrid, 0);
+    gl.uniform4f(z.u_zArea, Z.x, Z.y, Z.cols, Z.rows);
+    gl.uniform1f(z.u_zB, Z.cell);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    gl.bindVertexArray(zvao);
+    gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 8, Z.cols * Z.rows);
+    gl.bindVertexArray(null);
+  }
 
   /** The ray through screen point (x, y): origin and direction in world space (flat: the nav's camera). */
   cam.ray = (x, y, flatCam) => {

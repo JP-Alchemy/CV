@@ -69,7 +69,7 @@ function navBar(state, S) {
  * down again. Fixed at the bottom right, on a patch of paper so the page
  * scrolling under it doesn't show through.
  */
-function viewButton(state, S, ctx, vp) {
+function viewButton(state, S, ctx, vp, below = 0) {
   const on = !!state.tilted;
   const b = layout(row([button({
     key: 'nav-3d', label: on ? 'FLAT VIEW' : '3D VIEW', action: '3d', small: true, hover: state.hover === 'nav-3d', active: on,
@@ -81,7 +81,7 @@ function viewButton(state, S, ctx, vp) {
   const paper = ctx.el({ key: 'nav-3d:paper', sig: `paper|${w}|${b.h}`, w: w + pad * 2, h: b.h + pad * 2, blocks: fillBlocks(w + pad * 2, b.h + pad * 2, 4, 0, 0), z: 3 });
   paper.x = x0 - pad; paper.y = -pad;
   const els = [paper, ...b.els];
-  shift(els, S.left, vp.h - b.h - S.navTop);
+  shift(els, S.left, vp.h - below - b.h - S.navTop);
   for (const e of els) e.fixed = true;
   return els;
 }
@@ -900,8 +900,9 @@ export function buildScene(state, vp) {
     // Into the middle of the title's first letter.
     const want = title && title.blocks.length ? [title.x + title.blocks[2] * 2.5, title.y + title.blocks[2] * 3.5] : [vp.w / 2, vp.h / 2];
     const into = zoomFocus(page.els, want[0], want[1], 0, state.theme !== 'dark');
+    const view3d = viewButton(state, S, ctx, vp, hud.h); // above the panel
     return {
-      elements: resolve([...nav.els, ...page.els, ...hud.els]), height: vp.h, S,
+      elements: resolve([...nav.els, ...page.els, ...hud.els, ...view3d]), height: vp.h, S, tilt3d: true,
       zoom: { area: [0, S.navClip, vp.w, vp.h - hud.h - S.navClip], ...into, cell: S.mobile ? 3 : 4, cv: true },
     };
   }
@@ -920,7 +921,7 @@ export function buildScene(state, vp) {
   const hud = Z ? powersHud(state, S, ctx, vp, { cv: false }) : null;
   const into = Z ? zoomFocus([...page.els, ...foot.els], Z.point[0], Z.point[1] + Z.scroll, Z.scroll, Z.light) : null; // before resolve() makes the blocks absolute
   // 3D VIEW on the ordinary pages (not under the menu or while zoomed).
-  const view3d = !state.menuOpen && !Z && ZOOMABLE.has(state.route.name) ? viewButton(state, S, ctx, vp) : [];
+  const view3d = !state.menuOpen && ZOOMABLE.has(state.route.name) ? viewButton(state, S, ctx, vp, hud ? hud.h : 0) : [];
   const elements = resolve([...nav.els, ...page.els, ...foot.els, ...(hud ? hud.els : []), ...view3d]);
   return {
     elements, height: fy + foot.h + S.sp(3), S, tilt3d: view3d.length > 0,

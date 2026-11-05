@@ -107,7 +107,7 @@ vec3 pushAt(vec2 p, float mass) {
 // violet at the trailing edge, like a rainbow) and the brightness is
 // quantised with a per-pixel dither, so it reads as lit pixels rather than
 // a smooth glow. It fades with distance and time.
-const LIGHT_GLSL = `
+export const LIGHT_GLSL = `
 uniform vec4 u_pulse[${PULSES}]; // doc-space x, y; start time; strength
 uniform int u_pulseN;
 uniform float u_pulseSpeed;
