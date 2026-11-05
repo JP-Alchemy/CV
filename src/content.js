@@ -615,12 +615,13 @@ export const slimeText = {
 export const powersText = {
   eyebrow: 'POWERS OF TEN',
   title: 'POWERS OF TEN',
-  intro: 'One zoom with no cuts, forty-four powers of ten from end to end. It starts on my CV, as big as it really is on your screen. Zoom in and you go into a letter, into one block, into the pixels under it, onto the glass, into a bacterium, among its proteins and its DNA, to one rung of the DNA’s ladder, one of its carbon atoms, that atom’s nucleus and the quarks in a proton. Zoom out and the CV shrinks into the screen on my desk, then it’s my room, the house, a neighbourhood like mine, the Netherlands with a slime mould growing on it, the Earth and its satellites, the planets, Voyager 1 at the edge of the Sun’s wind, the Oort cloud, the nearest stars, the bubble our radio has filled, the galaxy, the cosmic web, the edge of what we can see and, past that, a guess. Every scale is a real simulation, running in your browser, and only the one you’re looking at runs. It’s after Charles and Ray Eames’s film of 1977, which did it with a picnic.',
+  intro: 'One zoom with no cuts, forty-four powers of ten from end to end. It starts on my CV, as big as it really is on your screen. Zoom in and you go into a letter, into one block, into the pixels under it, onto the glass, into a bacterium, among its proteins and its DNA, to one rung of the DNA’s ladder, one of its carbon atoms, that atom’s nucleus and the quarks in a proton. Zoom out and the CV shrinks into the screen on my desk, then it’s my room, the house, a neighbourhood like mine, the Netherlands with a slime mould growing on it, the Earth and its satellites, the planets, Voyager 1 at the edge of the Sun’s wind, the Oort cloud, the nearest stars, the bubble our radio has filled, the galaxy, the cosmic web, the edge of what we can see and, past that, a guess. Every scale is a real simulation, running in your browser, and only the one you’re looking at runs. It’s after Charles and Ray Eames’s film of 1977, which did it with a picnic. And it isn’t only here: pinch on a trackpad on any page of this site, or tap ZOOM IN in the menu on a phone, and that page goes the same way.',
   // What the panel says at each scale ({SIZE}, {BLOCK}, {HOW} and {ACT} filled in by powers/zoom.js).
   scales: {
     how: 'SCROLL TO ZOOM, OR USE + AND −.',
     howTouch: 'DRAG UP OR DOWN TO ZOOM, OR PINCH.',
     page: 'MY CV, ABOUT {SIZE} ACROSS ON YOUR SCREEN. {HOW} EVERY POWER OF TEN IS A LIVE SIMULATION.',
+    thisPage: 'THIS PAGE, ABOUT {SIZE} ACROSS ON YOUR SCREEN. {HOW} BACK HERE, OR PRESS ESC, AND IT SCROLLS AGAIN.',
     letter: 'ONE LETTER, MADE OF THE SAME SQUARE BLOCKS AS EVERYTHING ELSE HERE.',
     block: 'ONE BLOCK, {BLOCK} ACROSS. UNDER IT, THE SCREEN’S OWN PIXELS.',
     pixels: 'THE PIXELS: EACH ONE THREE LIGHTS, RED, GREEN AND BLUE, AND WHITE IS ALL THREE AT ONCE. A LAPTOP’S ARE IN STRIPES LIKE THESE; A PHONE’S OFTEN AREN’T.',

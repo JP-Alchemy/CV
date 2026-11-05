@@ -58,7 +58,7 @@ export function inWords(m) {
 }
 
 export class Zoom {
-  /** host: { renderer, now, kick, changed, calm, touch, dpr, dark, mould } */
+  /** host: { renderer, now, kick, changed, calm, touch, dpr, dark, mould, wantMould } */
   constructor(host) {
     this.host = host;
     this.on = false;
@@ -74,6 +74,8 @@ export class Zoom {
     this.days = j2000();
     this.last = null;
     this.seen = {};
+    this.away = false;
+    this.inputAt = 0;
     // The world's outlines, for the globe: a repaint once they're in.
     loadGeo().then(() => { this.painted = null; this.host.kick(); });
   }
@@ -91,11 +93,17 @@ export class Zoom {
     if (on) { this.host.renderer.clearZoom?.(); this.cam = null; }
   }
 
-  /** Where the page put things: z = { area: [x, y, w, h] (screen px), focus: [x, y, block] (px), cell }. */
+  /**
+   * Where the page put things: z = { area: [x, y, w, h] (screen px), focus:
+   * [x, y, block] (px, the lit spot it zooms into), rects (the blocks round it,
+   * px from the focus), cell, cv (it's the CV, not any page) }.
+   */
   layout(z) {
+    this.cv = !!z.cv;
     const [, , w, h] = z.area;
     this.area = z.area;
     this.focus = z.focus;
+    this.rects = z.rects || [];
     this.cell = z.cell;
     this.touch = !!this.host.touch;
     this.px = pxMetres(this.touch);
@@ -117,15 +125,16 @@ export class Zoom {
   // ------------------------------------------------------------ input
 
   /** Wheel or drag, in px: down (positive) goes in. */
-  wheel(d) { this.Lt = this.clamp((this.Lt ?? this.L0) - d * 0.0024); this.host.kick(); }
+  wheel(d) { this.Lt = this.clamp((this.Lt ?? this.L0) - d * 0.0024); this.inputAt = this.host.now(); this.host.kick(); }
 
   /** Pinch: the fingers moved `ratio` times further apart. */
-  pinch(ratio) { this.Lt = this.clamp(this.Lt - Math.log10(ratio)); this.L = this.clamp(this.L - Math.log10(ratio)); this.host.kick(); }
+  pinch(ratio) { this.Lt = this.clamp(this.Lt - Math.log10(ratio)); this.L = this.clamp(this.L - Math.log10(ratio)); this.inputAt = this.host.now(); this.host.kick(); }
 
   /** By whole powers of ten (to the next one along). */
   by(n) {
     const k = n < 0 ? Math.ceil(this.Lt - 1e-6) + n : Math.floor(this.Lt + 1e-6) + n;
     this.Lt = this.clamp(k);
+    this.inputAt = this.host.now();
     this.host.kick();
   }
 
@@ -140,6 +149,21 @@ export class Zoom {
   // ------------------------------------------------------------ what's where
 
   get atHome() { return Math.abs(this.L - this.L0) < 0.02; }
+
+  /**
+   * Zoomed into any page but Powers of Ten's own: true once you've been away
+   * and come back to the page's own size and let go, so the page can scroll
+   * again. Close enough to it, left alone, it settles there.
+   */
+  get resting() {
+    if (this.L === null || !this.area) return false;
+    if (Math.abs(this.L - this.L0) > 0.1) this.away = true;
+    // Barely pinched at all, it waits a moment longer before giving up.
+    if (this.host.now() - this.inputAt < (this.away ? 0.35 : 1.2)) return false;
+    if (Math.abs(this.Lt - this.L0) >= 0.08) return false;
+    if (this.Lt !== this.L0) this.home();
+    return Math.abs(this.L - this.L0) < 0.004; // close enough that letting go doesn't jump
+  }
 
   /** px a metre, now. */
   get ppm() { return this.area[2] / Math.pow(10, this.L); }
@@ -212,6 +236,8 @@ export class Zoom {
     };
     const now = this.host.now();
     // The slime mould starts growing the first time it's seen.
+    // Out towards the Netherlands: the slime mould's worker starts, ready for when its map is on screen.
+    if (L > 2.8 && !this.seen.mould) { this.seen.mould = true; this.host.wantMould?.(); }
     if (vis.map && !this.seen.map) { this.seen.map = true; this.host.mould?.arriveAt(now); }
 
     const [x, y, w, h] = this.area;
@@ -264,7 +290,8 @@ export class Zoom {
       if (vis.bubbles) this.bubbles.paint(P, V, vis.bubbles);
       if (vis.pixels) {
         (this.pixels ||= new Pixels()).paint(P, V, vis.pixels, {
-          pitch: this.px / (this.host.dpr?.() || 1), block: this.focus[2] * this.px, dark: !!this.host.dark?.(),
+          pitch: this.px / (this.host.dpr?.() || 1), dark: !!this.host.dark?.(),
+          rects: this.rects.map((r) => r.map((v) => v * this.px)),
           slide: Math.max(0, Math.min(1, (Lf - 0.45 - L) / 0.4)),
         });
       }
@@ -330,7 +357,7 @@ export class Zoom {
       : L > 1.3 ? S.house
       : L > 0.7 ? S.room
       : L > L0 + 0.08 ? S.desk
-      : L >= L0 - 0.4 ? S.page
+      : L >= L0 - 0.4 ? (this.cv ? S.page : S.thisPage)
       : L > Lf + 0.3 ? S.letter
       : L > Lf - 0.3 ? S.block
       : L > this.Lpix ? S.pixels

@@ -2,7 +2,7 @@ import { Renderer, TRAIL, PULSES } from './engine/renderer.js';
 import { Engine, SHRINK } from './engine/engine.js';
 import { buildScene } from './scene.js';
 import { DomMirror } from './dom.js';
-import { parseRoute, fromHash } from './router.js';
+import { parseRoute, fromHash, ZOOMABLE } from './router.js';
 import { applyMeta, pageHTML } from './seo.js';
 import { site, experience } from './content.js';
 import { tokens } from './ui.js';
@@ -11,7 +11,6 @@ import { even } from './engine/layout.js';
 import { puzzle } from './puzzle.js';
 import { Garden } from './garden/mode.js';
 import { Mould } from './slime/mode.js';
-import { Zoom } from './powers/zoom.js';
 import { THEMES as BRAND, unit } from './brand.js';
 import { animateFavicon } from './favicon.js';
 import './style.css';
@@ -83,9 +82,9 @@ function applyThemeCss() {
 const dpr = () => Math.min(window.devicePixelRatio || 1, 3);
 
 function render(mode = 'local', o = {}) {
-  if (state.route.name === 'powers' && zoom.on && !state.menuOpen) state.zoom = zoom.view(); // the panel's words, before it's laid out
+  if (zoomOn()) state.zoom = zoom.view(); // the panel's words, before it's laid out
   scene = buildScene(state, { w: vp.w, h: layoutH });
-  if (scene.zoom) {
+  if (scene.zoom && zoom) {
     zoom.layout(scene.zoom);
     // The first time, the panel's words only exist once the zoom knows its view: lay it out again with them.
     if (!state.zoom) { state.zoom = zoom.view(); scene = buildScene(state, { w: vp.w, h: layoutH }); zoom.layout(scene.zoom); }
@@ -258,8 +257,9 @@ function frame() {
   const lit = updatePulses(t);
   if (state.garden && !garden.on && !state.menuOpen && t > gardenAt) startGarden(); // the page has arrived
   if (garden.on && !state.menuOpen) garden.frame(t, pulses, { speed: 1100, width: scene.S.mobile ? 110 : 150 });
-  const zooming = zoom.frame(t);
-  const cam = zoom.camera();
+  const zooming = zoom ? zoom.frame(t) : false;
+  if (state.zoomFrom && zoom?.resting) leaveZoom(); // back at the page's own size: it scrolls again
+  const cam = zoom?.camera() ?? null;
   document.documentElement.classList.toggle('zoomed', !!cam && !zoom.atHome);
   const growing = mould.frame(t);
   const d = renderer.dpr;
@@ -409,7 +409,7 @@ const mould = new Mould({
   renderer,
   now: () => engine.now(),
   changed: () => { if (state.route.name === 'slime') { state.slime = mould.view(); render('local'); } },
-  scene: () => (state.route.name === 'powers' ? { slime: zoom.slimeRect() } : scene),
+  scene: () => (zoomOn() ? { slime: zoom.slimeRect() } : scene),
   kick: () => kick(),
   calm: () => engine.calm,
 });
@@ -420,35 +420,90 @@ const mouldAfterMorph = () => {
 
 // ---------------------------------------------------------------- powers of ten
 //
-const zoom = new Zoom({
+// Powers of Ten (src/powers/): one zoom from a proton to past the edge of
+// the universe. At /projects/powers-of-ten/ it's the page, opening on the
+// CV. On any other page in ZOOMABLE (router.js), a trackpad pinch, ctrl and
+// the wheel, + or −, or the menu's ZOOM goes into it, about the block you
+// pinched, and back at the page's own size it scrolls again
+// (state.zoomFrom: where it was scrolled to and the point zoomed about).
+// The zoom's code loads the first time it's wanted.
+
+let zoom = null;
+let zoomLoading = null;
+const zoomHost = {
   renderer,
   now: () => engine.now(),
   kick: () => kick(),
-  changed: () => { if (state.route.name === 'powers' && !state.menuOpen) render('local'); },
+  changed: () => { if (zoomOn()) render('local'); },
   calm: () => engine.calm,
   touch: state.touch,
   dpr: () => window.devicePixelRatio || 1, // the screen's real pixels, for the pixels under a block
   dark: () => state.theme === 'dark',
   mould,
-});
-/** Powers of Ten (/projects/powers-of-ten/): the zoom, and the slime mould on its map. */
+  wantMould: () => mould.open(),
+};
+const loadZoom = () => (zoomLoading ||= import('./powers/zoom.js').then((m) => (zoom = new m.Zoom(zoomHost))));
+
+/** Powers of Ten's own page: the zoom, and the slime mould on its map. */
 const openPowers = (on) => {
-  if (on) { zoom.open(); mould.open(); document.documentElement.classList.add('zooming'); }
-  else {
-    zoom.close(); state.zoom = null;
+  if (on) {
+    document.documentElement.classList.add('zooming');
+    loadZoom().then(() => {
+      if (state.route.name !== 'powers') return;
+      zoom.open(); mould.open(); render('local');
+    });
+  } else {
+    zoom?.close(); state.zoom = null;
     if (state.route.name !== 'slime') mould.close();
     document.documentElement.classList.remove('zooming', 'zoomed');
   }
 };
-const zoomOn = () => state.route.name === 'powers' && zoom.on && !state.menuOpen;
+const zoomOn = () => !!zoom?.on && !state.menuOpen && (state.route.name === 'powers' || !!state.zoomFrom);
+const canZoomHere = () => ZOOMABLE.has(state.route.name) && !state.menuOpen && !story;
+
+/** Into Powers of Ten from any page, about the point (screen px); `then` gets the zoom once it's open. */
+let entering = null;
+function enterZoom(px, py, then) {
+  if (!canZoomHere()) return;
+  if (state.zoomFrom) { then?.(zoom); return; }
+  const queued = entering ? entering.then : null;
+  entering = { then: (z) => { queued?.(z); then?.(z); } };
+  loadZoom().then(() => {
+    const go = entering?.then;
+    entering = null;
+    if (!canZoomHere() || state.zoomFrom) return;
+    state.zoomFrom = { scroll: window.scrollY, point: [px, py], light: state.theme !== 'dark' }; // the theme it went in with, so a switch while zoomed doesn't jump
+    state.zoom = null;
+    document.documentElement.classList.add('zooming');
+    zoom.open();
+    render('local');
+    go?.(zoom);
+  });
+}
+
+/** Back to the page, scrolled where it was. */
+function leaveZoom() {
+  if (!state.zoomFrom) return;
+  const y = state.zoomFrom.scroll;
+  state.zoomFrom = null;
+  state.zoom = null;
+  zoom?.close();
+  if (state.route.name !== 'slime') mould.close();
+  document.documentElement.classList.remove('zooming', 'zoomed');
+  render('local', { scrollTo: y });
+}
+// While zoomed, the page stays where it was.
+window.addEventListener('scroll', () => { if (state.zoomFrom && Math.abs(window.scrollY - state.zoomFrom.scroll) > 0.5) window.scrollTo(0, state.zoomFrom.scroll); });
 
 // Wheel and trackpad zoom it (a pinch on a trackpad comes as a wheel with ctrl);
 // on touch, one finger drags it in and out and two pinch.
+// Anywhere else, only a pinch (or ctrl and the wheel) goes in: the wheel scrolls.
 window.addEventListener('wheel', (e) => {
-  if (!zoomOn()) return;
-  e.preventDefault();
   const d = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
-  zoom.wheel(e.ctrlKey ? d * 5 : d);
+  if (zoomOn()) { e.preventDefault(); zoom.wheel(e.ctrlKey ? d * 5 : d); return; }
+  if (!e.ctrlKey || !canZoomHere()) return;
+  e.preventDefault(); // not the browser's own zoom (⌘/ctrl + and − still do that)
+  enterZoom(e.clientX, e.clientY, (z) => z.wheel(d * 5));
 }, { passive: false });
 let touches = null;
 const spread = (t) => (t.length > 1 ? Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY) : 0);
@@ -534,8 +589,9 @@ function runAction(action, node) {
       menuReturnScroll = window.scrollY;
       if (story) storyOut(true);
       if (garden.on) { renderer.clearGarden(); garden.up(); document.documentElement.classList.remove('gardening'); } // it waits under the menu
+      leaveZoom();
       mould.hide(true);
-      zoom.hide(true);
+      zoom?.hide(true);
       state.menuOpen = true;
       render('page', { scrollTo: 0, origin: centerOf(node) });
     } else {
@@ -543,7 +599,7 @@ function runAction(action, node) {
       if (story) storyIn();
       if (garden.on) document.documentElement.classList.add('gardening');
       mould.hide(false);
-      zoom.hide(false);
+      zoom?.hide(false);
       render('page', { scrollTo: menuReturnScroll, origin: centerOf(node) });
       gardenAfterMorph();
       mouldAfterMorph();
@@ -565,8 +621,16 @@ function runAction(action, node) {
     garden.select(action);
   } else if (action.startsWith('sm:')) {
     mould.action(action);
+  } else if (action === 'zm:enter') {
+    // The menu's ZOOM: back to the page, then into it about the middle of the screen.
+    state.menuOpen = false;
+    state.hover = null;
+    zoom?.hide(false);
+    mould.hide(false);
+    render('page', { scrollTo: menuReturnScroll, origin: centerOf(node) });
+    setTimeout(() => enterZoom(vp.w / 2, vp.h / 2, (z) => z.by(-1)), 450);
   } else if (action.startsWith('zm:')) {
-    zoom.action(action);
+    zoom?.action(action);
   } else if (action === 'pz:undo') {
     play(() => puzzle.undo());
   } else if (action === 'pz:restart') {
@@ -628,6 +692,7 @@ async function navigate(route, push) {
   if (route.name === 'story' && canGL()) storyIn();
   if (route.name === 'garden' && !fromGarden) { cameToGarden = push; openGarden(); }
   if (route.name !== 'garden') state.garden = null;
+  if (state.zoomFrom) { state.zoomFrom = null; zoom?.close(); document.documentElement.classList.remove('zooming', 'zoomed'); }
   if (state.route.name !== 'powers' || route.name !== 'powers') openPowers(false);
   if (route.name === 'slime') { mould.open(); state.slime = mould.view(); } else if (route.name !== 'powers') { mould.close(); state.slime = null; }
   if (route.name === 'powers') openPowers(true);
@@ -674,12 +739,19 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (garden.on && SCROLL_KEYS.has(e.key) && !(e.key === ' ' && e.target.closest?.('a, button'))) e.preventDefault();
-  // Powers of Ten: + and the down arrow go in, − and up come out, Home goes back to the CV.
-  if (zoomOn() && !e.metaKey && !e.ctrlKey && !e.altKey) {
+  // Powers of Ten: + and the down arrow go in, − and up come out, Home (or
+  // Esc) goes back. On any other page, + or − goes into it first.
+  if (!e.metaKey && !e.ctrlKey && !e.altKey) {
     const k = e.key;
-    const step = k === '+' || k === '=' || k === 'ArrowDown' || k === 'PageDown' ? -1 : k === '-' || k === '_' || k === 'ArrowUp' || k === 'PageUp' ? 1 : 0;
-    if (step) { e.preventDefault(); zoom.by(step); return; }
-    if (k === 'Home') { e.preventDefault(); zoom.home(); return; }
+    if (zoomOn()) {
+      const step = k === '+' || k === '=' || k === 'ArrowDown' || k === 'PageDown' ? -1 : k === '-' || k === '_' || k === 'ArrowUp' || k === 'PageUp' ? 1 : 0;
+      if (step) { e.preventDefault(); zoom.by(step); return; }
+      if (k === 'Home' || k === 'Escape') { e.preventDefault(); zoom.home(); return; }
+    } else if ((k === '+' || k === '=' || k === '-' || k === '_') && canZoomHere() && !e.target.closest?.('input, textarea')) {
+      e.preventDefault();
+      enterZoom(vp.w / 2, vp.h / 2, (z) => z.by(k === '-' || k === '_' ? 1 : -1));
+      return;
+    }
   }
   // The 404 puzzle: arrows or WASD move, Z undoes, R restarts.
   if (state.route.name !== 'notFound' || state.menuOpen || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -814,4 +886,4 @@ animateFavicon();
 window.addEventListener('photo-loaded', () => render('local'));
 
 // Debug/inspection handle.
-window.__site = { engine, state, render, impulses, pulses, kick, frame, puzzle, garden, mould, zoom, navigate, get scene() { return scene; }, get story() { return story; } };
+window.__site = { engine, state, render, impulses, pulses, kick, frame, puzzle, garden, mould, get zoom() { return zoom; }, navigate, get scene() { return scene; }, get story() { return story; } };

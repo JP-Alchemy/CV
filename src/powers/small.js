@@ -11,35 +11,46 @@ const RGB = [1, 4, 6]; // red, green and blue, from the spectrum
 // ---------------------------------------------------------------- pixels
 
 /**
- * The pixels under the block: each one three lights side by side, red,
+ * The pixels under the blocks: each one three lights side by side, red,
  * green and blue, the way most laptop screens have them (a phone's are often
  * laid out differently). Where the screen shows the paper they're all on;
  * where it shows the ink they're all off (or the other way round in the dark
- * theme). Between them, the black that every screen is up close. Once the
- * page has gone, the view slides to the block's corner, so both show.
+ * theme). Between them, the black that every screen is up close. The zoom
+ * goes into a lit spot (scene.js), so there's light in the middle, and once
+ * the page has gone the view slides to the nearest block's corner, so its
+ * edge shows too.
  */
 export class Pixels {
-  /** o: { pitch (m a pixel), block (m), dark, slide (0-1) } */
+  /** o: { pitch (m a pixel), rects (the blocks round the middle, nearest first, [x0, y0, x1, y1] m), dark, slide (0-1) } */
   paint(P, V, f, o) {
-    const p = o.pitch, b = o.block, m = P.m;
+    const p = o.pitch, m = P.m;
     const sw = p / 3;
     // Too small to tell apart: leave it to the page.
     f *= Math.max(0, Math.min(1, (sw / m) - 0.8));
     if (f <= 0) return;
-    const c = (o.slide * o.slide * (3 - 2 * o.slide)) * b * 0.5;
-    const X0 = -b / 2 + c, Y0 = -b / 2 + c; // the block's top-left corner
+    // Once the page has gone, the view slides to the nearest block's nearest corner, so its edge stays in sight.
+    const first = o.rects[0];
+    const e = first ? 0.75 * o.slide * o.slide * (3 - 2 * o.slide) : 0; // three quarters of the way: the middle stays lit
+    let cx0 = 0, cy0 = 0;
+    if (first) {
+      cx0 = Math.abs(first[0]) < Math.abs(first[2]) ? first[0] : first[2];
+      cy0 = Math.abs(first[1]) < Math.abs(first[3]) ? first[1] : first[3];
+    }
+    const sx = -cx0 * e, sy = -cy0 * e;
+    const rects = o.rects.map((r) => [r[0] + sx, r[1] + sy, r[2] + sx, r[3] + sy]);
+    const X0 = rects.length ? rects[0][0] : 0, Y0 = rects.length ? rects[0][1] : 0; // pixels line up with the blocks
     const xl = -V.cx / V.ppm, yt = -V.cy / V.ppm, xr = xl + V.cols * m, yb = yt + V.rows * m;
     const i0 = Math.floor((xl - X0) / p) - 1, i1 = Math.ceil((xr - X0) / p);
     const j0 = Math.floor((yt - Y0) / p) - 1, j1 = Math.ceil((yb - Y0) / p);
     if ((i1 - i0) * (j1 - j0) > 40000) return;
     const gx = sw * 0.14, gy = p * 0.07;
-    const n = Math.round(b / p); // the block, in whole pixels
     for (let j = j0; j <= j1; j++) {
+      const y = Y0 + j * p, cy = y + p / 2;
       for (let i = i0; i <= i1; i++) {
-        const ink = i >= 0 && j >= 0 && i < n && j < n;
-        const lit = o.dark ? ink : !ink;
-        if (!lit) continue;
-        const x = X0 + i * p, y = Y0 + j * p;
+        const x = X0 + i * p, cx = x + p / 2;
+        let ink = false;
+        for (const r of rects) if (cx > r[0] && cx < r[2] && cy > r[1] && cy < r[3]) { ink = true; break; }
+        if (o.dark ? !ink : ink) continue;
         for (let k = 0; k < 3; k++) P.rect(x + k * sw + gx, y + gy, x + (k + 1) * sw - gx - m * 0.01, y + p - gy - m * 0.01, { colour: RGB[k], f });
       }
     }

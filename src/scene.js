@@ -5,6 +5,7 @@ import { typeset } from './engine/typeset.js';
 import { roadbookPage } from './roadbook.js';
 import { slimePage } from './slime/page.js';
 import { powersHud } from './powers/hud.js';
+import { ZOOMABLE } from './router.js';
 import { puzzle, board, boardWidth } from './puzzle.js';
 import { COLOURS, PRIMARY, CELL } from './garden/sim.js';
 import { bed } from './garden/bed.js';
@@ -641,6 +642,14 @@ function menu(state, S) {
         ], { justify: 'between', valign: 'center' }),
       });
     }),
+    // Into Powers of Ten from the page you were on (a pinch does it on a trackpad).
+    ZOOMABLE.has(state.route.name) ? pressRow({
+      key: 'menu-zoom', action: 'zm:enter', hover: hv('menu-zoom'), label: 'Zoom into this page, Powers of Ten style', padY: 18,
+      content: (tone, z) => row([
+        text('ZOOM IN', S.h1, { key: 'menu-zoom:l', tone, z, a11y: false }),
+        text('+', S.h2, { key: 'menu-zoom:a', tone, z, a11y: false }),
+      ], { justify: 'between', valign: 'center' }),
+    }) : null,
   ]);
 }
 
@@ -757,6 +766,74 @@ function notFound(state, S) {
   return row([{ ...col([...intro, ...help]), grow: true }, { ...play, basis: boardWidth(1e4) }], { gap: S.sp(6) });
 }
 
+/**
+ * Where Powers of Ten zooms in about, near a point on the page (doc px): a
+ * spot that's lit on the screen, so going in feels like going into
+ * something, not into the dark. In the light theme that's the paper, the
+ * nearest bit of it beside some ink (so the ink's edge is there as you go);
+ * in the dark theme the ink is the light, so it's the middle of the nearest
+ * block. Returns { focus: [x, y on screen, block size], rects: the blocks
+ * round it, [x0, y0, x1, y1] px from the focus, nearest first }.
+ */
+function zoomFocus(els, px, py, scroll, light, R = 48) { // R: px looked round the point
+  const rects = [];
+  for (const e of els) {
+    const b = e.blocks;
+    if (!b || !b.length || e.fixed) continue;
+    if (px < e.x - R || py < e.y - R || px > e.x + (e.w || 0) + R || py > e.y + (e.h || 0) + R) continue;
+    for (let i = 0; i < b.length; i += 5) {
+      if (b[i + 2] < 2 || b[i + 2] > 24 || b[i + 4] === 0) continue; // a real block, not paper or a dot
+      const x0 = e.x + b[i], y0 = e.y + b[i + 1];
+      if (x0 > px + R || y0 > py + R || x0 + b[i + 2] < px - R || y0 + b[i + 3] < py - R) continue;
+      rects.push([x0, y0, x0 + b[i + 2], y0 + b[i + 3]]);
+    }
+  }
+  // Nothing near (a margin, a gap between sections): look further, for something to go into.
+  if (!rects.length && R < 200) return zoomFocus(els, px, py, scroll, light, 200);
+  let at = [px, py], size = 4;
+  if (rects.length) {
+    // Nearest block to a point: its index and how far.
+    const nearest = (x, y) => {
+      let k = 0, bd = Infinity;
+      rects.forEach((r, n) => { const dx = Math.max(r[0] - x, 0, x - r[2]), dy = Math.max(r[1] - y, 0, y - r[3]), d = dx * dx + dy * dy; if (d < bd) { bd = d; k = n; } });
+      return [k, Math.sqrt(bd)];
+    };
+    if (!light) {
+      const [k] = nearest(px, py), r = rects[k];
+      at = [(r[0] + r[2]) / 2, (r[1] + r[3]) / 2]; size = r[2] - r[0];
+    } else {
+      // Which pixels round the point are ink (with a pixel's margin), and which are within a block of some.
+      const D = 2 * R + 1, ox = px - R, oy = py - R;
+      const ink = new Uint8Array(D * D), near = new Uint8Array(D * D);
+      const mark = (mask, x0, y0, x1, y1) => {
+        for (let y = Math.max(0, Math.floor(y0 - oy)); y < Math.min(D, Math.ceil(y1 - oy)); y++) for (let x = Math.max(0, Math.floor(x0 - ox)); x < Math.min(D, Math.ceil(x1 - ox)); x++) mask[y * D + x] = 1;
+      };
+      for (const r of rects) { const g = r[2] - r[0]; mark(near, r[0] - g, r[1] - g, r[2] + g, r[3] + g); mark(ink, r[0] - 1, r[1] - 1, r[2] + 1, r[3] + 1); }
+      // Outwards in square rings from the point: the first paper that's within a block of some ink (not right against it).
+      let best = null;
+      for (let q = 0; q <= R && !best; q++) {
+        let bd = Infinity;
+        const tryAt = (x, y) => {
+          if (x < 0 || y < 0 || x >= D || y >= D) return;
+          const k = y * D + x;
+          if (ink[k] || !near[k]) return;
+          const d = (x - R) ** 2 + (y - R) ** 2;
+          if (d < bd) { bd = d; best = [ox + x + 0.5, oy + y + 0.5]; }
+        };
+        for (let t = -q; t <= q; t++) { tryAt(R + t, R - q); tryAt(R + t, R + q); tryAt(R - q, R + t); tryAt(R + q, R + t); }
+      }
+      if (best) { const [k] = nearest(best[0], best[1]), r = rects[k]; best.push(r[2] - r[0]); }
+      if (best) { at = [best[0], best[1]]; size = best[2]; }
+    }
+  }
+  // The blocks round it, nearest first, for the pixels under them (powers/small.js).
+  const near = rects
+    .map((r) => [r[0] - at[0], r[1] - at[1], r[2] - at[0], r[3] - at[1]])
+    .sort((a, b) => Math.hypot((a[0] + a[2]) / 2, (a[1] + a[3]) / 2) - Math.hypot((b[0] + b[2]) / 2, (b[1] + b[3]) / 2))
+    .slice(0, 40);
+  return { focus: [at[0], at[1] - scroll, size], rects: near };
+}
+
 const PAGES = { home, work, project, services: servicesPage, about: aboutPage, cv: cvPage, contact, colophon: colophonPage, notFound, roadbook: roadbookPage, garden: gardenPage, slime: slimePage, powers: cvPage };
 
 export function buildScene(state, vp) {
@@ -798,20 +875,12 @@ export function buildScene(state, vp) {
   if (state.route.name === 'powers' && !state.menuOpen) {
     const hud = powersHud(state, S, ctx, vp);
     const title = page.els.find((e) => e.key === 'page-title');
-    let focus = [vp.w / 2, vp.h / 2, 4];
-    if (title && title.blocks.length) {
-      // The block nearest the middle of the title's first letter.
-      const b = title.blocks, size = b[2], want = [title.x + size * 2.5, title.y + size * 3.5];
-      let best = 0, bd = Infinity;
-      for (let i = 0; i < b.length; i += 5) {
-        const d = Math.hypot(title.x + b[i] + b[i + 2] / 2 - want[0], title.y + b[i + 1] + b[i + 3] / 2 - want[1]);
-        if (d < bd) { bd = d; best = i; }
-      }
-      focus = [title.x + b[best] + b[best + 2] / 2, title.y + b[best + 1] + b[best + 3] / 2, b[best + 2]];
-    }
+    // Into the middle of the title's first letter.
+    const want = title && title.blocks.length ? [title.x + title.blocks[2] * 2.5, title.y + title.blocks[2] * 3.5] : [vp.w / 2, vp.h / 2];
+    const into = zoomFocus(page.els, want[0], want[1], 0, state.theme !== 'dark');
     return {
       elements: resolve([...nav.els, ...page.els, ...hud.els]), height: vp.h, S,
-      zoom: { area: [0, S.navClip, vp.w, vp.h - hud.h - S.navClip], focus, cell: S.mobile ? 3 : 4 },
+      zoom: { area: [0, S.navClip, vp.w, vp.h - hud.h - S.navClip], ...into, cell: S.mobile ? 3 : 4, cv: true },
     };
   }
 
@@ -823,9 +892,15 @@ export function buildScene(state, vp) {
 
   // Where slime/mode.js draws the mould's map: the area inside its frame.
   const map = state.route.name === 'slime' && !state.menuOpen ? page.els.find((e) => e.key === 'sm-map') : null;
-  const elements = resolve([...nav.els, ...page.els, ...foot.els]);
+  // Pinched into, any page zooms the same way, about the block you pinched,
+  // with the panel along the bottom until you're back (main.js, state.zoomFrom).
+  const Z = state.zoomFrom && !state.menuOpen && ZOOMABLE.has(state.route.name) ? state.zoomFrom : null;
+  const hud = Z ? powersHud(state, S, ctx, vp, { cv: false }) : null;
+  const into = Z ? zoomFocus([...page.els, ...foot.els], Z.point[0], Z.point[1] + Z.scroll, Z.scroll, Z.light) : null; // before resolve() makes the blocks absolute
+  const elements = resolve([...nav.els, ...page.els, ...foot.els, ...(hud ? hud.els : [])]);
   return {
     elements, height: fy + foot.h + S.sp(3), S,
     slime: map && { x: map.x, y: map.y, w: map.w, h: map.h },
+    zoom: Z ? { area: [0, S.navClip, vp.w, vp.h - hud.h - S.navClip], ...into, cell: S.mobile ? 3 : 4 } : undefined,
   };
 }

@@ -16,6 +16,14 @@ export const POWERS_PATH = '/projects/powers-of-ten/';
 
 export const PAGES = ['work', 'services', 'about', 'cv', 'contact', 'colophon', 'story', 'garden'];
 
+/**
+ * Pages you can pinch into, Powers of Ten style (src/powers/), and back out
+ * of to keep scrolling. Not the ones with a simulation of their own running
+ * (the garden, the slime mould, the story, the 404 puzzle), nor Powers of
+ * Ten itself, which is the zoom from the start.
+ */
+export const ZOOMABLE = new Set(['home', 'work', 'project', 'services', 'about', 'cv', 'contact', 'colophon', 'roadbook']);
+
 export function parseRoute(pathname = location.pathname) {
   const parts = pathname.split('/').filter(Boolean);
   if (parts.length === 0) return { name: 'home', path: '/' };

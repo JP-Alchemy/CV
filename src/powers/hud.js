@@ -13,13 +13,15 @@ const Z = 4; // over the page, however big its blocks get
 
 const btnW = (s) => Math.ceil((measure(s, 2) + 24 - 4) / 4) * 4 + 4;
 
-export function powersHud(state, S, ctx, vp) {
+/** o.cv: on the CV (Powers of Ten's own page), not any page. */
+export function powersHud(state, S, ctx, vp, o = {}) {
   const v = state.zoom || { readout: '10⁰ M', size: '', caption: '', home: true };
   const hv = (k) => state.hover === k;
   const btn = (key, lbl, action, aria) => button({ key, label: lbl, action, hover: hv(key), small: true, aria });
-  const homeLabel = S.mobile ? 'CV' : 'BACK TO THE CV';
+  const cv = o.cv !== false;
+  const homeLabel = S.mobile ? (cv ? 'CV' : 'PAGE') : cv ? 'BACK TO THE CV' : 'BACK TO THE PAGE';
   const zoomBtns = [btn('zm-out', '−', 'zm:out', 'Zoom out ten times'), btn('zm-in', '+', 'zm:in', 'Zoom in ten times')];
-  const home = v.home ? null : btn('zm-home', homeLabel, 'zm:home', 'Back to the CV');
+  const home = v.home ? null : btn('zm-home', homeLabel, 'zm:home', cv ? 'Back to the CV' : 'Back to the page');
   const readout = text(v.readout, S.h2, { key: 'zm-readout', motion: 'step', nowrap: true, label: `About ${v.size.toLowerCase()} across`, attrs: { 'aria-live': 'polite' } });
   const size = text(S.cw < 900 && S.mobile ? v.size.replace(/ ACROSS$/, '') : v.size, S.small, { key: 'zm-size', motion: 'step', nowrap: true, a11y: false });
   const scale = col([readout, { ...size, mt: 8 }]);
@@ -28,7 +30,7 @@ export function powersHud(state, S, ctx, vp) {
   // and the height the longest caption needs in it.
   const stacked = S.cw < 900;
   const gap = S.sp(3);
-  const buttonsW = stacked ? 0 : Math.max(btnW(homeLabel), 8 + 2 * btnW('+'));
+  const buttonsW = stacked ? 0 : Math.max(btnW('BACK TO THE PAGE'), 8 + 2 * btnW('+'));
   const scaleW = stacked ? 0 : 220;
   const capW = stacked ? S.cw : S.cw - scaleW - buttonsW - gap * 2;
   const longest = Math.max(...Object.values(T.scales).map((s) => typeset(s.replace('{HOW}', T.scales.howTouch), { size: S.body.size, lh: S.body.lh, width: capW }).height));
