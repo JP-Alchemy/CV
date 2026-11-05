@@ -64,6 +64,28 @@ function navBar(state, S) {
   return row([row(left, { gap: 4 }), row(right, { gap: 4 })], { justify: 'between' });
 }
 
+/**
+ * 3D VIEW (src/tilt.js): tips the page back into 3D, and FLAT VIEW lays it
+ * down again. Fixed at the bottom right, on a patch of paper so the page
+ * scrolling under it doesn't show through.
+ */
+function viewButton(state, S, ctx, vp) {
+  const on = !!state.tilted;
+  const b = layout(row([button({
+    key: 'nav-3d', label: on ? 'FLAT VIEW' : '3D VIEW', action: '3d', small: true, hover: state.hover === 'nav-3d', active: on,
+    aria: on ? 'Lay the page flat again' : 'See the page in 3D (drag to turn it)',
+  })], { justify: 'end' }), S.cw, ctx);
+  const btn = b.els.filter((e) => e.blocks.length);
+  const x0 = Math.min(...btn.map((e) => e.x)), w = S.cw - x0, pad = 6;
+  for (const e of b.els) e.z = (e.z || 0) + 4;
+  const paper = ctx.el({ key: 'nav-3d:paper', sig: `paper|${w}|${b.h}`, w: w + pad * 2, h: b.h + pad * 2, blocks: fillBlocks(w + pad * 2, b.h + pad * 2, 4, 0, 0), z: 3 });
+  paper.x = x0 - pad; paper.y = -pad;
+  const els = [paper, ...b.els];
+  shift(els, S.left, vp.h - b.h - S.navTop);
+  for (const e of els) e.fixed = true;
+  return els;
+}
+
 function footer(state, S, count) {
   const hv = (k) => state.hover === k;
   const made = `THIS PAGE IS MADE OF ${count.toLocaleString('en-US')} BLOCKS`;
@@ -897,9 +919,11 @@ export function buildScene(state, vp) {
   const Z = state.zoomFrom && !state.menuOpen && ZOOMABLE.has(state.route.name) ? state.zoomFrom : null;
   const hud = Z ? powersHud(state, S, ctx, vp, { cv: false }) : null;
   const into = Z ? zoomFocus([...page.els, ...foot.els], Z.point[0], Z.point[1] + Z.scroll, Z.scroll, Z.light) : null; // before resolve() makes the blocks absolute
-  const elements = resolve([...nav.els, ...page.els, ...foot.els, ...(hud ? hud.els : [])]);
+  // 3D VIEW on the ordinary pages (not under the menu or while zoomed).
+  const view3d = !state.menuOpen && !Z && ZOOMABLE.has(state.route.name) ? viewButton(state, S, ctx, vp) : [];
+  const elements = resolve([...nav.els, ...page.els, ...foot.els, ...(hud ? hud.els : []), ...view3d]);
   return {
-    elements, height: fy + foot.h + S.sp(3), S,
+    elements, height: fy + foot.h + S.sp(3), S, tilt3d: view3d.length > 0,
     slime: map && { x: map.x, y: map.y, w: map.w, h: map.h },
     zoom: Z ? { area: [0, S.navClip, vp.w, vp.h - hud.h - S.navClip], ...into, cell: S.mobile ? 3 : 4 } : undefined,
   };

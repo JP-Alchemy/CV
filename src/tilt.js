@@ -27,7 +27,8 @@ export function tilt3d(o) {
     const k = T.k, m = T.sm, r = o.renderer;
     cam.view.k = k;
     cam.view.tilt = k ? k * (PAGE.tilt + (SHAPE.tilt - PAGE.tilt) * m + T.pitch) : 0;
-    cam.view.yaw = k ? k * (PAGE.yaw + (SHAPE.yaw - PAGE.yaw) * m + T.yaw) : 0;
+    const turn = Math.min(1, r.w / r.h); // a tall, narrow screen turns less, or the page's side leaves it
+    cam.view.yaw = k ? k * ((PAGE.yaw + (SHAPE.yaw - PAGE.yaw) * m) * turn + T.yaw) : 0;
     cam.view.s = k ? k / (1.4 * Math.max(r.w, r.h)) : 0;
     cam.on = k > 0; // flat, it's the 2D renderer itself (and Powers of Ten's zoom keeps its camera)
     root.classList.toggle('tilted', k > 0);
@@ -54,7 +55,12 @@ export function tilt3d(o) {
   };
 
   /** Tilt in (true) or lay flat (false); `shape` turns the camera towards something in the middle. */
-  T.set = (on, shape = T.shape) => { T.kTo = on ? 1 : 0; T.shape = !!shape; run(); };
+  T.set = (on, shape = T.shape) => {
+    const was = T.kTo;
+    T.kTo = on ? 1 : 0; T.shape = !!shape;
+    if (T.kTo !== was) o.onChange?.(!!T.kTo);
+    run();
+  };
   T.toggle = () => T.set(!T.kTo);
 
   /** Where a screen point lands on the page (screen px): for the push, the light and clicks. */
@@ -141,7 +147,7 @@ export function tilt3d(o) {
     });
   }
 
-  addEventListener('keydown', (e) => {
+  if (o.key !== false) addEventListener('keydown', (e) => {
     if (e.key !== '3' || e.metaKey || e.ctrlKey || e.altKey || e.target.closest?.('input, textarea')) return;
     T.toggle();
   });

@@ -55,6 +55,7 @@ const state = {
   touch: matchMedia('(pointer: coarse)').matches,
   fullscreen: false,
   storyEls: null, // the story's picture, while the page morphs into it
+  tilted: false, // the page in 3D (src/tilt.js)
 };
 
 // Measure the canvas itself: it tracks every viewport change (rotation,
@@ -90,6 +91,7 @@ function render(mode = 'local', o = {}) {
     // The first time, the panel's words only exist once the zoom knows its view: lay it out again with them.
     if (!state.zoom) { state.zoom = zoom.view(); scene = buildScene(state, { w: vp.w, h: layoutH }); zoom.layout(scene.zoom); }
   }
+  if (tilt?.kTo && !scene.tilt3d) tilt.set(false); // pages with simulations of their own stay flat
   // A garden is laid on the page as it was: if its ground has moved, it starts again.
   const moved = garden.on && scene.gardenTop !== garden.bottom;
   if (moved) stopGarden(false);
@@ -637,6 +639,8 @@ function runAction(action, node) {
       gardenAfterMorph();
       mouldAfterMorph();
     }
+  } else if (action === '3d') {
+    view3d();
   } else if (action === 'top') {
     window.scrollTo({ top: 0, behavior: engine.calm ? 'auto' : 'smooth' });
   } else if (action === 'copy') {
@@ -766,6 +770,7 @@ window.addEventListener('scroll', () => { engine.reveal(window.scrollY); kick();
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && state.menuOpen) runAction('menu', fixedEl);
   // G: to the garden and back again. Keys don't scroll it.
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key === '3' && scene?.tilt3d && !e.target.closest?.('input, textarea')) { view3d(); return; }
   if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'g' || e.key === 'G')) {
     e.preventDefault();
     if (!e.repeat) goGarden();
@@ -918,12 +923,17 @@ animateFavicon();
 // Real photos re-render once loaded.
 window.addEventListener('photo-loaded', () => render('local'));
 
-// The page in 3D, while it's an experiment: only with ?3d in the address. 3 tilts it, a drag turns it.
-if (new URLSearchParams(location.search).has('3d') && !document.documentElement.classList.contains('no-gl')) {
-  import('./tilt.js').then((m) => {
-    tilt = m.tilt3d({ renderer, engine, kick, surface: document, doc: docEl, fixed: fixedEl, height: () => scene.height });
+// The page in 3D (src/tilt.js): 3D VIEW at the bottom right (or 3) tips it
+// back, a drag turns it. Its code loads the first time it's wanted.
+let tiltLoading = null;
+function view3d(on) {
+  if (document.documentElement.classList.contains('no-gl')) return;
+  tiltLoading ||= import('./tilt.js').then((m) => {
+    tilt = m.tilt3d({ renderer, engine, kick, surface: document, doc: docEl, fixed: fixedEl, height: () => scene.height, key: false, onChange: (v) => { state.tilted = v; queueMicrotask(() => render('local')); } });
     window.__site.tilt = tilt;
+    return tilt;
   });
+  tiltLoading.then((t) => t.set(on ?? !t.kTo));
 }
 
 // Debug/inspection handle.
