@@ -396,3 +396,212 @@ export class Town {
     if (c < 30 && !odd && hash(i, j, 5) < 0.25) G.put(i, j, 0.25, 0, 0.3, f);
   }
 }
+
+// ---------------------------------------------------------------- the region
+
+// Between the town and the country: Leiden among its neighbours, as they
+// really are, roughly. The coast is Natural Earth's (geo.js), with the dunes
+// behind it; the towns are the slime mould's 40 cities (slime/places.js) and
+// the smaller ones near Leiden; the motorways, rivers, canals and lakes are
+// traced by hand to a few hundred metres; Schiphol has its six runways, the
+// Westland its glass, and the bulb fields between Leiden and Haarlem flower in
+// spring (March to May, by the calendar). Everything else is polder.
+
+const M_LAT = 111320, M_LON = 111320 * Math.cos((LEIDEN[0] * Math.PI) / 180);
+/** Latitude and longitude to metres from Leiden (x east, y south). */
+const xy = ([la, lo]) => [(lo - LEIDEN[1]) * M_LON, (LEIDEN[0] - la) * M_LAT];
+
+// [lat, lon, radius km]: the towns near Leiden that aren't among the 40.
+const TOWNS = [
+  [52.2, 4.415, 1.5], [52.238, 4.445, 1.2], [52.143, 4.4, 1.2], [52.127, 4.447, 1], [52.129, 4.66, 2],
+  [52.06, 4.49, 2.4], [52.01, 4.36, 2], [52.3, 4.69, 1.8], [52.257, 4.557, 1], [52.225, 4.52, 0.8],
+  [52.263, 4.635, 1], [52.08, 4.39, 1.7], [52.04, 4.32, 1.3], [52.08, 4.75, 0.9], [52.085, 4.885, 1.3],
+  [52.3, 4.86, 2], [52.29, 4.58, 0.9], [51.93, 4.58, 1.5], [51.92, 4.4, 1.5], [51.91, 4.34, 1.5],
+  [52.35, 4.61, 1], [52.155, 4.52, 1.4], [52.175, 4.47, 1.2], [51.99, 4.21, 0.8], [52.04, 4.2, 1.6],
+];
+const MOTORWAYS = [
+  [[52.34, 4.86], [52.31, 4.77], [52.27, 4.66], [52.21, 4.56], [52.17, 4.52], [52.13, 4.46], [52.09, 4.4], [52.06, 4.35], [52, 4.38], [51.93, 4.4]], // A4
+  [[52.29, 4.66], [52.24, 4.56], [52.21, 4.51], [52.18, 4.47], [52.14, 4.4], [52.1, 4.34]], // A44
+  [[52.08, 4.32], [52.07, 4.41], [52.05, 4.5], [52.03, 4.62], [52.03, 4.7], [52.08, 4.9], [52.09, 5.08]], // A12
+  [[52.34, 4.92], [52.25, 4.98], [52.15, 5.02], [52.1, 5.06]], // A2
+  [[52.3, 4.87], [52.32, 4.75], [52.38, 4.67], [52.42, 4.66]], // A9
+  [[52.06, 4.35], [52, 4.39], [51.94, 4.44]], // A13
+  [[51.93, 4.33], [51.94, 4.47], [51.95, 4.55], [52, 4.65]], // A20
+  [[52.15, 4.52], [52.12, 4.62], [52.12, 4.7]], // N11
+  Array.from({ length: 25 }, (_, k) => [52.365 + 0.03 * Math.sin((k / 24) * 2 * Math.PI), 4.89 + 0.049 * Math.cos((k / 24) * 2 * Math.PI)]), // A10
+];
+// [points, width m]
+const WATERWAYS = [
+  [[[52.207, 4.4], [52.18, 4.45], [52.16, 4.49], [52.145, 4.55], [52.13, 4.66], [52.09, 4.8], [52.085, 4.88], [52.09, 5], [52.09, 5.11]], 40], // the Old Rhine
+  [[[52.465, 4.57], [52.44, 4.67], [52.42, 4.78], [52.39, 4.88], [52.38, 4.92]], 270], // the North Sea Canal
+  [[[51.98, 4.05], [51.955, 4.15], [51.91, 4.3], [51.905, 4.4], [51.91, 4.48], [51.9, 4.55], [51.88, 4.6]], 500], // the Maas
+  [[[52.33, 4.6], [52.25, 4.56], [52.22, 4.6], [52.24, 4.7], [52.3, 4.76], [52.35, 4.72], [52.33, 4.6]], 40], // the Haarlemmermeer's ring canal
+  [[[52.16, 4.49], [52.1, 4.42], [52.07, 4.38], [52.01, 4.36]], 30], // Rijn-Schiekanaal
+  [[[52.38, 4.92], [52.3, 4.97], [52.2, 5.02], [52.09, 5.08]], 100], // Amsterdam-Rijnkanaal
+  [[[52.13, 4.66], [52.06, 4.68], [52.01, 4.71]], 30], // the Gouwe
+];
+// [lat, lon, semi-axes km (east, north), turn]
+const LAKES = [
+  [52.215, 4.555, 1.6, 1, 0.4], [52.19, 4.645, 0.7, 2, 0.2], [52.255, 4.745, 2, 1.6, 0], [52.04, 4.73, 1.8, 1.2, 0],
+  [52.215, 4.93, 0.8, 3, -0.3], [52.145, 4.81, 2, 1.2, 0], [52.02, 4.58, 1, 0.8, 0],
+];
+// [lat, lon, heading°, length m]
+const RUNWAYS = [[52.3486, 4.7116, 0, 3800], [52.317, 4.738, 0, 3400], [52.3, 4.783, 0, 3400], [52.297, 4.77, 58, 3500], [52.316, 4.795, 87, 3450], [52.31, 4.8, 40, 2000]];
+const GLASS = [[51.99, 4.24, 5, 3.5, 0.3], [52.02, 4.53, 2, 1.5, 0]]; // the Westland, and round Bleiswijk
+const BLUR = [[0, 0], [-450, -450], [450, -450], [-450, 450], [450, 450], [-640, 0], [640, 0], [0, -640], [0, 640]];
+const BULBS = [52.27, 4.54, 2.5, 7, -0.4]; // the Bollenstreek
+
+const segs = (pts, w) => {
+  const out = [];
+  const P = pts.map(xy);
+  for (let k = 1; k < P.length; k++) {
+    const [ax, ay] = P[k - 1], [bx, by] = P[k];
+    out.push({ ax, ay, bx, by, w, x0: Math.min(ax, bx), x1: Math.max(ax, bx), y0: Math.min(ay, by), y1: Math.max(ay, by) });
+  }
+  return out;
+};
+const ellipse = ([la, lo, a, b, t]) => { const [x, y] = xy([la, lo]); return { x, y, a: a * 1000, b: b * 1000, c: Math.cos(t), s: Math.sin(t), r: Math.max(a, b) * 1000 }; };
+const inEllipse = (e, x, y) => { const dx = x - e.x, dy = y - e.y, u = (dx * e.c + dy * e.s) / e.a, v = (-dx * e.s + dy * e.c) / e.b; return u * u + v * v; };
+
+export class Region {
+  /** places: the slime mould's cities ({ cities: [name, x km, y km, people] }); G: geo.js. */
+  constructor(places, G) {
+    this.G = G;
+    const lei = places.cities.find((c) => c[0] === 'Leiden');
+    this.towns = places.cities.map(([name, x, y, n]) => ({ x: (x - lei[1]) * 1000, y: (y - lei[2]) * 1000, r: name === 'Leiden' ? 2600 : 5.5 * Math.sqrt(n) }));
+    for (const [la, lo, r] of TOWNS) { const [x, y] = xy([la, lo]); this.towns.push({ x, y, r: r * 1000 }); }
+    this.towns.forEach((t, k) => { t.p = k * 1.7; t.q = k * 2.3; });
+    this.roads = MOTORWAYS.flatMap((p) => segs(p, 30));
+    this.water = WATERWAYS.flatMap(([p, w]) => segs(p, w));
+    this.runways = RUNWAYS.map(([la, lo, h, len]) => {
+      const [x, y] = xy([la, lo]), dx = (Math.sin((h * Math.PI) / 180) * len) / 2, dy = (-Math.cos((h * Math.PI) / 180) * len) / 2;
+      return segs([[LEIDEN[0] - (y - dy) / M_LAT, LEIDEN[1] + (x - dx) / M_LON], [LEIDEN[0] - (y + dy) / M_LAT, LEIDEN[1] + (x + dx) / M_LON]], 60)[0];
+    });
+    this.lakes = LAKES.map(ellipse);
+    this.glass = GLASS.map(ellipse);
+    this.bulbs = ellipse(BULBS);
+    this.terminal = { ...xy([52.31, 4.763]), r: 700 };
+  }
+
+  paint(P, V, f) {
+    const spring = [2, 3, 4].includes(new Date().getMonth());
+    const key = `${V.ppm}|${V.cols}|${V.rows}|${V.cell}|${V.cx}|${V.cy}|${Math.round(f * 20)}|${this.G.ready}|${spring}`;
+    if (key !== this.key) {
+      this.own ||= new Grid();
+      if (this.own.cols !== V.cols || this.own.rows !== V.rows) this.own.resize(V.cols, V.rows);
+      this.own.clear();
+      this.fill(this.own, V, Math.round(f * 20) / 20, spring);
+      this.key = key;
+    }
+    const a = this.own.buf, b = P.G.buf;
+    for (let k = 0; k < a.length; k += 4) if (a[k] > b[k]) { b[k] = a[k]; b[k + 1] = a[k + 1]; b[k + 2] = a[k + 2]; }
+  }
+
+  fill(G, V, f, spring) {
+    const { cols, rows, cell, ppm } = V, c = cell / ppm, h = c * 0.5;
+    const at = (x, y) => (this.G.ready ? this.G.at(LEIDEN[0] - y / M_LAT, LEIDEN[1] + x / M_LON) : 1);
+    // What's in view (and a little round it), so each block only asks about those.
+    const vx0 = -V.cx / ppm - c, vx1 = (cols * cell - V.cx) / ppm + c, vy0 = -V.cy / ppm - c, vy1 = (rows * cell - V.cy) / ppm + c;
+    const seen = (s) => s.x1 + s.w + c > vx0 && s.x0 - s.w - c < vx1 && s.y1 + s.w + c > vy0 && s.y0 - s.w - c < vy1;
+    const roads = this.roads.filter(seen), water = this.water.filter(seen), runways = this.runways.filter(seen);
+    const round = (e) => e.x + e.r * 1.4 + c > vx0 && e.x - e.r * 1.4 - c < vx1 && e.y + e.r * 1.4 + c > vy0 && e.y - e.r * 1.4 - c < vy1;
+    const towns = this.towns.filter(round), lakes = this.lakes.filter(round), glass = this.glass.filter(round), bulbs = [this.bulbs].filter(round);
+    // The lines (water, runways, roads) and the towns, drawn once into a
+    // layer of cells: walked along, or filled over, rather than asked about
+    // at every block.
+    const line = new Uint8Array(cols * rows), built = new Float32Array(cols * rows);
+    const ci = (x) => (V.cx + x * ppm) / cell, cj = (y) => (V.cy + y * ppm) / cell;
+    const stroke = (list, kind, pad) => {
+      for (const sg of list) {
+        const half = Math.max(sg.w / 2, pad) / c, n = Math.ceil((Math.hypot(sg.bx - sg.ax, sg.by - sg.ay) / c) * 2) + 1, r = Math.ceil(half);
+        for (let k = 0; k <= n; k++) {
+          const u = k / n, px = ci(sg.ax + (sg.bx - sg.ax) * u), py = cj(sg.ay + (sg.by - sg.ay) * u);
+          if (px < -r - 1 || py < -r - 1 || px > cols + r || py > rows + r) continue;
+          for (let j = Math.floor(py - half); j <= Math.floor(py + half); j++) {
+            if (j < 0 || j >= rows) continue;
+            for (let i = Math.floor(px - half); i <= Math.floor(px + half); i++) {
+              if (i < 0 || i >= cols || (i + 0.5 - px) ** 2 + (j + 0.5 - py) ** 2 > half * half + 0.25) continue;
+              const q = j * cols + i;
+              if (!line[q] || line[q] > kind) line[q] = kind;
+            }
+          }
+        }
+      }
+    };
+    stroke(water, 1, h); stroke(runways, 2, h * 0.8); stroke(roads, 3, h);
+    for (const t of towns) {
+      const R = (t.r * 1.3) / c, x0 = ci(t.x), y0 = cj(t.y);
+      for (let j = Math.max(0, Math.floor(y0 - R)); j <= Math.min(rows - 1, Math.floor(y0 + R)); j++) {
+        for (let i = Math.max(0, Math.floor(x0 - R)); i <= Math.min(cols - 1, Math.floor(x0 + R)); i++) {
+          const dx = i + 0.5 - x0, dy = j + 0.5 - y0, a = Math.atan2(dy, dx);
+          const d = (Math.hypot(dx, dy) * c) / (t.r * (1 + 0.18 * Math.sin(3 * a + t.p) + 0.1 * Math.sin(7 * a + t.q)));
+          const q = j * cols + i;
+          if (d < 1 && 1 - d > built[q]) built[q] = 1 - d;
+        }
+      }
+    }
+    // The sea: how much of the ground round each point of a coarse lattice
+    // is sea (the outlines are a few hundred metres a pixel, so blurred a
+    // little), then read between the points, so the coast runs smooth, not in stairs.
+    const sp = Math.max(320, c * 1.5), taps = c > 700 ? BLUR.slice(0, 1) : BLUR, lx0 = vx0 - 2000, ly0 = vy0 - 2000;
+    const LW = Math.ceil((vx1 - lx0) / sp) + 2, LH = Math.ceil((vy1 + 1000 - ly0) / sp) + 2, wet = new Float32Array(LW * LH);
+    for (let b = 0; b < LH; b++) for (let a = 0; a < LW; a++) {
+      let n = 0;
+      for (const [ox, oy] of taps) n += at(lx0 + a * sp + ox, ly0 + b * sp + oy) === 0 ? 1 : 0;
+      wet[b * LW + a] = n / taps.length;
+    }
+    const seaAt = (x, y) => {
+      const gx = (x - lx0) / sp, gy = (y - ly0) / sp, a = Math.max(0, Math.min(LW - 2, gx | 0)), b = Math.max(0, Math.min(LH - 2, gy | 0)), fx = gx - a, fy = gy - b, k = b * LW + a;
+      return (wet[k] * (1 - fx) + wet[k + 1] * fx) * (1 - fy) + (wet[k + LW] * (1 - fx) + wet[k + LW + 1] * fx) * fy > 0.5;
+    };
+    const polders = new Map(), inside = (list, x, y) => list.some((e) => Math.abs(x - e.x) < e.r && Math.abs(y - e.y) < e.r && inEllipse(e, x, y) < 1);
+    const W = cols + 2, sea = new Uint8Array(W * (rows + 2));
+    for (let j = -1; j <= rows; j++) {
+      const y = ((j + 0.5) * cell - V.cy) / ppm;
+      for (let i = -1; i <= cols; i++) sea[(j + 1) * W + i + 1] = seaAt(((i + 0.5) * cell - V.cx) / ppm, y) ? 1 : 0;
+    }
+    for (let j = 0; j < rows; j++) {
+      const y = ((j + 0.5) * cell - V.cy) / ppm;
+      for (let i = 0; i < cols; i++) {
+        const x = ((i + 0.5) * cell - V.cx) / ppm, odd = (i + j) & 1, k = (j + 1) * W + i + 1;
+        if (sea[k]) { if (((i + 2 * j) & 3) === 0) G.put(i, j, 0.25, 0, 0.4, f); continue; }
+        if (this.G.ready && c > 400 && at(x, y) !== this.G.nl) continue; // further out, only the Netherlands: the globe has the rest
+        if (sea[k - 1] || sea[k + 1] || sea[k - W] || sea[k + W]) { G.put(i, j, 1, 0, 1, f); continue; } // the beach
+        if (inside(lakes, x, y)) { if (((i + 2 * j) & 3) === 0) G.put(i, j, 0.25, 0, 0.4, f); else if (lakes.some((e) => inEllipse(e, x, y) > (1 - c / e.r) ** 2)) G.put(i, j, 0.75, 0, 0.8, f); continue; }
+        const ln = line[j * cols + i];
+        if (ln === 1) { G.put(i, j, 0.75, 0, 0.8, f); continue; }
+        if (ln === 2) { G.put(i, j, 0.9, 0, 0.95, f); continue; }
+        if (ln === 3) { G.put(i, j, 0.6, 0, 0.7, f); continue; }
+        if (Math.hypot(x - this.terminal.x, y - this.terminal.y) < this.terminal.r) { if (!odd) G.put(i, j, 0.75, 0, 0.8, f); continue; }
+        // A town: built up, denser in the middle, its edge wavy.
+        const town = built[j * cols + i];
+        if (town > 0) {
+          if (town > 0.55) G.put(i, j, odd ? 0.5 : 0.75, 0, 0.75, f);
+          else if (!odd || hash(i, j, 9) < 0.3) G.put(i, j, 0.5, 0, 0.55, f);
+          continue;
+        }
+        // The dunes: a strip of sand and scrub behind the beach.
+        if (seaAt(x - 1800, y) || seaAt(x - 900, y)) { if (hash(i, j, 13) < 0.55) G.put(i, j, 0.4, 0, 0.45, f); continue; }
+        if (inside(glass, x, y)) { // greenhouses: whole blocks of glass
+          const gx = Math.floor((x + 5e4) / 260), gy = Math.floor((y + 5e4) / 180);
+          if (hash(gx, gy, 17) < 0.75) G.put(i, j, 0.6, 0, 0.9, f);
+          continue;
+        }
+        // Fields, in strips between ditches, each polder at its own angle.
+        const px = Math.floor((x + 5e4) / 3500), py = Math.floor((y + 5e4) / 3500), pk = px * 4096 + py;
+        let pol = polders.get(pk);
+        if (!pol) { const ang = (hash(px, py, 19) - 0.5) * 1.2; polders.set(pk, pol = { co: Math.cos(ang), si: Math.sin(ang), sw: 70 + 90 * hash(px, py, 23) }); }
+        const { co, si, sw } = pol, u = x * co + y * si, v = -x * si + y * co, strip = Math.floor(u / sw);
+        if (inside(bulbs, x, y)) { // bulb fields: in flower in spring
+          const tulip = [1, 1, 2, 3, 7][Math.floor(hash(strip, Math.floor(v / 300), 29) * 5)];
+          if (spring) G.put(i, j, 0.55, tulip, 1, f);
+          else if (strip & 1) G.put(i, j, 0.35, 0, 0.4, f);
+          continue;
+        }
+        if (sw > c * 2 && Math.abs(u - strip * sw) < h) { G.put(i, j, 0.4, 0, 0.42, f); continue; } // a ditch
+        if (hash(strip, Math.floor(v / 900), 31) < 0.012) { G.put(i, j, 0.6, 0, 0.7, f); continue; } // a farm
+        if (!odd && hash(i, j, 5) < 0.22) G.put(i, j, 0.25, 0, 0.3, f);
+      }
+    }
+  }
+}

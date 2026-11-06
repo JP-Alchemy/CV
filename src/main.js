@@ -299,6 +299,7 @@ function frame() {
       layers.push({ layer: story.layer, time: story.time(), navClip: story.clip(), pulses: storyPulses });
     }
   }
+  tilt?.update(); // the camera follows the zoom (its pivot and its swing round the Earth)
   renderer.draw({
     time: t,
     scroll: Math.round(window.scrollY * d) / d,
@@ -929,7 +930,18 @@ let tiltLoading = null;
 function view3d(on) {
   if (document.documentElement.classList.contains('no-gl')) return;
   tiltLoading ||= import('./tilt.js').then((m) => {
-    tilt = m.tilt3d({ renderer, engine, kick, surface: document, doc: docEl, fixed: fixedEl, height: () => scene.height, key: false, onChange: (v) => { state.tilted = v; queueMicrotask(() => render('local')); } });
+    // In Powers of Ten it turns about the middle of the zoom's view, sees things (from the Earth out) nearly face on,
+    // turns right round them once there's a solid to turn round, and swings once round the Earth as you zoom out past it.
+    const z = () => (zoomOn() ? zoom : null);
+    const sweep = (L, L1) => { const k = Math.max(0, Math.min(1, (L - L1) / 0.95)); return 2 * Math.PI * k * k * (3 - 2 * k); }; // from when the solid globe has taken over, while it's still big
+    tilt = m.tilt3d({
+      renderer, engine, kick, surface: document, doc: docEl, fixed: fixedEl, height: () => scene.height, key: false,
+      onChange: (v) => { state.tilted = v; queueMicrotask(() => render('local')); },
+      pivot: () => (z()?.area ? z().centre : null),
+      subject: () => (z()?.L ?? 0) > 4.9,
+      free: () => !!z() && z().L > z().globeL() - 0.02,
+      spin: () => (z() && !engine.calm ? sweep(z().L, z().globeL()) : 0),
+    });
     window.__site.tilt = tilt;
     return tilt;
   });

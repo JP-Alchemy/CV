@@ -22,13 +22,16 @@ export function tilt3d(o) {
   const cam = attach3D(o.renderer);
   const T = { cam, k: 0, kTo: 0, yaw: 0, pitch: 0, sm: 0, shape: false, last: 0, raf: 0 };
   const root = document.documentElement;
+  const subject = () => T.shape || !!o.subject?.(); // looking at a thing (a shape, a planet) rather than a page
 
   const view = () => {
     const k = T.k, m = T.sm, r = o.renderer;
     cam.view.k = k;
     cam.view.tilt = k ? k * (PAGE.tilt + (SHAPE.tilt - PAGE.tilt) * m + T.pitch) : 0;
     const turn = Math.min(1, r.w / r.h); // a tall, narrow screen turns less, or the page's side leaves it
-    cam.view.yaw = k ? k * ((PAGE.yaw + (SHAPE.yaw - PAGE.yaw) * m) * turn + T.yaw) : 0;
+    cam.view.yaw = k ? k * ((PAGE.yaw + (SHAPE.yaw - PAGE.yaw) * m) * turn + T.yaw + (o.spin?.() || 0)) : 0;
+    cam.view.round = !!o.free?.(); // things you can turn right round: the flat layer is points in space, seen from either side
+    cam.view.piv = o.pivot?.() || null; // what it turns about: the middle of the view, or the thing it's looking at
     cam.view.s = k ? k / (1.4 * Math.max(r.w, r.h)) : 0;
     cam.on = k > 0; // flat, it's the 2D renderer itself (and Powers of Ten's zoom keeps its camera)
     root.classList.toggle('tilted', k > 0);
@@ -40,11 +43,11 @@ export function tilt3d(o) {
     T.last = now;
     const ease = (v, to, rate) => (engine.calm ? to : Math.abs(to - v) < 1e-3 ? to : v + (to - v) * Math.min(1, dt * rate));
     T.k = ease(T.k, T.kTo, 3.2);
-    T.sm = ease(T.sm, +T.shape, 2.5);
+    T.sm = ease(T.sm, +subject(), 2.5);
     if (!T.k) T.yaw = T.pitch = 0; // back flat: the next tilt starts from the usual angle
     view();
     T.reveal();
-    return T.k !== T.kTo || T.sm !== +T.shape;
+    return T.k !== T.kTo || T.sm !== +subject();
   };
 
   const run = () => {
@@ -55,6 +58,9 @@ export function tilt3d(o) {
   };
 
   /** Tilt in (true) or lay flat (false); `shape` turns the camera towards something in the middle. */
+  /** Redraw at the camera's new angle (the spin follows the zoom). */
+  T.update = () => { if ((T.k || T.kTo) && T.step()) run(); };
+
   T.set = (on, shape = T.shape) => {
     const was = T.kTo;
     T.kTo = on ? 1 : 0; T.shape = !!shape;
@@ -103,14 +109,18 @@ export function tilt3d(o) {
     if (!T.kTo) T.set(true);
     // Never round to the back of the page: about ±70° side to side, from face on to 75° back.
     const yaw0 = PAGE.yaw + (SHAPE.yaw - PAGE.yaw) * T.sm, tilt0 = PAGE.tilt + (SHAPE.tilt - PAGE.tilt) * T.sm;
-    T.yaw = clamp(T.yaw + dx * 0.004, -1.2 - yaw0, 1.2 - yaw0);
+    T.yaw = o.free?.() ? T.yaw + dx * 0.006 : clamp(T.yaw + dx * 0.004, -1.2 - yaw0, 1.2 - yaw0); // a solid thing can be turned right round
     T.pitch = clamp(T.pitch - dy * 0.003, -1.3 - tilt0, 0.15 - tilt0);
     drag.x = e.clientX; drag.y = e.clientY;
     T.dragging = true;
     run();
   });
   window.addEventListener('pointerup', () => {
-    if (drag?.moved) addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); }, { capture: true, once: true }); // a drag isn't a click
+    if (drag?.moved) { // a drag isn't a click: swallow the one it ends in, if any, but never a later one
+      const eat = (e) => { e.stopPropagation(); e.preventDefault(); };
+      addEventListener('click', eat, { capture: true, once: true });
+      setTimeout(() => removeEventListener('click', eat, { capture: true }), 0);
+    }
     drag = null;
     T.dragging = false;
   });

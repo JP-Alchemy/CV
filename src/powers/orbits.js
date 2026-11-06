@@ -19,33 +19,53 @@ const j2000ms = Date.UTC(2000, 0, 1, 12);
 // ---------------------------------------------------------------- satellites
 
 /**
- * Satellites round the globe as Earth.paint draws it, Leiden facing us: a
- * few hundred of the ten thousand or so up there, in the orbits they really
- * use. Starlink's shell 550 km up and the polar ones at 700 km lap the Earth
- * in about an hour and a half; the space station a little lower; GPS, 20,000
- * km up, twice a day; and the geostationary ring, 36,000 km up over the
+ * Satellites round the globe as Earth.paint draws it, Leiden facing us: about
+ * 6,000 of the ten thousand or so up there, in the orbits they really use.
+ * Low Earth orbit, a few hundred km up, laps the Earth in about an hour and
+ * a half: Starlink's shells (53°, 43°, 70° and the polar one), OneWeb nearly
+ * over the poles 1,200 km up, the Earth-watching ones in sun-synchronous
+ * orbits, the space station and China's Tiangong. Further out the
+ * navigation constellations, 19,000 to 23,000 km up, twice a day: GPS,
+ * Galileo, GLONASS, BeiDou. And the geostationary ring, 36,000 km up over the
  * equator, once a day, as fast as the Earth turns, so it hangs still. Each
- * moves on its own Kepler circle; the ones behind the Earth are hidden. A
- * minute a second.
+ * moves on its own Kepler circle. In the 3D view they're where they are, all
+ * the way round; flat, the ones behind the Earth are hidden. A minute a second.
  */
 export class Satellites {
   constructor() {
     const r = rng(41);
-    const s = (alt, inc, node, u, size = 0.75, tone = 0.85) => {
+    const s = (alt, inc, node, u, size = 0.5, tone = 0.7) => {
       const a = R_EARTH + alt;
       return { a, inc: inc * DEG, node, u, n: Math.sqrt(MU / (a * a * a)), size, tone };
     };
+    const shell = (alt, inc, planes, per, o = {}) => {
+      for (let p = 0; p < planes; p++) for (let k = 0; k < per; k++) {
+        this.sats.push(s(alt + (o.spread ? (r() - 0.5) * o.spread : 0), inc, (p / planes) * 2 * Math.PI, ((k + p * 0.37) / per) * 2 * Math.PI, o.size, o.tone));
+      }
+    };
     this.sats = [];
     this.iss = s(4.2e5, 51.64, r() * 2 * Math.PI, r() * 2 * Math.PI, 1, 1);
-    this.sats.push(this.iss);
-    // Starlink: 24 planes of 12, 53°.
-    for (let p = 0; p < 24; p++) for (let k = 0; k < 12; k++) this.sats.push(s(5.5e5, 53, (p / 24) * 2 * Math.PI, ((k + p * 0.37) / 12) * 2 * Math.PI, 0.5, 0.7));
-    // Sun-synchronous, nearly over the poles.
-    for (let k = 0; k < 50; k++) this.sats.push(s(6e5 + r() * 2e5, 97.5, r() * 2 * Math.PI, r() * 2 * Math.PI, 0.5, 0.7));
-    // GPS: 6 planes of 5, 55°.
-    for (let p = 0; p < 6; p++) for (let k = 0; k < 5; k++) this.sats.push(s(2.0186e7, 55, (p / 6) * 2 * Math.PI, ((k + p * 0.4) / 5) * 2 * Math.PI));
+    this.sats.push(this.iss, s(3.9e5, 41.5, r() * 2 * Math.PI, r() * 2 * Math.PI, 1, 1)); // and Tiangong
+    // Starlink.
+    shell(5.5e5, 53, 72, 22);
+    shell(5.3e5, 43, 28, 22);
+    shell(5.7e5, 70, 36, 20);
+    shell(5.6e5, 97.6, 6, 58);
+    // OneWeb, nearly over the poles.
+    shell(1.2e6, 87.9, 12, 49);
+    // Watching the Earth: sun-synchronous, 500-800 km.
+    for (let k = 0; k < 400; k++) this.sats.push(s(5e5 + r() * 3e5, 97.5, r() * 2 * Math.PI, r() * 2 * Math.PI));
+    // Everything else low: launch-site inclinations.
+    const INC = [28.5, 51.6, 65, 82, 98.2];
+    for (let k = 0; k < 300; k++) this.sats.push(s(3e5 + r() * 1.2e6, INC[Math.floor(r() * INC.length)], r() * 2 * Math.PI, r() * 2 * Math.PI));
+    // Navigation, in their planes.
+    const nav = { size: 0.75, tone: 0.85 };
+    shell(2.0186e7, 55, 6, 5, nav); // GPS
+    shell(2.3222e7, 56, 3, 8, nav); // Galileo
+    shell(1.91e7, 64.8, 3, 8, nav); // GLONASS
+    shell(2.1528e7, 55, 3, 8, nav); // BeiDou
     // Geostationary: on the equator, as fast as the Earth turns.
-    for (let k = 0; k < 110; k++) this.sats.push(s(3.5786e7, 0, 0, r() * 2 * Math.PI));
+    for (let k = 0; k < 550; k++) this.sats.push(s(3.5786e7, 0, 0, r() * 2 * Math.PI, 0.75, 0.85));
     this.t = 0;
     // The view, as Earth.paint has it: e towards us (Leiden), E to the right, N up.
     const p0 = LEIDEN[0] * DEG, l0 = LEIDEN[1] * DEG;
@@ -57,7 +77,7 @@ export class Satellites {
   /** dt real seconds; a minute a second. */
   step(dt) { this.t += dt * 60; }
 
-  /** Where a satellite is on screen: [x, y (m, y down), in front]. */
+  /** Where a satellite is: [x, y (m, y down), seen (not behind the Earth, from straight on), z (towards you)]. */
   where(q) {
     // The node turns back against the Earth's spin (we're in the Earth's frame).
     const node = q.node - W_EARTH * this.t, u = q.u + q.n * this.t;
@@ -65,18 +85,21 @@ export class Satellites {
     const x = q.a * (cn * cu - sn * su * ci), y = q.a * (sn * cu + cn * su * ci), z = q.a * su * si;
     const { e, E, N } = this;
     const sx = x * E[0] + y * E[1] + z * E[2], sy = -(x * N[0] + y * N[1] + z * N[2]), d = x * e[0] + y * e[1] + z * e[2];
-    return [sx, sy, d > 0 || sx * sx + sy * sy > R_EARTH * R_EARTH];
+    return [sx, sy, d > 0 || sx * sx + sy * sy > R_EARTH * R_EARTH, d];
   }
 
   paint(P, V, f) {
-    // The geostationary ring itself, faint and dotted, hidden behind the Earth.
+    const space = !!P.S; // the 3D view: everything where it is, the Earth hides what's behind it
+    // The geostationary ring itself, faint and dotted.
     const a = R_EARTH + 3.5786e7, n = 240;
     for (let k = 0; k < n; k++) {
-      const [x, y, seen] = this.where({ a, inc: 0, node: 0, u: (k / n) * 2 * Math.PI + W_EARTH * this.t, n: 0 });
-      if (seen) P.dot(x, y, { size: 0.25, tone: 0.4, f });
+      const [x, y, seen, d] = this.where({ a, inc: 0, node: 0, u: (k / n) * 2 * Math.PI + W_EARTH * this.t, n: 0 });
+      if (space) P.dot3(x, y, d, { size: 0.25, tone: 0.4, f });
+      else if (seen) P.dot(x, y, { size: 0.25, tone: 0.4, f });
     }
     for (const q of this.sats) {
-      const [x, y, seen] = this.where(q);
+      const [x, y, seen, d] = this.where(q);
+      if (space) { P.dot3(x, y, d, { size: q === this.iss ? 1.25 : q.size, tone: q.tone, f }); continue; }
       if (!seen) continue;
       if (q === this.iss) {
         const m = P.m * 0.6;
@@ -121,7 +144,14 @@ export class Outer {
     const r = rng(43);
     this.belt = Array.from({ length: 420 }, () => {
       const a = 30 + r() * 20 + (r() < 0.3 ? 9.5 * (r() - 0.5) : 0); // AU
-      return { a, th: r() * 2 * Math.PI, n: (2 * Math.PI) / (365.256 * Math.pow(a, 1.5)), e: (r() - 0.5) * 0.12 };
+      // Tilted out of the ecliptic: most a few degrees (the cold belt), a scattered fifth up to 30°.
+      const inc = (r() < 0.8 ? 4 : 17) * Math.sqrt(-2 * Math.log(r() + 1e-9)) * DEG;
+      return { a, th: r() * 2 * Math.PI, n: (2 * Math.PI) / (365.256 * Math.pow(a, 1.5)), e: (r() - 0.5) * 0.12, inc: Math.min(inc, 35 * DEG), node: r() * 2 * Math.PI };
+    });
+    // Directions all round, for drawing the edge of the Sun's wind as a shell.
+    this.dirs = Array.from({ length: 1400 }, (_, k) => {
+      const z = 1 - (2 * (k + 0.5)) / 1400, s = Math.sqrt(1 - z * z), a = k * 2.39996;
+      return [s * Math.cos(a), s * Math.sin(a), z];
     });
   }
 
@@ -130,15 +160,32 @@ export class Outer {
     const dim = { size: 0.5, tone: 0.55, f };
     for (const b of this.belt) {
       const th = b.th + b.n * days, rr = b.a * (1 + b.e * Math.cos(th * 2)) * AU;
-      P.dot(sun[0] + rr * Math.cos(th), sun[1] - rr * Math.sin(th), dim);
+      P.dot3(sun[0] + rr * Math.cos(th), sun[1] - rr * Math.sin(th), rr * Math.sin(b.inc) * Math.sin(th - b.node), dim);
     }
     // The heliosphere: about 120 AU out in front, much further behind.
     const shape = (k) => (phi) => k * AU * (120 + 110 * (1 - Math.cos(phi - NOSE)) / 2);
-    this.outline(P, sun, shape(1), { size: 0.75, tone: 0.75, f }, 1);
-    this.outline(P, sun, shape(0.78), { size: 0.5, tone: 0.45, f }, 3);
+    if (P.S) { // in 3D, a shell round the Sun, squashed towards the nose
+      const nose = [Math.cos(NOSE), -Math.sin(NOSE), 0];
+      for (const [k, st, every] of [[1, { size: 0.75, tone: 0.75, f }, 1], [0.78, { size: 0.5, tone: 0.45, f }, 3]]) {
+        this.dirs.forEach((d, i) => {
+          if (i % every) return;
+          const c = d[0] * nose[0] + d[1] * nose[1] + d[2] * nose[2], r = k * AU * (120 + 110 * (1 - c) / 2);
+          P.dot3(sun[0] + d[0] * r, sun[1] + d[1] * r, d[2] * r, st);
+        });
+      }
+    } else {
+      this.outline(P, sun, shape(1), { size: 0.75, tone: 0.75, f }, 1);
+      this.outline(P, sun, shape(0.78), { size: 0.5, tone: 0.45, f }, 3);
+    }
     for (const c of CRAFT) {
-      const d = (c.d + (c.v * (days - CRAFT_EPOCH)) / YEAR_DAYS) * AU * Math.cos(c.lat * DEG);
+      const D = (c.d + (c.v * (days - CRAFT_EPOCH)) / YEAR_DAYS) * AU, d = D * Math.cos(c.lat * DEG), z = D * Math.sin(c.lat * DEG);
       const x = sun[0] + d * Math.cos(c.lon * DEG), y = sun[1] - d * Math.sin(c.lon * DEG);
+      if (P.S) { // the way it came, out of the ecliptic at its real latitude
+        const n = Math.min(400, Math.ceil(Math.hypot(x - sun[0], y - sun[1], z) * P.V.ppm / P.V.cell / 2));
+        for (let k = 0; k <= n; k++) P.dot3(sun[0] + (x - sun[0]) * k / n, sun[1] + (y - sun[1]) * k / n, z * k / n, { size: 0.5, tone: 0.45, f });
+        P.dot3(x, y, z, { size: 1.25, f });
+        continue;
+      }
       P.line(sun[0], sun[1], x, y, { size: 0.5, tone: 0.45, f }, 2);
       const m = P.m * 0.6;
       for (const [dx, dy] of [[0, 0], [m, 0], [0, m], [m, m]]) P.dot(x + dx, y + dy, { f });
@@ -168,12 +215,12 @@ export class Oort {
     this.pts = Array.from({ length: 2600 }, () => {
       const d = 2000 * Math.pow(50, Math.sqrt(r())) * AU; // more of them in the inner cloud
       const z = 2 * r() - 1, a = r() * 2 * Math.PI, s = Math.sqrt(1 - z * z);
-      return [d * s * Math.cos(a), d * s * Math.sin(a)];
+      return [d * s * Math.cos(a), d * s * Math.sin(a), d * z];
     });
   }
 
   paint(P, V, f) {
-    for (const [x, y] of this.pts) P.dot(x, y, { size: 0.5, tone: 0.6, f });
+    for (const [x, y, z] of this.pts) P.dot3(x, y, z, { size: 0.5, tone: 0.6, f }); // a sphere, in 3D
   }
 }
 
@@ -201,6 +248,7 @@ export class Radio {
     const R = (radioYears() + this.extra) * LY;
     const Rc = (R * V.ppm) / V.cell;
     if (Rc < 0.7) { P.dot(0, 0, { colour: 1, f }); return; }
+    if (P.S) { this.sphere(P, V, f, R); return; }
     // Decades: where the broadcasts of 1930, 1940, … have got to.
     const now = 1920.84 + radioYears() + this.extra;
     for (let y = 1930; y < now; y += 10) {
@@ -215,6 +263,28 @@ export class Radio {
       const r = R - k * band;
       if (r <= 0) break;
       P.ring(0, 0, r, { size: 1, colour: k + 1, f }, 1);
+    }
+  }
+
+  /** In 3D it's what it is, a sphere: the front as seven shells, the decades as fainter ones inside. */
+  sphere(P, V, f, R) {
+    const shell = (r, st, spacing, cap) => {
+      const rc = (r * V.ppm) / V.cell, n = Math.min(cap, Math.max(12, Math.ceil((4 * Math.PI * rc * rc) / (spacing * spacing))));
+      for (let k = 0; k < n; k++) {
+        const z = 1 - (2 * (k + 0.5)) / n, s = Math.sqrt(1 - z * z), a = k * 2.39996;
+        P.dot3(r * s * Math.cos(a), r * s * Math.sin(a), r * z, st);
+      }
+    };
+    const now = 1920.84 + radioYears() + this.extra;
+    for (let y = 1930; y < now; y += 10) {
+      const r = (now - y) * LY;
+      if ((r * V.ppm) / V.cell > 3) shell(r, { size: 0.25, tone: 0.4, f }, 5, 700);
+    }
+    const band = P.m * 0.55;
+    for (let k = 0; k < 7; k++) {
+      const r = R - k * band;
+      if (r <= 0) break;
+      shell(r, { size: 1, colour: k + 1, f }, 2.5, 2200);
     }
   }
 }

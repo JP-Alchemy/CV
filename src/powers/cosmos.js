@@ -321,6 +321,161 @@ export class Web {
   }
 }
 
+// ---------------------------------------------------------------- the web, in 3D
+
+const N3 = 64; // galaxies a side in the 3D box (262,144 of them)
+const B3 = 32; // its crowding, binned
+
+/** A 3D inverse FFT of an n³ complex grid (x fastest), real part returned. */
+function ifft3(re, im, n) {
+  const r = new Float64Array(n), i = new Float64Array(n), n2 = n * n;
+  for (const [stride, outer] of [[1, (a, b) => a * n + b * n2], [n, (a, b) => a + b * n2], [n2, (a, b) => a + b * n]]) {
+    for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) {
+      const o = outer(a, b);
+      for (let k = 0; k < n; k++) { r[k] = re[o + k * stride]; i[k] = im[o + k * stride]; }
+      fft(r, i, true);
+      for (let k = 0; k < n; k++) { re[o + k * stride] = r[k]; im[o + k * stride] = i[k]; }
+    }
+  }
+  return re;
+}
+
+/**
+ * The web for the 3D view: the same Zel'dovich approximation as Web, in a
+ * box of 64³ galaxies, so its sheets, filaments and voids are 3D and you can
+ * go round them. Close up, every galaxy; from further off, how crowded each
+ * bit of space is, in cubes that grow with the view so there are never more
+ * than some tens of thousands. Beyond the box it repeats, each copy turned
+ * or flipped (one of 48 ways). It reaches out to the edge of what we can see,
+ * the microwave background, a sphere.
+ */
+export class Web3 {
+  constructor() {
+    const r = rng(61), n = N3, n3 = n * n * n;
+    const phase = Array.from({ length: n3 }, () => [gauss(r), gauss(r)]);
+    const psi = [];
+    for (let axis = 0; axis < 3; axis++) {
+      const re = new Float64Array(n3), im = new Float64Array(n3);
+      for (let z = 0; z < n; z++) for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+        const f = (v) => (v <= n / 2 ? v : v - n), kx = f(x), ky = f(y), kz = f(z), k = Math.hypot(kx, ky, kz), o = (z * n + y) * n + x;
+        if (!k || k > 26) continue;
+        const amp = Math.pow(k, -2.4) * Math.exp(-(k * k) / 170), [a, b] = phase[o], kk = [kx, ky, kz][axis]; // ψ = −∇Φ
+        re[o] = -b * amp * kk; im[o] = a * amp * kk;
+      }
+      psi.push(ifft3(re, im, n));
+    }
+    // Scaled by how much it squeezes, as Web does, so that today it has crossed into sheets and filaments.
+    let rms = 0;
+    for (let z = 0; z < n; z++) for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const o = (z * n + y) * n + x;
+      const dv = psi[0][(z * n + y) * n + ((x + 1) % n)] - psi[0][o] + psi[1][(z * n + ((y + 1) % n)) * n + x] - psi[1][o] + psi[2][(((z + 1) % n) * n + y) * n + x] - psi[2][o];
+      rms += dv * dv;
+    }
+    rms = Math.sqrt(rms / n3);
+    const sc = (WEB_SQUEEZE * 0.8) / (n * rms); // in boxes
+    this.psi = psi.map((a) => Float32Array.from(a, (v) => v * sc));
+    this.P = [new Float32Array(n3), new Float32Array(n3), new Float32Array(n3)];
+    this.D = 0.3;
+    this.place();
+  }
+
+  /** Grow, as Web does. */
+  step(dt) {
+    if (this.D >= 1) return false;
+    this.D = Math.min(1, this.D + dt / 14);
+    this.place();
+    return true;
+  }
+
+  /** Where every galaxy is now (in boxes, 0-1), and how crowded each bin is, averaged down by halves. */
+  place() {
+    const n = N3, [X, Y, Z] = this.P, c = new Float32Array(B3 * B3 * B3);
+    const wrap = (v) => v - Math.floor(v);
+    for (let z = 0; z < n; z++) for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const o = (z * n + y) * n + x;
+      X[o] = wrap((x + 0.5) / n + this.D * this.psi[0][o]);
+      Y[o] = wrap((y + 0.5) / n + this.D * this.psi[1][o]);
+      Z[o] = wrap((z + 0.5) / n + this.D * this.psi[2][o]);
+      c[((Math.min(B3 - 1, (Z[o] * B3) | 0) * B3) + Math.min(B3 - 1, (Y[o] * B3) | 0)) * B3 + Math.min(B3 - 1, (X[o] * B3) | 0)]++;
+    }
+    const mean = (n * n * n) / (B3 * B3 * B3);
+    let res = B3, lvl = c.map((v) => v / mean);
+    this.mips = { [res]: lvl };
+    while (res > 1) {
+      const h = res / 2, nx = new Float32Array(h * h * h);
+      for (let z = 0; z < h; z++) for (let y = 0; y < h; y++) for (let x = 0; x < h; x++) {
+        let sum = 0;
+        for (let d = 0; d < 8; d++) sum += lvl[((2 * z + (d >> 2)) * res + 2 * y + ((d >> 1) & 1)) * res + 2 * x + (d & 1)];
+        nx[(z * h + y) * h + x] = sum / 8;
+      }
+      res = h; lvl = nx; this.mips[res] = lvl;
+    }
+  }
+
+  /** A copy of the box at tile (tx, ty, tz): one of 48 turns and flips. Returns [u, v, w] in the copy for [u, v, w] in the box. */
+  static sym(tx, ty, tz) { return ((Math.imul(tx, 73856093) ^ Math.imul(ty, 19349663) ^ Math.imul(tz, 83492791)) >>> 0) % 48; }
+  static apply(s, u, v, w) {
+    if (s & 1) u = 1 - u;
+    if (s & 2) v = 1 - v;
+    if (s & 4) w = 1 - w;
+    switch ((s >> 3) % 6) {
+      case 1: return [v, u, w];
+      case 2: return [w, v, u];
+      case 3: return [u, w, v];
+      case 4: return [v, w, u];
+      case 5: return [w, u, v];
+      default: return [u, v, w];
+    }
+  }
+
+  /** In the 3D view (P.S), round "here", out to the view's reach or the edge of what we can see. */
+  paint(P, V, f) {
+    const reach = Math.min(R_OBS, Math.hypot(V.cols, V.rows) * V.cell * 0.5 / V.ppm), cell = V.cell / V.ppm;
+    if (reach < 0.33 * BOX) { // close up: the galaxies themselves (some tens of thousands in reach)
+      const [X, Y, Z] = this.P, t0 = Math.floor(-reach / BOX), t1 = Math.floor(reach / BOX), r2 = reach * reach;
+      const size = Math.max(0.5, Math.min(1, (BOX / N3 / 6) / cell));
+      for (let tz = t0; tz <= t1; tz++) for (let ty = t0; ty <= t1; ty++) for (let tx = t0; tx <= t1; tx++) {
+        const s = Web3.sym(tx, ty, tz);
+        for (let k = 0; k < X.length; k++) {
+          const [u, v, w] = Web3.apply(s, X[k], Y[k], Z[k]);
+          const x = (tx + u) * BOX, y = (ty + v) * BOX, z = (tz + w) * BOX;
+          if (x * x + y * y + z * z < r2) P.dot3(x, y, z, { size, tone: 0.8, f });
+        }
+      }
+      return;
+    }
+    // Further off: galaxies scattered by how crowded each bit of space is (a few to a crowded bit, none in a
+    // void), at fixed spots, about 24 bits across the view's reach, so it reads the same at every scale.
+    const step = Math.max(reach / 24, BOX / B3 / 2);
+    let res = B3;
+    while (res > 1 && BOX / res < step * 0.99) res /= 2;
+    const map = this.mips[res], m = Math.ceil(reach / step), size = 0.75;
+    const hash = (a, b, c, d) => { let h = Math.imul(a, 374761393) ^ Math.imul(b, 668265263) ^ Math.imul(c, 2147483647) ^ Math.imul(d, 1274126177); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+    for (let k = -m; k <= m; k++) for (let j = -m; j <= m; j++) for (let i = -m; i <= m; i++) {
+      const x = i * step, y = j * step, z = k * step;
+      if (x * x + y * y + z * z > reach * reach) continue;
+      const bx = x / BOX, by = y / BOX, bz = z / BOX, tx = Math.floor(bx), ty = Math.floor(by), tz = Math.floor(bz);
+      const [u, v, w] = Web3.apply(Web3.sym(tx, ty, tz), bx - tx, by - ty, bz - tz);
+      const c = map[(Math.min(res - 1, (w * res) | 0) * res + Math.min(res - 1, (v * res) | 0)) * res + Math.min(res - 1, (u * res) | 0)];
+      // Averaged over more, the contrast fades: on the largest scales the universe is smooth (and sparse here).
+      const count = Math.floor(Math.pow(Math.max(0, c - 0.9), 1.7) * 1.0 + hash(i, j, k, 7));
+      for (let g = 0; g < Math.min(count, 6); g++) {
+        const ox = (hash(i, j, k, 3 * g + 11) - 0.5) * step, oy = (hash(i, j, k, 3 * g + 12) - 0.5) * step, oz = (hash(i, j, k, 3 * g + 13) - 0.5) * step;
+        P.dot3(x + ox, y + oy, z + oz, { size, tone: Math.min(1, 0.45 + c * 0.12), f });
+      }
+    }
+  }
+
+  /** The edge of what we can see, the microwave background: a sphere. */
+  edge(P, V, f) {
+    const rc = (R_OBS * V.ppm) / V.cell, n = Math.min(4000, Math.max(60, Math.ceil(4 * Math.PI * rc * rc / 6)));
+    for (let k = 0; k < n; k++) {
+      const z = 1 - (2 * (k + 0.5)) / n, s = Math.sqrt(1 - z * z), a = k * 2.39996;
+      P.dot3(R_OBS * s * Math.cos(a), R_OBS * s * Math.sin(a), R_OBS * z, { colour: 1, f });
+    }
+  }
+}
+
 // ---------------------------------------------------------------- bubbles
 
 /**

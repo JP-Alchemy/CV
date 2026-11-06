@@ -28,13 +28,19 @@ vec3 shade(vec3 col, vec3 bg, vec3 wn, float k) {
 // Powers of Ten's scales (FS_ZOOM in renderer.js) as cubes: one instance per
 // cell of its grid, the same size, colour and tone, standing on the page's
 // plane. A height in the grid's alpha (cells, ×16) raises a cell; until the
-// scenes give one, everything stands one cell deep.
+// scenes give one, everything stands one cell deep. A map of the Earth's
+// surface (Z.ball: its middle and radius, px) is a view straight down onto
+// the globe, so each cell is lifted back onto the sphere it was seen on,
+// and where the ground slopes away the cell grows deeper, so no gaps show.
 const VS_ZOOM = `#version 300 es
 precision highp float;
 precision highp int;
 uniform sampler2D u_zGrid;
 uniform vec4 u_zArea; // x, y, cols, rows
-uniform float u_zB, u_scroll, u_time, u_s, u_k;
+uniform float u_zB, u_scroll, u_time, u_s, u_k, u_face;
+uniform float u_zDot, u_zRing; // how much of its cell a block fills; 1 for a far ring (smaller, flat, and only beyond the middle)
+uniform vec4 u_zHole; // x0, y0, x1, y1: a finer grid is drawn here (the far ring leaves it out)
+uniform vec4 u_ball; // x, y, radius (0: flat), how far the ball's middle is in front of a radius behind the page
 uniform mat4 u_vp;
 uniform vec3 u_eye, u_piv;
 out vec3 v_q;
@@ -47,11 +53,21 @@ void main() {
   vec4 t = texelFetch(u_zGrid, g, 0);
   // Tilted, the painted area's edge shows: dissolve the outer eighth of it, a cell at a time.
   vec2 e = min(vec2(g) + 0.5, u_zArea.zw - vec2(g) - 0.5) / (u_zArea.zw * 0.12);
-  float keep = clamp(min(e.x, e.y), 0.0, 1.0);
+  float keep = clamp(min(e.x, e.y), 0.0, 1.0) * u_face; // and the whole flat layer as it turns away
   if (t.r <= 0.0 || hashL(vec2(g) + 3.7) >= keep) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
-  vec3 h = vec3(t.r * u_zB * 0.5);
+  vec3 h = vec3(t.r * u_zB * 0.5 * u_zDot);
+  if (u_zRing > 0.0) h.z = min(h.z, u_zB * 0.06); // tiles on the ground, not blocks standing on it
   vec2 c = u_zArea.xy + (vec2(g) + 0.5) * u_zB;
+  if (c.x > u_zHole.x && c.y > u_zHole.y && c.x < u_zHole.z && c.y < u_zHole.w) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
   vec3 C = vec3(c, t.a * 255.0 / 16.0 * u_zB - h.z - 0.5); // a hair behind the page's blocks
+  if (u_ball.z > 0.0) {
+    vec2 d = c - u_ball.xy;
+    float R = u_ball.z, r2 = dot(d, d), up = R * sqrt(max(1.0 - r2 / (R * R), 0.0));
+    float deep = min(sqrt(r2) / max(up, 1e-3), 10.0) * u_zB * 0.5; // the slope, in cells
+    C.z += -r2 / (R + up) + u_ball.w - deep; // how far the ground falls away (written so a town, on a ball millions of px across, stays exact)
+    h.z += deep;
+  }
+  if (u_zRing > 0.0 && (u_vp * vec4(C, 1.0)).w < (u_vp * vec4(u_piv, 1.0)).w) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; } // the near side of a ring would loom past the camera
   vec3 dl = u_eye + u_s * (u_piv - C);
   vec3 s = vec3(greaterThanEqual(dl, vec3(0.0))) * 2.0 - 1.0;
   int j = gl_VertexID, k = (s.x * s.y * s.z > 0.0 ? j + 5 : 7 - j) % 6;
@@ -79,6 +95,92 @@ void main() {
   int k = int(v_kt.x + 0.5);
   vec3 col = k > 0 ? SPECTRUM[clamp(k - 1, 0, 6)] : mix(bg, fg, v_kt.y);
   col = mix(col, v_light.rgb, v_light.a);
+  o = vec4(shade(col, bg, face(v_q), u_k), 1.0);
+}`;
+
+const FAN = `
+  vec3 s = vec3(greaterThanEqual(dl, vec3(0.0))) * 2.0 - 1.0;
+  int j = gl_VertexID, k = (s.x * s.y * s.z > 0.0 ? j + 5 : 7 - j) % 6;
+  vec3 q = j == 0 ? s : s * (k == 0 ? vec3(-1, 1, 1) : k == 1 ? vec3(-1, -1, 1) : k == 2 ? vec3(1, -1, 1) : k == 3 ? vec3(1, -1, -1) : k == 4 ? vec3(1, 1, -1) : vec3(-1, 1, -1));`;
+
+const VS_POINTS = `#version 300 es
+precision highp float;
+precision highp int;
+layout(location=0) in vec4 a_p; // x, y, z (px from the centre), size (px)
+layout(location=1) in vec4 a_m; // colour, tone, fade, -
+uniform vec3 u_centre, u_eye, u_piv;
+uniform float u_s;
+uniform mat4 u_vp;
+out vec3 v_q;
+flat out vec2 v_ct;
+float hashS(vec3 p) { p = fract(p * 0.1031); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); }
+void main() {
+  if (hashS(floor(a_p.xyz) * 0.37 + 1.3) >= a_m.z) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+  vec3 C = u_centre + a_p.xyz, h = vec3(a_p.w * 0.5);
+  if ((u_vp * vec4(C, 1.0)).w < 0.2) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; } // at or behind the camera
+  vec3 dl = u_eye + u_s * (u_piv - C);
+${FAN}
+  gl_Position = u_vp * vec4(C + q * h, 1.0);
+  v_q = q;
+  v_ct = a_m.xy;
+}`;
+
+const FS_POINTS = `#version 300 es
+precision highp float;
+precision highp int;
+in vec3 v_q;
+flat in vec2 v_ct;
+uniform float u_k, u_time;
+out vec4 o;
+${THEME_GLSL}
+${LIGHT_GLSL}
+${SHADE}
+void main() {
+  float t = themeK();
+  vec3 bg = mix(u_bgA, u_bgB, t), fg = mix(u_fgA, u_fgB, t);
+  int k = int(v_ct.x + 0.5);
+  vec3 col = k > 0 ? SPECTRUM[clamp(k - 1, 0, 6)] : mix(bg, fg, v_ct.y);
+  o = vec4(shade(col, bg, face(v_q), u_k), 1.0);
+}`;
+
+const VS_SOLID = `#version 300 es
+precision highp float;
+precision highp int;
+layout(location=0) in vec4 a_cube; // x, y, z (grid steps), tone
+uniform vec3 u_centre, u_sun, u_eye, u_piv;
+uniform float u_size, u_s, u_fade, u_tone, u_lit;
+uniform vec4 u_hole; // x0, y0, x1, y1: where a finer map of the near side is drawn, just sea
+uniform mat4 u_vp;
+out vec3 v_q;
+flat out float v_tone;
+float hashS(vec3 p) { p = fract(p * 0.1031); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); }
+void main() {
+  if (hashS(a_cube.xyz + 5.1) >= u_fade) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; } // dissolving in or out
+  vec3 C = u_centre + a_cube.xyz * u_size, h = vec3(u_size * 0.5);
+  bool under = a_cube.z > 0.0 && C.x > u_hole.x && C.y > u_hole.y && C.x < u_hole.z && C.y < u_hole.w; // under the finer map: a plain floor, so what's behind doesn't show through it
+  if ((u_vp * vec4(C, 1.0)).w < 0.2) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; } // at or behind the camera
+  vec3 dl = u_eye + u_s * (u_piv - C);
+${FAN}
+  gl_Position = u_vp * vec4(C + q * h, 1.0);
+  v_q = q;
+  float day = dot(normalize(a_cube.xyz), u_sun);
+  v_tone = (under ? 0.16 : a_cube.w) * u_tone * (u_lit > 0.5 ? mix(0.55, 1.0, smoothstep(-0.08, 0.08, day)) : 1.0);
+}`;
+
+const FS_SOLID = `#version 300 es
+precision highp float;
+in vec3 v_q;
+flat in float v_tone;
+uniform float u_k, u_time;
+uniform int u_colour;
+out vec4 o;
+${THEME_GLSL}
+${LIGHT_GLSL}
+${SHADE}
+void main() {
+  float t = themeK();
+  vec3 bg = mix(u_bgA, u_bgB, t), fg = mix(u_fgA, u_fgB, t);
+  vec3 col = u_colour > 0 ? mix(bg, SPECTRUM[clamp(u_colour - 1, 0, 6)], v_tone) : mix(bg, fg, v_tone);
   o = vec4(shade(col, bg, face(v_q), u_k), 1.0);
 }`;
 
@@ -168,17 +270,22 @@ void main() {
 const mul = (A, B) => A.map((_, i) => { const r = i >> 2, c = i & 3; return A[r * 4] * B[c] + A[r * 4 + 1] * B[4 + c] + A[r * 4 + 2] * B[8 + c] + A[r * 4 + 3] * B[12 + c]; });
 const ZS = 1 / 4000; // depth: ±4000 px about the pivot
 
-/** Camera: tilt (about x, then yaw about y) about the middle of a w × h view, s = 1 / distance (0: orthographic). */
-export function camera(w, h, tilt = 0, yaw = 0, s = 0) {
+/** Camera: tilt (about x, then yaw about y) about `piv` (screen px; the middle of the w × h view by default), s = 1 / distance (0: orthographic). */
+export function camera(w, h, tilt = 0, yaw = 0, s = 0, piv = null) {
   const ct = Math.cos(tilt), st = Math.sin(tilt), cy = Math.cos(yaw), sy = Math.sin(yaw);
   const R = [cy, sy * st, sy * ct, 0, 0, ct, -st, 0, -sy, cy * st, cy * ct, 0, 0, 0, 0, 1];
   const Rt = [R[0], R[4], R[8], 0, R[1], R[5], R[9], 0, R[2], R[6], R[10], 0, 0, 0, 0, 1];
-  const px = w / 2, py = h / 2, ax = 2 / w, ay = -2 / h;
+  const px = piv ? piv[0] : w / 2, py = piv ? piv[1] : h / 2, ax = 2 / w, ay = -2 / h;
+  // Turn about (px, py), and put it back where it was on screen: the view's middle moves with it only if the pivot is the middle.
+  const qx = w / 2 - px, qy = h / 2 - py;
   const T = [1, 0, 0, -px, 0, 1, 0, -py, 0, 0, 1, 0, 0, 0, 0, 1];
   const Ti = [1, 0, 0, px, 0, 1, 0, py, 0, 0, 1, 0, 0, 0, 0, 1];
+  const Q = [1, 0, 0, -qx, 0, 1, 0, -qy, 0, 0, 1, 0, 0, 0, 0, 1], Qi = [1, 0, 0, qx, 0, 1, 0, qy, 0, 0, 1, 0, 0, 0, 0, 1];
   const P = [ax, 0, 0, 0, 0, ay, 0, 0, 0, 0, -ZS, 0, 0, 0, -s, 1];
   const Pi = [1 / ax, 0, 0, 0, 0, 1 / ay, 0, 0, 0, 0, -1 / ZS, 0, 0, 0, -s / ZS, 1];
-  return { vp: mul(P, mul(R, T)), ivp: mul(Ti, mul(Rt, Pi)), eye: [R[8], R[9], R[10]], piv: [px, py, 0], s };
+  // Towards the camera, as the shader wants it (s × the way from the pivot to the eye, which sits over the screen's middle).
+  const eye = [0, 1, 2].map((k) => R[8 + k] + s * (qx * R[k] + qy * R[4 + k]));
+  return { vp: mul(P, mul(Q, mul(R, T))), ivp: mul(Ti, mul(Rt, mul(Qi, Pi))), eye, piv: [px, py, 0], s };
 }
 
 /**
@@ -202,7 +309,8 @@ export function attach3D(r) {
   }
   gl.bindVertexArray(null);
   const flat = [r.blocks, r.vao], draw = r.draw.bind(r);
-  const cam = { view: { tilt: 0, yaw: 0, s: 0, k: 0 }, on: true, c: null };
+  const cam = { view: { tilt: 0, yaw: 0, s: 0, k: 0, piv: null }, on: true, c: null, solid: null };
+  r.cam3d = cam; // for scenes with solid things (Powers of Ten's globe)
 
   r.draw = (f) => {
     if (!cam.on) {
@@ -211,7 +319,7 @@ export function attach3D(r) {
       cam.c = null;
       return draw(f);
     }
-    const V = cam.view, c = cam.c = camera(r.w, r.h, V.tilt, V.yaw, V.s);
+    const V = cam.view, c = cam.c = camera(r.w, r.h, V.tilt, V.yaw, V.s, V.piv);
     gl.useProgram(P.p);
     gl.uniformMatrix4fv(u.u_vp, true, c.vp);
     gl.uniformMatrix4fv(u.u_vp0, true, camera(r.w, r.h).vp);
@@ -226,12 +334,109 @@ export function attach3D(r) {
     const Z = r.zoom, M = r.slime;
     r.zoom = r.slime = null;
     try { draw(f); } finally { r.zoom = Z; r.slime = M; }
-    if (Z) zoomCubes(f, Z, c);
+    if (Z) zoomCubes(f, Z, c, r.ztex);
+    if (Z) (cam.far || []).forEach((F, i) => { // the ground further out, coarser, in rings round the zoom's grid
+      let T = ftex[i];
+      if (!T) T = ftex[i] = { tex: gl.createTexture(), v: -1 };
+      if (F.version !== T.v) {
+        gl.bindTexture(gl.TEXTURE_2D, T.tex);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, F.cols, F.rows, 0, gl.RGBA, gl.UNSIGNED_BYTE, F.buf);
+        for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.NEAREST], [gl.TEXTURE_MAG_FILTER, gl.NEAREST], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+        T.v = F.version;
+      }
+      zoomCubes(f, F, c, T.tex);
+    });
+    for (const S of [].concat(cam.solid || [])) if (S?.n) solidCubes(f, S, c);
+    if (cam.points?.n) pointCubes(f, cam.points, c);
   };
 
-  let ZP = null;
+  let ZP = null, SP = null;
   const zvao = gl.createVertexArray();
-  function zoomCubes(f, Z, c) {
+  function common(z, f, c) {
+    gl.uniform3fv(z.u_bgA, f.themeA.bg); gl.uniform3fv(z.u_fgA, f.themeA.fg);
+    gl.uniform3fv(z.u_bgB, f.themeB.bg); gl.uniform3fv(z.u_fgB, f.themeB.fg);
+    gl.uniform1f(z.u_themeT, f.themeT);
+    gl.uniform2f(z.u_themeOrigin, f.themeOrigin[0], f.themeOrigin[1]);
+    gl.uniform2f(z.u_viewDev, r.canvas.width, r.canvas.height);
+    gl.uniform1f(z.u_dpr, r.dpr);
+    gl.uniformMatrix4fv(z.u_vp, true, c.vp);
+    gl.uniform3fv(z.u_eye, c.eye);
+    gl.uniform3fv(z.u_piv, c.piv);
+    gl.uniform1f(z.u_s, c.s);
+    gl.uniform1f(z.u_k, cam.view.k);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+  }
+
+  // Solid things (cam.solid: one or a list of { buf, n, centre: [x, y], size,
+  // sun: [x, y, z], fade, tone, colour, lit }): cubes on a grid, `size` px
+  // apart, about `centre` (screen px, at z = 0). buf holds x, y, z (grid
+  // steps; y down, z towards you) and a tone a cube, times `tone`; `colour`
+  // 1-7 is the spectrum instead of ink; with `lit` (the default) the side
+  // away from the Sun is night, a little darker. Each buf is uploaded once.
+  const bufs = new WeakMap();
+  function solidCubes(f, S, c) {
+    SP ||= program(gl, VS_SOLID, FS_SOLID);
+    const z = SP.u;
+    gl.useProgram(SP.p);
+    common(z, f, c);
+    let B = bufs.get(S.buf);
+    if (!B) {
+      B = { vao: gl.createVertexArray(), buf: gl.createBuffer() };
+      gl.bindVertexArray(B.vao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, B.buf);
+      gl.bufferData(gl.ARRAY_BUFFER, S.buf, gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 16, 0);
+      gl.vertexAttribDivisor(0, 1);
+      bufs.set(S.buf, B);
+    }
+    gl.bindVertexArray(B.vao);
+    gl.uniform3f(z.u_centre, S.centre[0], S.centre[1], S.centre[2] || 0);
+    gl.uniform1f(z.u_size, S.size);
+    gl.uniform3fv(z.u_sun, S.sun || [0, 0, 1]);
+    gl.uniform1f(z.u_fade, S.fade ?? 1);
+    gl.uniform1f(z.u_tone, S.tone ?? 1);
+    gl.uniform1f(z.u_lit, S.lit === false ? 0 : 1);
+    gl.uniform4fv(z.u_hole, S.hole || [0, 0, 0, 0]);
+    gl.uniform1i(z.u_colour, S.colour || 0);
+    gl.uniform1f(z.u_time, f.time);
+    gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 8, S.n);
+    gl.bindVertexArray(null);
+  }
+
+  // Points in space (cam.points: { buf, n, centre: [x, y], version }): buf
+  // holds 8 floats a point: x, y, z (px from centre; y down, z towards you),
+  // size (px), colour (0 ink, 1-7 the spectrum), tone, fade, -. Uploaded
+  // when `version` changes.
+  let PP = null;
+  const pvao = gl.createVertexArray(), pbuf = gl.createBuffer();
+  let pVersion = -1;
+  function pointCubes(f, Pt, c) {
+    PP ||= program(gl, VS_POINTS, FS_POINTS);
+    const z = PP.u;
+    gl.useProgram(PP.p);
+    common(z, f, c);
+    gl.bindVertexArray(pvao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, pbuf);
+    if (Pt.version !== pVersion) {
+      gl.bufferData(gl.ARRAY_BUFFER, Pt.buf, gl.DYNAMIC_DRAW);
+      pVersion = Pt.version;
+    }
+    for (const [loc, off] of [[0, 0], [1, 16]]) {
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, 4, gl.FLOAT, false, 32, off);
+      gl.vertexAttribDivisor(loc, 1);
+    }
+    gl.uniform3f(z.u_centre, Pt.centre[0], Pt.centre[1], Pt.centre[2] || 0);
+    gl.uniform1f(z.u_time, f.time);
+    gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 8, Pt.n);
+    gl.bindVertexArray(null);
+  }
+
+  const ftex = [];
+  function zoomCubes(f, Z, c, tex) {
     ZP ||= program(gl, VS_ZOOM, FS_ZOOM);
     const z = ZP.u;
     gl.useProgram(ZP.p);
@@ -255,11 +460,17 @@ export function attach3D(r) {
     gl.uniform3fv(z.u_piv, c.piv);
     gl.uniform1f(z.u_s, c.s);
     gl.uniform1f(z.u_k, cam.view.k);
+    // A flat picture (the desk, the town) fades as it turns away, rather than show mirrored; points in space (cam.view.round) are seen from either side.
+    gl.uniform1f(z.u_face, cam.view.round ? 1 : Math.min(1, Math.max(0, (c.eye[2] - 0.15) / 0.35)));
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, r.ztex);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.uniform1i(z.u_zGrid, 0);
+    gl.uniform4fv(z.u_zHole, Z.hole || [0, 0, 0, 0]);
+    gl.uniform1f(z.u_zDot, Z.dot || 1);
+    gl.uniform1f(z.u_zRing, Z.ring ? 1 : 0);
     gl.uniform4f(z.u_zArea, Z.x, Z.y, Z.cols, Z.rows);
     gl.uniform1f(z.u_zB, Z.cell);
+    gl.uniform4fv(z.u_ball, Z.ball || [0, 0, 0, 0]);
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
     gl.bindVertexArray(zvao);

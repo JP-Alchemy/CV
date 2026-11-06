@@ -15,8 +15,9 @@
 
 import { Grid, Pen, Desk, Earth, Planets, Stars, Galaxy, Bacteria, Proteins, here, ramp, j2000, LY, AU } from './scenes.js';
 import { geo, loadGeo } from './geo.js';
-import { Street, Town, sunOverLeiden } from './street.js';
-import { LocalGroup, Web, Bubbles } from './cosmos.js';
+import { buildGlobe, sunInView, ball } from './globe.js';
+import { Street, Town, Region, sunOverLeiden } from './street.js';
+import { LocalGroup, Web, Web3, Bubbles } from './cosmos.js';
 import { BasePair, Atom, Nucleus, Proton } from './atoms.js';
 import { Satellites, Outer, Oort, Radio, voyager1, radioYears } from './orbits.js';
 import { Pixels, Dna } from './small.js';
@@ -84,13 +85,14 @@ export class Zoom {
     if (!this.on) return;
     this.on = false;
     this.host.renderer.clearZoom?.();
+    if (this.host.renderer.cam3d) this.host.renderer.cam3d.solid = this.host.renderer.cam3d.points = this.host.renderer.cam3d.far = null;
     this.cam = null;
   }
 
   /** Under the menu: nothing zooms or draws. */
   hide(on) {
     this.hidden = on;
-    if (on) { this.host.renderer.clearZoom?.(); this.cam = null; }
+    if (on) { this.host.renderer.clearZoom?.(); this.cam = null; if (this.host.renderer.cam3d) this.host.renderer.cam3d.solid = this.host.renderer.cam3d.points = this.host.renderer.cam3d.far = null; }
   }
 
   /**
@@ -209,11 +211,13 @@ export class Zoom {
     if (moving) this.L += (this.Lt - this.L) * (1 - Math.exp(-dt * (this.host.calm?.() ? 20 : RATE)));
     else this.L = this.Lt;
     const L = this.L, L0 = this.L0, Lf = this.Lfill, Lp = this.Lpix;
+    const in3d = !!this.host.renderer.cam3d?.on; // in 3D the slime mould's map isn't drawn, so the region stays on until the country is small
     const vis = this.vis = {
       desk: ramp(L, L0, L0 + 0.08, 2.15, 2.55),
       town: ramp(L, 2.15, 2.55, 3.95, 4.45),
-      here: Math.max(ramp(L, 2.6, 3.0, 3.9, 4.4), ramp(L, 5.6, 6.0, 7.3, 7.8)),
-      map: ramp(L, 3.6, 4.2, 5.8, 6.3),
+      here: ramp(L, 2.6, 3.0, 7.3, 7.8),
+      region: in3d ? ramp(L, 3.7, 4.15, 5.9, 6.4) : ramp(L, 3.7, 4.15, 5.25, 5.75),
+      map: ramp(L, 4.75, 5.25, 5.8, 6.3),
       earth: ramp(L, 4.9, 5.4, 8.6, 9.2),
       sats: ramp(L, 6.6, 7.0, 8.3, 8.6),
       planets: ramp(L, 8.2, 8.8, 14.5, 15.2),
@@ -246,7 +250,11 @@ export class Zoom {
       screen: [w * this.px, h * this.px], touch: this.touch,
     };
     const P = new Pen(this.grid, V);
+    const c3 = this.host.renderer.cam3d;
+    if (c3?.on) P.S = []; // the 3D view: things in space are drawn where they are (Pen.dot3)
+    else if (c3) c3.points = null;
     let alive = false;
+    const solid = this.solid(vis, V, x, y, w, h); // in 3D, the Earth as a solid while it fits the screen; 0-1
     if (vis.desk) { (this.desk ||= new Desk()).step(dt, V); (this.street ||= new Street()).step(dt); alive = true; }
     if (vis.town) { (this.town ||= new Town()).step(dt); alive = true; }
     if (vis.sats) { (this.sats ||= new Satellites()).step(dt); alive = true; }
@@ -257,8 +265,10 @@ export class Zoom {
       (this.group ||= new LocalGroup()).step(dt * 100);
       alive = true;
       if (!this.web && !this.webSoon) this.webSoon = setTimeout(() => { this.web ||= new Web(); }, 0); // the web takes a moment to build: start it before it's needed
+      if (P.S && !this.web3 && !this.web3Soon) this.web3Soon = setTimeout(() => { this.web3 ||= new Web3(); }, 0); // and its 3D one (a fifth of a second)
     }
-    if (vis.web && (this.web ||= new Web()).step(dt)) alive = true;
+    if (vis.web && P.S && (this.web3 ||= new Web3()).step(dt)) alive = true; // in 3D, a web you can go round
+    else if (vis.web && !P.S && (this.web ||= new Web()).step(dt)) alive = true;
     if (vis.bubbles) { (this.bubbles ||= new Bubbles()).step(dt); alive = true; }
     if (vis.glass || vis.proteins || vis.dna) { (this.bacteria ||= new Bacteria()).step(dt); alive = true; }
     if (vis.proteins) { (this.proteins ||= new Proteins()).step(dt); }
@@ -268,7 +278,8 @@ export class Zoom {
     if (vis.nucleus) { (this.nucleus ||= new Nucleus()).step(dt); alive = true; }
     if (vis.proton) { (this.proton ||= new Proton()).step(dt); alive = true; }
 
-    const changed = moving || alive || this.painted !== L;
+    const changed = moving || alive || this.painted !== L || this.painted3d !== !!P.S; // and when the 3D view comes or goes
+    this.painted3d = !!P.S;
     if (changed) {
       this.grid.clear();
       if (vis.desk) {
@@ -276,17 +287,18 @@ export class Zoom {
         this.street.paint(P, V, vis.desk, t, this.desk.geo(V), sunOverLeiden(j2000()));
       }
       if (vis.town) this.town.paint(P, V, vis.town);
+      if (vis.region) (this.region ||= new Region(places, geo)).paint(P, V, vis.region);
       if (vis.here) here(P, vis.here);
-      if (vis.earth) (this.earth ||= new Earth()).paint(P, V, vis.earth, j2000(), { geo, nlOpen: vis.map > 0.2 });
+      if (vis.earth && solid < 1) (this.earth ||= new Earth()).paint(P, V, vis.earth * (1 - solid), j2000(), { geo, nlOpen: (vis.map > 0.2 && !in3d) || vis.region > 0 });
       if (vis.sats) this.sats.paint(P, V, vis.sats);
-      if (vis.planets) (this.planets ||= new Planets()).paint(P, V, vis.planets, this.days);
+      if (vis.planets) (this.planets ||= new Planets()).paint(P, V, vis.planets, this.days, { bodies: !this.solidPlanets });
       if (vis.outer) (this.outer ||= new Outer()).paint(P, V, vis.outer, this.days);
       if (vis.oort) (this.oort ||= new Oort()).paint(P, V, vis.oort);
       if (vis.stars) (this.stars ||= new Stars()).paint(P, V, vis.stars);
       if (vis.radio) this.radio.paint(P, V, vis.radio);
       if (vis.galaxy) this.galaxy.paint(P, V, vis.galaxy);
       if (vis.group) this.group.paint(P, V, vis.group);
-      if (vis.web) { this.web.paint(P, V, vis.web); if (L > 25.6) this.web.edge(P, V, vis.web); }
+      if (vis.web) { const W = P.S ? this.web3 : this.web; W.paint(P, V, vis.web); if (L > 25.6) W.edge(P, V, vis.web); }
       if (vis.bubbles) this.bubbles.paint(P, V, vis.bubbles);
       if (vis.pixels) {
         (this.pixels ||= new Pixels()).paint(P, V, vis.pixels, {
@@ -303,11 +315,134 @@ export class Zoom {
       if (vis.atom) this.atom.paint(P, V, vis.atom);
       if (vis.nucleus) this.nucleus.paint(P, V, vis.nucleus);
       if (vis.proton) this.proton.paint(P, V, vis.proton);
-      this.host.renderer.setZoom?.({ cols: this.grid.cols, rows: this.grid.rows, buf: this.grid.buf, x, y, cell: this.cell });
+      // From the town out to the Earth the grid is a view straight down onto the globe: in 3D it's lifted back onto it.
+      const ground = !vis.desk && (vis.town || vis.region || vis.earth) ? [x + w / 2, y + h / 2, 6.371e6 * this.ppm, 6.371e6 * this.ppm + (this.zc ?? -6.371e6 * this.ppm)] : null;
+      this.host.renderer.setZoom?.({ cols: this.grid.cols, rows: this.grid.rows, buf: this.grid.buf, x, y, cell: this.cell, ball: ground });
+      if (c3) c3.far = in3d && ground && !vis.desk ? this.far(V, x, y, w, h, ground) : null;
+      if (P.S) c3.points = { buf: Float32Array.from(P.S), n: P.S.length / 8, centre: [x + w / 2, y + h / 2, this.zc || 0], version: (this.pointsV = (this.pointsV || 0) + 1) };
       this.painted = L;
     }
     this.tell();
     return moving || alive;
+  }
+
+  /**
+   * In 3D, the ground beyond the screen: the same map, FAR times as far
+   * across and as coarse, round the zoom's grid and lifted onto the same
+   * sphere, so tilted you see the land go on to the horizon (further out the
+   * whole globe does it: solid()). Painted again only when the scale has
+   * drifted by a sixth (one ring a frame); in between it's drawn at the
+   * scale it was painted, which is right, just a little coarser or finer.
+   */
+  far(V, x, y, w, h, ground) {
+    const R = 6.371e6 * this.ppm;
+    if (R < 3 * Math.max(w, h)) return null; // the globe's there instead
+    this.rings ||= [];
+    let inner = [x, y, w, h], busy = false;
+    return [3, 9].map((FAR, i) => {
+      const want = this.ppm / FAR;
+      let ring = this.rings[i];
+      const stale = !ring || ring.G.cols !== V.cols || ring.G.rows !== V.rows || ring.geo !== geo.ready;
+      if (stale || (!busy && Math.abs(Math.log(ring.ppm / want)) > 0.15)) {
+        busy = true; // one ring a frame
+        ring = this.rings[i] ||= { G: new Grid(), parts: {}, version: 0 };
+        if (ring.G.cols !== V.cols || ring.G.rows !== V.rows) ring.G.resize(V.cols, V.rows);
+        ring.G.clear();
+        const Vr = { ...V, ppm: want }, P = new Pen(ring.G, Vr), Lr = Math.log10(this.area[2] / want), q = ring.parts;
+        const town = this.L > 2.55 ? ramp(Lr, -99, -98, 3.95, 4.45) : 0, region = ramp(Lr, 3.7, 4.15, 5.9, 6.4), earth = ramp(Lr, 4.9, 5.4, 99, 100);
+        if (town) (q.town ||= new Town()).paint(P, Vr, town);
+        if (region) (q.region ||= new Region(places, geo)).paint(P, Vr, region);
+        if (earth) (q.earth ||= new Earth()).paint(P, Vr, earth, j2000(), { geo, nlOpen: region > 0 });
+        Object.assign(ring, { ppm: want, geo: geo.ready, version: ring.version + 1 });
+      }
+      const S = this.ppm / ring.ppm, m = 0.07; // page px a ring px, now
+      const [ix, iy, iw, ih] = inner;
+      const out = {
+        buf: ring.G.buf, cols: V.cols, rows: V.rows, version: ring.version, dot: 0.8 / Math.sqrt(FAR), ring: true,
+        x: x + w / 2 - V.cx * S, y: y + h / 2 - V.cy * S, cell: this.cell * S, ball: ground,
+        hole: [ix + iw * m, iy + ih * m, ix + iw * (1 - m), iy + ih * (1 - m)], // inside the grid (or ring) within it
+      };
+      inner = [out.x, out.y, V.cols * out.cell, V.rows * out.cell];
+      return out;
+    });
+  }
+
+  /**
+   * The 3D view's globe (globe.js): rebuilt when its size on screen changes by
+   * a tenth, drawn by the renderer (cam3d.solid). It takes over from the flat
+   * globe as the whole Earth comes to fit the view. Returns how much it has (0-1).
+   */
+  solid(vis, V, x, y, w, h) {
+    const c3 = this.host.renderer.cam3d;
+    if (!c3) return 0;
+    const R = 6.371e6 * V.ppm, fit = 0.42 * Math.min(w, h);
+    const k = c3.on && vis.earth ? Math.max(0, Math.min(1, (fit * 1.25 - R) / (fit * 0.35))) : 0;
+    const n = Math.round(R / this.cell);
+    this.zc = -R * (1 - k); // where the Earth's middle is: a radius behind the map, coming forward to the middle of the view as the whole globe takes over
+    const list = [];
+    const globe = k > 0 && n >= 4;
+    if (globe) {
+      const ready = geo.ready;
+      if (!this.globe || Math.abs(n - this.globe.n) > this.globe.n * 0.1 || this.globe.ready !== ready) {
+        this.globe = buildGlobe(n, geo);
+        this.globe.ready = ready;
+      }
+      list.push({ buf: this.globe.buf, n: this.globe.count, centre: [x + w / 2, y + h / 2, this.zc], size: R / this.globe.n, sun: sunInView(j2000()), fade: vis.earth * k });
+    }
+    // Closer, where the map (the grid, lifted onto the sphere) fills the screen: the rest of the Earth behind and round it, coarser, so its curve runs on to the horizon.
+    if (c3.on && vis.earth && k < 1 && R < 3 * Math.max(w, h)) {
+      const nb = Math.min(n, 128), ready = geo.ready;
+      if (!this.back || this.back.n !== nb || this.back.ready !== ready) { this.back = buildGlobe(nb, geo); this.back.ready = ready; }
+      const m = 0.07; // inside the map's dissolving edge
+      list.push({
+        buf: this.back.buf, n: this.back.count, centre: [x + w / 2, y + h / 2, this.zc], size: (R * 0.99) / nb, sun: sunInView(j2000()), fade: vis.earth * (1 - k), tone: 0.75,
+        hole: [x + w * m, y + h * m, x + w * (1 - m), y + h * (1 - m)],
+      });
+    }
+    if (c3.on && vis.planets) list.push(...this.bodies(vis.planets, V, x, y, w, h, !globe));
+    c3.solid = list.length ? list : null;
+    this.solidPlanets = c3.on && vis.planets > 0;
+    return globe ? k : 0;
+  }
+
+  /** The zoom (L) at which the 3D globe has wholly taken over from the flat one, on this screen (see solid()). */
+  globeL() {
+    if (!this.area) return 7;
+    const [, , w, h] = this.area, fit = 0.42 * Math.min(w, h);
+    return Math.log10((6.371e6 * w) / (0.9 * fit)); // where the Earth's radius on screen is 0.9 of what fits: k = 1
+  }
+
+  /**
+   * The Sun, the planets, the Moon (and the Earth, once its globe has gone) as
+   * balls on their orbits, where they are today. Too small to see at their
+   * real size, so never smaller than a few cells; lit from where the Sun is,
+   * so they show their phases as you turn round them. The Sun lights itself.
+   */
+  bodies(f, V, x, y, w, h, earth) {
+    if (!(w > 0 && h > 0 && V.ppm > 0)) return [];
+    const W = (this.planets ||= new Planets()).where(this.days);
+    const cx = x + w / 2, cy = y + h / 2, cell = this.cell, out = [], taken = [];
+    // Too small to see at their real size, so shown bigger, but still shrinking as you zoom out: a radius of
+    // k × (the real one, in cells)^p, never less than the real one or half a cell. Bigger bodies stay bigger.
+    const shown = (r, k, p) => { const c = (r * V.ppm) / cell; return Math.max(c, 0.5, k * Math.pow(c, p)); };
+    // Biggest first; a body whose ball would run into one already there waits until they're apart.
+    const add = (p, r, size, o = {}) => {
+      const sx = cx + p[0] * V.ppm, sy = cy + p[1] * V.ppm;
+      let n = size;
+      if (Math.hypot(sx - cx, sy - cy) > Math.hypot(w, h) / 2 + n * cell) return; // off screen
+      if (taken.some(([tx, ty, tr]) => Math.hypot(sx - tx, sy - ty) < (tr + n + 1) * cell)) return;
+      taken.push([sx, sy, n]);
+      n = Math.min(60, n > 4 ? Math.round(n) : Math.round(n * 2) / 2);
+      const b = ball(n);
+      const toSun = [0, 1, 2].map((k) => W.sun[k] - (p[k] || 0)), d = Math.hypot(...toSun) || 1;
+      out.push({ buf: b.buf, n: b.count, centre: [sx, sy, (p[2] || 0) * V.ppm], size: cell, sun: toSun.map((v) => v / d), fade: f, ...o });
+    };
+    add(W.sun, 6.96e8, shown(6.96e8, 10.7, 0.25), { colour: 3, lit: false }); // about 9 cells as it comes into view, 2 by 10^14 m
+    const bodies = W.planets.map(([px, py, pz, r]) => [[px, py, pz], r, 0.85]);
+    if (earth) bodies.push([[0, 0, 0], 6.371e6, 0.9]);
+    bodies.push([W.moon.slice(0, 3), W.moon[3], 0.75]);
+    for (const [p, r, tone] of bodies.sort((a, b) => b[1] - a[1])) add(p, r, shown(r, 3.8, 0.12), { tone }); // the Earth: 4 cells at 10^9 m, about 2 at 10^12, 1 at 10^14
+    return out;
   }
 
   // ------------------------------------------------------------ words
@@ -351,7 +486,8 @@ export class Zoom {
       : L > 7.3 ? S.earth
       : L > 6.4 ? S.europe
       : L > 5.7 ? S.country
-      : L > 3.9 ? S.nl
+      : L > 5.0 ? S.nl
+      : L > 3.9 ? S.region
       : L > 3.35 ? S.edge
       : L > 2.35 ? S.town
       : L > 1.3 ? S.house

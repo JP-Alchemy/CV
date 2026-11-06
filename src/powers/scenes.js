@@ -100,6 +100,33 @@ export class Pen {
 
   dot(x, y, st) { this.G.put(this.i(x), this.j(y), st.size ?? 1, st.colour ?? 0, st.tone ?? 1, st.f ?? 1); }
 
+  /**
+   * A point in space (metres from "here"; y down, z towards you). In the 3D
+   * view (the zoom gives the pen a sink, S) it's drawn where it is, depth
+   * and all; flat, it's drawn as dot() would, z dropped.
+   */
+  dot3(x, y, z, st) {
+    if (!this.S) { this.dot(x, y, st); return; }
+    const k = this.V.ppm;
+    this.S.push(x * k, y * k, z * k, (st.size ?? 1) * this.V.cell, st.colour ?? 0, st.tone ?? 1, st.f ?? 1, 0);
+  }
+
+  /**
+   * A circle in space: centre c ([x, y, z], m), radius r, in the plane of the
+   * unit vectors a and b; a point every `every` cells round. Off the 3D view
+   * it falls back to ring() when it lies flat on the screen.
+   */
+  circle3(c, r, a, b, st, every = 1) {
+    if (!this.S && Math.abs(a[2]) < 1e-9 && Math.abs(b[2]) < 1e-9 && Math.abs(a[0] * b[1] - a[1] * b[0]) > 0.999) { this.ring(c[0], c[1], r, st, every); return; }
+    const R = (r * this.V.ppm) / this.V.cell;
+    if (R < 1) { this.dot3(c[0], c[1], c[2], st); return; }
+    const n = Math.min(3000, Math.ceil((2 * Math.PI * R) / every));
+    for (let k = 0; k < n; k++) {
+      const t = (k / n) * 2 * Math.PI, co = Math.cos(t) * r, si = Math.sin(t) * r;
+      this.dot3(c[0] + a[0] * co + b[0] * si, c[1] + a[1] * co + b[1] * si, c[2] + a[2] * co + b[2] * si, st);
+    }
+  }
+
   rect(x0, y0, x1, y1, st) {
     const { cols, rows } = this.V;
     const i0 = Math.max(0, this.i(x0)), i1 = Math.min(cols - 1, this.i(x1));
@@ -370,38 +397,66 @@ export class Earth {
 
 // ---------------------------------------------------------------- the planets
 
-// a (AU), period (days), mean longitude at J2000 (degrees), radius (m).
+// a (AU), period (days), mean longitude at J2000 (degrees), radius (m),
+// inclination to the ecliptic and longitude of the ascending node (degrees).
 const PLANETS = [
-  [0.387, 87.969, 252.25, 2.44e6],
-  [0.723, 224.701, 181.98, 6.05e6],
-  [1.0, 365.256, 100.46, R_EARTH],
-  [1.524, 686.98, 355.45, 3.39e6],
-  [5.203, 4332.59, 34.4, 6.99e7],
-  [9.537, 10759.2, 49.94, 5.82e7],
-  [19.19, 30688.5, 313.23, 2.54e7],
-  [30.07, 60182, 304.88, 2.46e7],
+  [0.387, 87.969, 252.25, 2.44e6, 7.0, 48.33],
+  [0.723, 224.701, 181.98, 6.05e6, 3.39, 76.68],
+  [1.0, 365.256, 100.46, R_EARTH, 0, 0],
+  [1.524, 686.98, 355.45, 3.39e6, 1.85, 49.56],
+  [5.203, 4332.59, 34.4, 6.99e7, 1.3, 100.46],
+  [9.537, 10759.2, 49.94, 5.82e7, 2.49, 113.67],
+  [19.19, 30688.5, 313.23, 2.54e7, 0.77, 74.0],
+  [30.07, 60182, 304.88, 2.46e7, 1.77, 131.78],
 ];
+const MOON = { a: 3.844e8, i: 5.145, r: 1.737e6 };
+
+/**
+ * An orbit's plane on screen (x right, y down, z towards you: the ecliptic
+ * seen from its north): the unit vectors towards the ascending node and 90°
+ * on from it, so a point u along the orbit is a·(P cos u + Q sin u).
+ */
+function plane(i, node) {
+  const I = (i * Math.PI) / 180, O = (node * Math.PI) / 180;
+  return [[Math.cos(O), -Math.sin(O), 0], [-Math.sin(O) * Math.cos(I), -Math.cos(O) * Math.cos(I), Math.sin(I)]];
+}
+const along = (a, [P, Q], u) => [0, 1, 2].map((k) => a * (P[k] * Math.cos(u) + Q[k] * Math.sin(u)));
 
 /** The planets on circles, where they are today, a day a second; the Moon round the Earth. The Earth stays in the middle. */
 export class Planets {
-  paint(P, V, f, days) {
-    const pos = PLANETS.map(([a, T, L0]) => {
-      const th = ((L0 + (360 * days) / T) * Math.PI) / 180;
-      return [a * AU * Math.cos(th), -a * AU * Math.sin(th)];
-    });
-    const sun = [-pos[2][0], -pos[2][1]];
+  /**
+   * Where everything is (metres from the Earth, on screen's axes): { sun,
+   * planets: [[x, y, radius], ...] (the Earth left out), moon: [x, y, radius] }.
+   */
+  where(days) {
+    // Mean longitude on a circle in the orbit's own plane (u from the node).
+    const pos = PLANETS.map(([a, T, L0, , i, node]) => along(a * AU, plane(i, node), ((L0 - node + (360 * days) / T) * Math.PI) / 180));
+    const sun = pos[2].map((v) => -v);
+    const mnode = 125.08 - 0.0529538 * days; // the Moon's node slides back round in 18.6 years
+    return {
+      sun, pos, mnode,
+      planets: PLANETS.map(([, , , r], k) => [sun[0] + pos[k][0], sun[1] + pos[k][1], sun[2] + pos[k][2], r, k]).filter((p) => p[4] !== 2),
+      moon: [...along(MOON.a, plane(MOON.i, mnode), ((218.316 - mnode + 13.176396 * days) * Math.PI) / 180), MOON.r],
+    };
+  }
+
+  /** o.bodies === false: only the orbits (the 3D view draws the bodies as solids). */
+  paint(P, V, f, days, o = {}) {
+    const { sun, pos, mnode } = this.where(days);
     const orbit = { size: 0.25, tone: 0.4, f };
-    PLANETS.forEach(([a], k) => { if (k !== 2) P.ring(sun[0], sun[1], a * AU, orbit, 3); });
-    P.ring(sun[0], sun[1], AU, { size: 0.5, tone: 0.5, f }, 3);
+    PLANETS.forEach(([a, , , , i, node], k) => { if (k !== 2) P.circle3(sun, a * AU, ...plane(i, node), orbit, 3); });
+    P.circle3(sun, AU, ...plane(0, 0), { size: 0.5, tone: 0.5, f }, 3);
+    const moonOrbit = () => P.circle3([0, 0, 0], MOON.a, ...plane(MOON.i, mnode), orbit, 3);
+    if (o.bodies === false) { moonOrbit(); return; }
     P.disc(sun[0], sun[1], Math.max(6.96e8, P.m * 1.2), { colour: 3, f });
     PLANETS.forEach(([, , , r], k) => {
       if (k === 2) return;
       P.disc(sun[0] + pos[k][0], sun[1] + pos[k][1], Math.max(r, P.m * 0.5), { f });
     });
     P.disc(0, 0, Math.max(R_EARTH, P.m * 0.5), { f }); // the Earth, in the middle
-    const mth = ((218.316 + 13.176396 * days) * Math.PI) / 180;
-    P.ring(0, 0, 3.844e8, orbit, 3);
-    P.disc(3.844e8 * Math.cos(mth), -3.844e8 * Math.sin(mth), Math.max(1.737e6, P.m * 0.5), { f });
+    moonOrbit();
+    const moon = this.where(days).moon;
+    P.disc(moon[0], moon[1], Math.max(1.737e6, P.m * 0.5), { f });
   }
 }
 
@@ -409,6 +464,12 @@ export class Planets {
 
 // The nearest and brightest: galactic longitude (degrees), distance (light
 // years), colour (0 white-ish ink, 1-7 the spectrum).
+// Their galactic latitudes (degrees), in the same order, for the 3D view:
+// Alpha Centauri, Barnard's, Wolf 359, Lalande 21185, Sirius, UV Ceti, Ross
+// 154, Ross 248, Epsilon Eridani, Lacaille 9352, Ross 128, Procyon, 61 Cygni,
+// Altair, Vega, Arcturus, Aldebaran, Polaris, Betelgeuse, Rigel, Deneb.
+// Filled in from memory of the catalogues: right to a degree or two, not checked.
+const STARS_B = [-0.7, 14.1, 56.1, 65.4, -8.9, -75.7, -10.3, -16.9, -48.1, -66.0, 59.6, 13.0, -5.8, -8.9, 19.2, 69.1, -20.2, 26.5, -9.0, -25.2, 2.0];
 const STARS = [
   [315.7, 4.37, 3], [31.0, 5.96, 1], [244.1, 7.86, 1], [185.1, 8.31, 1], [227.2, 8.6, 6],
   [175.5, 8.73, 1], [11.3, 9.69, 1], [110.0, 10.29, 1], [195.8, 10.47, 2], [5.1, 10.72, 1],
@@ -419,20 +480,23 @@ const STARS = [
 /** The nearest stars flattened onto the galaxy's plane (towards its middle is to the right), and some of the many more. */
 export class Stars {
   constructor() {
-    const r = rng(11);
+    const r = rng(11), rz = rng(13); // heights from their own stream, so the flat view's stars stay where they were
     this.field = Array.from({ length: 900 }, () => {
       const d = 5 * Math.pow(1000, r()), a = r() * 2 * Math.PI; // as many in each power of ten of distance
-      return [d * Math.cos(a) * LY, -d * Math.sin(a) * LY, r() < 0.7 ? 0 : [1, 2, 3, 6][Math.floor(r() * 4)]];
+      const c = r() < 0.7 ? 0 : [1, 2, 3, 6][Math.floor(r() * 4)];
+      // Above or below the plane: all round us close by, a disc about a thousand light years thick further out.
+      return [d * Math.cos(a) * LY, -d * Math.sin(a) * LY, c, gauss(rz) * Math.min(d * 0.6, 1000) * LY];
     });
   }
 
   paint(P, V, f) {
-    for (const [x, y, c] of this.field) P.dot(x, y, { size: 0.5, colour: c, tone: 0.6, f });
-    for (const [l, d, c] of STARS) {
-      const a = (l * Math.PI) / 180;
-      const x = d * LY * Math.cos(a), y = -d * LY * Math.sin(a), m = P.m * 0.6;
+    for (const [x, y, c, z] of this.field) P.dot3(x, y, z, { size: 0.5, colour: c, tone: 0.6, f });
+    STARS.forEach(([l, d, c], k) => {
+      const a = (l * Math.PI) / 180, b = (STARS_B[k] * Math.PI) / 180;
+      const x = d * LY * Math.cos(b) * Math.cos(a), y = -d * LY * Math.cos(b) * Math.sin(a), z = d * LY * Math.sin(b), m = P.m * 0.6;
+      if (P.S) { P.dot3(x, y, z, { colour: c, f, size: 1.25 }); return; }
       for (const [dx, dy] of [[0, 0], [m, 0], [0, m], [m, m]]) P.dot(x + dx, y + dy, { colour: c, f });
-    }
+    });
     const m = P.m * 0.6;
     for (const [dx, dy] of [[0, 0], [m, 0], [0, m], [m, m]]) P.dot(dx, dy, { colour: 3, f }); // the Sun
   }
@@ -465,6 +529,13 @@ export class Galaxy {
       this.y[i] = rad * Math.sin(a);
       this.c[i] = r() < 0.72 ? 0 : [1, 2, 3, 5, 6][Math.floor(r() * 5)];
     }
+    // Heights above the disc, for the 3D view (the pull is worked out in the disc's plane): a thin
+    // disc a few hundred parsecs thick, puffing up into the bulge in the middle. Their own stream.
+    const rz = rng(17);
+    this.z = Float64Array.from({ length: n }, (_, i) => {
+      const rad = Math.hypot(this.x[i], this.y[i]);
+      return gauss(rz) * (0.25 + 0.9 * Math.max(0, 1 - rad / 2.5));
+    });
     this.accel();
     for (let i = 0; i < n; i++) {
       const rad = Math.hypot(this.x[i], this.y[i]);
@@ -517,6 +588,11 @@ export class Galaxy {
 
   paint(P, V, f) {
     const { n, x, y, c } = this;
+    if (P.S) { // in 3D, each star where it is, the disc with some thickness
+      for (let i = 0; i < n; i++) P.dot3((x[i] + SUN_R) * KPC, y[i] * KPC, this.z[i] * KPC, { size: 0.75, colour: c[i], tone: 0.85, f });
+      P.dot3(0, 0, 0, { colour: 3, f });
+      return;
+    }
     const G = P.G, count = this.count ||= new Map();
     count.clear();
     for (let i = 0; i < n; i++) {

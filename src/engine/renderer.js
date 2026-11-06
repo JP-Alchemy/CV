@@ -734,7 +734,7 @@ export class Renderer {
     } else {
       gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, z.cols, z.rows, gl.RGBA, gl.UNSIGNED_BYTE, z.buf);
     }
-    this.zoom = { cols: z.cols, rows: z.rows, x: z.x, y: z.y, cell: z.cell };
+    this.zoom = { cols: z.cols, rows: z.rows, x: z.x, y: z.y, cell: z.cell, ball: z.ball || null };
   }
 
   clearZoom() { this.zoom = null; }
