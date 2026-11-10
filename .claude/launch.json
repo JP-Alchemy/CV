@@ -18,6 +18,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--", "--port", "5183", "--strictPort", "--host"],
       "port": 5183
+    },
+    {
+      "name": "universe",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "5184", "--strictPort", "--host"],
+      "port": 5184
     }
   ]
 }

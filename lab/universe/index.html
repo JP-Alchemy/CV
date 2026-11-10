@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Universe (lab)</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--fg); }
+      [hidden] { display: none !important; }
+      #gl { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; touch-action: none; cursor: crosshair; }
+      .hud { position: fixed; z-index: 2; font: 12px/1.45 ui-monospace, Menlo, monospace; color: var(--fg); }
+      .box { background: var(--bg); border: 2px solid var(--fg); padding: 6px 9px; }
+      #path { top: 12px; left: 12px; right: 400px; display: flex; flex-wrap: wrap; gap: 2px 4px; align-items: center; pointer-events: none; }
+      #path button, #path span { pointer-events: auto; font: inherit; color: var(--fg); background: var(--bg); border: 2px solid var(--fg); padding: 2px 7px; cursor: pointer; }
+      #path span { cursor: default; border-style: dashed; }
+      #path button[aria-current='true'] { background: var(--fg); color: var(--bg); }
+      #path i { font-style: normal; opacity: 0.6; }
+      #bar { top: 12px; right: 12px; display: flex; gap: 4px; }
+      #bar button { font: inherit; color: var(--fg); background: var(--bg); border: 2px solid var(--fg); padding: 2px 8px; cursor: pointer; }
+      #scale { left: 12px; bottom: 12px; }
+      #scale small { display: block; opacity: 0.7; }
+      #stats { right: 12px; bottom: 12px; max-width: min(560px, calc(100vw - 24px)); }
+      #stats summary { cursor: pointer; }
+      #stats pre { margin: 6px 0 0; white-space: pre-wrap; }
+      #toast { left: 50%; bottom: 64px; transform: translateX(-50%); }
+      #marks { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+      .mark { position: absolute; left: -7px; top: -7px; display: flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: var(--fg); font: 11px/1.3 ui-monospace, Menlo, monospace; cursor: pointer; pointer-events: auto; white-space: nowrap; }
+      .mark i { width: 10px; height: 10px; border: 2px solid var(--fg); box-sizing: content-box; flex: none; }
+      .mark span { background: var(--bg); border: 1px solid var(--fg); padding: 1px 5px; opacity: 0.85; }
+      .mark span b { font-weight: 700; }
+      .mark:hover span, .mark:focus-visible span { background: var(--fg); color: var(--bg); opacity: 1; }
+      .mark:hover i { background: var(--fg); }
+      #sel { position: fixed; left: -16px; top: -16px; width: 28px; height: 28px; z-index: 1; pointer-events: none;
+        background: linear-gradient(var(--fg), var(--fg)) 0 0 / 9px 2px, linear-gradient(var(--fg), var(--fg)) 0 0 / 2px 9px,
+          linear-gradient(var(--fg), var(--fg)) 100% 0 / 9px 2px, linear-gradient(var(--fg), var(--fg)) 100% 0 / 2px 9px,
+          linear-gradient(var(--fg), var(--fg)) 0 100% / 9px 2px, linear-gradient(var(--fg), var(--fg)) 0 100% / 2px 9px,
+          linear-gradient(var(--fg), var(--fg)) 100% 100% / 9px 2px, linear-gradient(var(--fg), var(--fg)) 100% 100% / 2px 9px;
+        background-repeat: no-repeat; }
+      #card { left: 50%; bottom: 12px; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; max-width: calc(100vw - 24px); }
+      #card span { opacity: 0.75; }
+      #card button { font: inherit; color: var(--fg); background: var(--bg); border: 2px solid var(--fg); padding: 4px 10px; cursor: pointer; }
+      #card #card-go { background: var(--fg); color: var(--bg); font-weight: 700; }
+      #time { left: 12px; bottom: 74px; width: min(380px, calc(100vw - 24px)); box-sizing: border-box; }
+      #time label { display: block; }
+      #time input[type=range] { width: 100%; accent-color: var(--fg); margin: 4px 0 2px; }
+      #time #epoch-now { float: right; font: inherit; color: var(--fg); background: var(--bg); border: 2px solid var(--fg); padding: 0 6px; cursor: pointer; margin-top: -2px; }
+      #time #clock { opacity: 0.75; }
+      #find { top: 44px; left: 12px; width: min(440px, calc(100vw - 24px)); }
+      #q { width: 100%; box-sizing: border-box; font: inherit; color: var(--fg); background: var(--bg); border: 2px solid var(--fg); padding: 5px 8px; }
+      #find-out { background: var(--bg); }
+      #find-out:not(:empty) { border: 2px solid var(--fg); border-top: 0; padding: 6px 8px; }
+      #find-out p { margin: 0 0 4px; }
+      #find-out .chips span { display: inline-block; border: 1px solid var(--fg); padding: 0 5px; margin: 0 4px 2px 0; }
+      #find-out ol { margin: 4px 0 0; padding: 0; list-style: none; }
+      #find-out li button { all: unset; display: block; cursor: pointer; padding: 2px 4px; }
+      #find-out li button:hover, #find-out li button:focus-visible { background: var(--fg); color: var(--bg); }
+      #why { right: 12px; top: 44px; width: min(380px, calc(100vw - 24px)); max-height: calc(100vh - 140px); overflow: auto; box-sizing: border-box; }
+      #why h2 { font-size: 13px; margin: 0 0 6px; }
+      #why section p { margin: 2px 0 0; }
+      #why i { display: block; font-style: normal; opacity: 0.6; margin: 4px 0; }
+      #why-x { float: right; font: inherit; color: var(--fg); background: var(--bg); border: 2px solid var(--fg); cursor: pointer; }
+      :root { --s1: #ff453a; --s2: #ff9429; --s3: #ffdb33; --s4: #4cdb6b; --s5: #33ccf2; --s6: #406bff; --s7: #9e52ff; }
+      #blockp { right: 12px; top: 44px; width: min(320px, calc(100vw - 24px)); box-sizing: border-box; }
+      #blockp p { margin: 4px 0; opacity: 0.8; }
+      #blockp .sw { display: flex; gap: 4px; margin: 6px 0; }
+      #blockp .sw button { width: 24px; height: 24px; border: 2px solid var(--bg); outline: 2px solid transparent; cursor: pointer; }
+      #blockp .sw button[aria-pressed='true'] { outline-color: var(--fg); }
+      #blockp input { width: 100%; box-sizing: border-box; font: inherit; color: var(--fg); background: var(--bg); border: 2px solid var(--fg); padding: 4px 6px; margin-bottom: 6px; }
+      #blockp button:not(.sw button) { font: inherit; color: var(--fg); background: var(--bg); border: 2px solid var(--fg); padding: 2px 8px; cursor: pointer; margin-right: 4px; }
+      #blockp #bplace { background: var(--fg); color: var(--bg); }
+      #bx { float: right; }
+      #flash { position: fixed; inset: 0; z-index: 4; pointer-events: none; background: var(--fg); opacity: 0; }
+      #flash.go { animation: flash 0.9s ease-out; }
+      @keyframes flash { from { opacity: 0.9; } to { opacity: 0; } }
+      #tip { position: fixed; left: 0; top: 0; z-index: 3; pointer-events: none; font: 12px/1.3 ui-monospace, Menlo, monospace; background: var(--fg); color: var(--bg); padding: 3px 7px; white-space: nowrap; }
+      @media (max-width: 700px) {
+        #path { top: 52px; right: 12px; }
+        #stats { bottom: 64px; }
+        #card { bottom: 200px; }
+        #time { bottom: 120px; }
+        #find { top: 120px; }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="gl" aria-label="A procedurally generated universe of blocks"></canvas>
+    <div id="marks" aria-label="Places to go"></div>
+    <div id="tip" hidden></div>
+    <div id="sel" hidden></div>
+    <div id="card" class="hud box" hidden></div>
+    <nav id="path" class="hud" aria-label="Where you are"></nav>
+    <div id="bar" class="hud"></div>
+    <div id="scale" class="hud box"></div>
+    <div id="time" class="hud box">
+      <label><span id="epoch-l"></span><input id="epoch" type="range" min="0.2" max="13.8" step="0.01" value="13.8" aria-label="Age of the universe, billions of years"></label>
+      <button id="epoch-now">Now</button>
+      <div><span id="clock"></span> <b id="unborn"></b></div>
+    </div>
+    <form id="find" class="hud" role="search"><input id="q" type="search" placeholder="Find… e.g. ringed ocean world with two moons (/)" autocomplete="off" aria-label="Find a place"><div id="find-out"></div></form>
+    <div id="why" class="hud box" hidden></div>
+    <div id="blockp" class="hud box" hidden></div>
+    <div id="flash" aria-hidden="true"></div>
+    <details id="stats" class="hud box"><summary id="stats-sum">…</summary><pre id="stats-out"></pre></details>
+    <div id="toast" class="hud box" hidden></div>
+    <noscript>This lab needs JavaScript and WebGL2.</noscript>
+    <script type="module" src="/src/lab/universe/main.js"></script>
+  </body>
+</html>
