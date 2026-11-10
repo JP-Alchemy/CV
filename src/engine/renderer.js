@@ -735,6 +735,7 @@ export class Renderer {
       gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, z.cols, z.rows, gl.RGBA, gl.UNSIGNED_BYTE, z.buf);
     }
     this.zoom = { cols: z.cols, rows: z.rows, x: z.x, y: z.y, cell: z.cell, ball: z.ball || null };
+    if (this.cam3d?.on) this.cam3d.deep(z); // in 3D, how deep each cell is (renderer3d.js)
   }
 
   clearZoom() { this.zoom = null; }

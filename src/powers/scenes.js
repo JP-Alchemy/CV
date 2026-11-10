@@ -40,27 +40,80 @@ const gauss = (r) => Math.sqrt(-2 * Math.log(r() + 1e-12)) * Math.cos(2 * Math.P
 // ---------------------------------------------------------------- the grid
 
 /** The blocks: cols × rows cells, RGBA8 each (size, colour, tone). */
+// A grid of blocks, one a cell (buf: size, colour, tone; drawn flat by the 2D
+// renderer). In the 3D view a block can also have depth: `deep` holds, a
+// cell, how far its front and back are towards you (cells; 0, 0 is a plain
+// block one cell deep on the page), and a second block behind or in front of
+// it that the 2D renderer never draws: a wall, the ground, or whatever didn't
+// fit (its front and back, and in buf's alpha its tone and size, 4 bits each).
 export class Grid {
   resize(cols, rows) {
     this.cols = cols;
     this.rows = rows;
     this.buf = new Uint8Array(cols * rows * 4);
+    this.deep = new Float32Array(cols * rows * 4);
     const r = rng(7);
     this.hash = Float32Array.from({ length: cols * rows }, r);
   }
 
-  clear() { this.buf.fill(0); }
+  clear() { this.buf.fill(0); this.deep.fill(0); }
 
-  /** A block in cell (i, j): size 0-1 of the cell, colour 0 ink or 1-7 the spectrum, tone 0-1 (ink only); f dissolves it in. The biggest block in a cell wins. */
-  put(i, j, size, colour = 0, tone = 1, f = 1) {
+  /**
+   * A block in cell (i, j): size 0-1 of the cell, colour 0 ink or 1-7 the
+   * spectrum, tone 0-1 (ink only); f dissolves it in. The biggest block in a
+   * cell wins. z: [front, back] (cells towards you) gives it depth in 3D;
+   * two that overlap merge into one, and one that doesn't goes into the
+   * cell's second block, if that's free.
+   */
+  put(i, j, size, colour = 0, tone = 1, f = 1, z = null) {
     if (i < 0 || j < 0 || i >= this.cols || j >= this.rows) return;
     const k = j * this.cols + i;
     if (f < 1 && this.hash[k] >= f) return;
-    const o = k * 4, s = Math.round(Math.min(1, size) * 255);
-    if (s <= this.buf[o]) return;
-    this.buf[o] = s;
-    this.buf[o + 1] = colour;
-    this.buf[o + 2] = Math.round(tone * 255);
+    const o = k * 4, s = Math.round(Math.min(1, size) * 255), b = this.buf, D = this.deep;
+    if (!z) {
+      if (s <= b[o]) return;
+      b[o] = s; b[o + 1] = colour; b[o + 2] = Math.round(tone * 255);
+      D[o] = D[o + 1] = 0;
+      return;
+    }
+    let zf = z[0], zb = z[1];
+    if (zf - zb < 0.5) { const m = (zf + zb) / 2; zf = m + 0.25; zb = m - 0.25; }
+    if (!b[o]) { b[o] = s; b[o + 1] = colour; b[o + 2] = Math.round(tone * 255); D[o] = zf; D[o + 1] = zb; return; }
+    const af = D[o] || D[o + 1] ? D[o] : 0, ab = D[o] || D[o + 1] ? D[o + 1] : -1; // a plain block: a cell deep, on the page
+    if (zb <= af + 0.5 && zf >= ab - 0.5) { // they overlap: one block
+      D[o] = Math.max(af, zf); D[o + 1] = Math.min(ab, zb);
+      if (s > b[o]) { b[o] = s; b[o + 1] = colour; b[o + 2] = Math.round(tone * 255); }
+      return;
+    }
+    if (s > b[o]) { // the new one wins; the old one goes behind
+      this.second(o, b[o + 2] / 255, b[o] / 255, af, ab);
+      b[o] = s; b[o + 1] = colour; b[o + 2] = Math.round(tone * 255); D[o] = zf; D[o + 1] = zb;
+    } else this.second(o, tone, size, zf, zb);
+  }
+
+  /** The second block in a cell (3D only), unless it has one: a wall, the ground. */
+  back(i, j, tone, size, z, f = 1) {
+    if (i < 0 || j < 0 || i >= this.cols || j >= this.rows) return;
+    const k = j * this.cols + i;
+    if (f < 1 && this.hash[k] >= f) return;
+    let zf = z[0], zb = z[1];
+    if (zf - zb < 0.5) { const m = (zf + zb) / 2; zf = m + 0.25; zb = m - 0.25; }
+    this.second(k * 4, tone, size, zf, zb);
+  }
+
+  second(o, tone, size, zf, zb) {
+    if (this.buf[o + 3]) return;
+    this.buf[o + 3] = (Math.round(Math.min(1, tone) * 15) << 4) | Math.max(1, Math.round(Math.min(1, size) * 15));
+    this.deep[o + 2] = zf; this.deep[o + 3] = zb;
+  }
+
+  /** Lay another grid of the same size over this one: its bigger blocks win, and its second blocks fill in where there are none. */
+  merge(G) {
+    const a = G.buf, b = this.buf, A = G.deep, B = this.deep;
+    for (let k = 0; k < a.length; k += 4) {
+      if (a[k] > b[k]) { b[k] = a[k]; b[k + 1] = a[k + 1]; b[k + 2] = a[k + 2]; B[k] = A[k]; B[k + 1] = A[k + 1]; }
+      if (a[k + 3] && !b[k + 3]) { b[k + 3] = a[k + 3]; B[k + 2] = A[k + 2]; B[k + 3] = A[k + 3]; }
+    }
   }
 }
 
@@ -78,8 +131,7 @@ export function cached(host, key, P, paint) {
     paint(new Pen(host.layer, V));
     host.layerKey = key;
   }
-  const a = host.layer.buf, b = P.G.buf;
-  for (let k = 0; k < a.length; k += 4) if (a[k] > b[k]) { b[k] = a[k]; b[k + 1] = a[k + 1]; b[k + 2] = a[k + 2]; }
+  P.G.merge(host.layer);
 }
 
 /**
@@ -98,7 +150,40 @@ export class Pen {
   /** One cell in metres. */
   get m() { return this.V.cell / this.V.ppm; }
 
-  dot(x, y, st) { this.G.put(this.i(x), this.j(y), st.size ?? 1, st.colour ?? 0, st.tone ?? 1, st.f ?? 1); }
+  /**
+   * Into cell (i, j), in a style. A style's z gives it depth in the 3D view:
+   * [front, back] in metres towards you, or a function of where the cell is
+   * (x, y, m) that returns them (or null: no block there in 3D).
+   */
+  put(i, j, st) {
+    let z = st.z;
+    if (z && this.D3) {
+      if (typeof z === 'function') {
+        z = z(((i + 0.5) * this.V.cell - this.V.cx) / this.V.ppm, ((j + 0.5) * this.V.cell - this.V.cy) / this.V.ppm);
+        if (!z) return;
+      }
+      const k = this.V.ppm / this.V.cell;
+      z = [z[0] * k, z[1] * k];
+    } else z = null;
+    this.G.put(i, j, st.size ?? 1, st.colour ?? 0, st.tone ?? 1, st.f ?? 1, z);
+  }
+
+  /** In 3D only: a wall (a cell's second block) over a rectangle, z [front, back] (m), leaving out `holes` ([x0, y0, x1, y1], m). */
+  wall(x0, y0, x1, y1, st, holes = []) {
+    if (!this.D3) return;
+    const { cols, rows } = this.V, k = this.V.ppm / this.V.cell, z = [st.z[0] * k, st.z[1] * k];
+    const i0 = Math.max(0, this.i(x0)), i1 = Math.min(cols - 1, this.i(x1));
+    const j0 = Math.max(0, this.j(y0)), j1 = Math.min(rows - 1, this.j(y1));
+    const H = holes.map(([a, b, c, d]) => [this.u(a), this.v(b), this.u(c), this.v(d)]);
+    for (let j = j0; j <= j1; j++) {
+      for (let i = i0; i <= i1; i++) {
+        if (H.some(([a, b, c, d]) => i + 0.5 > a && i + 0.5 < c && j + 0.5 > b && j + 0.5 < d)) continue;
+        this.G.back(i, j, st.tone ?? 1, st.size ?? 1, z, st.f ?? 1);
+      }
+    }
+  }
+
+  dot(x, y, st) { this.put(this.i(x), this.j(y), st); }
 
   /**
    * A point in space (metres from "here"; y down, z towards you). In the 3D
@@ -132,7 +217,7 @@ export class Pen {
     const i0 = Math.max(0, this.i(x0)), i1 = Math.min(cols - 1, this.i(x1));
     const j0 = Math.max(0, this.j(y0)), j1 = Math.min(rows - 1, this.j(y1));
     if (i1 < i0 || j1 < j0) return;
-    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) this.G.put(i, j, st.size ?? 1, st.colour ?? 0, st.tone ?? 1, st.f ?? 1);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) this.put(i, j, st);
   }
 
   /** The edge of a rectangle, a cell thick. */
@@ -150,7 +235,7 @@ export class Pen {
     if (n > 20000) return;
     for (let k = 0; k <= n; k += every) {
       const t = n ? k / n : 0;
-      this.G.put(Math.floor(a[0] + (b[0] - a[0]) * t), Math.floor(a[1] + (b[1] - a[1]) * t), st.size ?? 1, st.colour ?? 0, st.tone ?? 1, st.f ?? 1);
+      this.put(Math.floor(a[0] + (b[0] - a[0]) * t), Math.floor(a[1] + (b[1] - a[1]) * t), st);
     }
   }
 
@@ -164,7 +249,7 @@ export class Pen {
       const dy = j + 0.5 - cj;
       for (let i = i0; i <= i1; i++) {
         const dx = i + 0.5 - ci;
-        if (dx * dx + dy * dy <= R * R) this.G.put(i, j, st.size ?? 1, st.colour ?? 0, st.tone ?? 1, st.f ?? 1);
+        if (dx * dx + dy * dy <= R * R) this.put(i, j, st);
       }
     }
   }
@@ -179,12 +264,15 @@ export class Pen {
     if (ci + R < 0 || cj + R < 0 || ci - R > this.V.cols || cj - R > this.V.rows) return;
     for (let k = 0; k < n; k++) {
       const a = (k / n) * 2 * Math.PI;
-      this.G.put(Math.floor(ci + R * Math.cos(a)), Math.floor(cj + R * Math.sin(a)), st.size ?? 1, st.colour ?? 0, st.tone ?? 1, st.f ?? 1);
+      this.put(Math.floor(ci + R * Math.cos(a)), Math.floor(cj + R * Math.sin(a)), st);
     }
   }
 }
 
 // ---------------------------------------------------------------- the desk
+
+/** In 3D, how far the room's back wall is behind the screen, and how far its open front is in front of it (m). */
+export const WALL = -0.45, FRONT = 3.2;
 
 /**
  * My desk, side on, with the CV's screen in the middle (the page itself is
@@ -222,58 +310,76 @@ export class Desk {
     return { sw, sh, bez, deskY, phone, mug: [0.4, 0, 0.08, 0.1] };
   }
 
+  // In the 3D view everything here has its depth (z, metres towards you): the
+  // screen is the page's own plane, the desk runs back to the wall behind it
+  // and out towards you, the mug is round and the lamp's light a cone.
   paint(P, V, f, t) {
     const { sw, sh, bez, deskY, phone, mug } = this.geo(V);
+    const z = (a, b) => [a, b];
     const ink = { f }, grey = { tone: 0.45, f };
+    const at = (st, zz) => ({ ...st, z: zz });
+    // Round things: a cylinder standing up at x = cx, z = cz, radius r, as the depth of each column of cells.
+    const round = (cx, cz, r) => (x) => { const d = r * r - (x - cx) ** 2; return d > 0 ? [cz + Math.sqrt(d), cz - Math.sqrt(d)] : [cz + 0.002, cz - 0.002]; };
+    // The desk and the floor. In 3D it goes first, so what stands on it doesn't take its top's colour, and it's softer: its top is a big face.
+    const desk = () => {
+      P.rect(-0.8, deskY, 0.8, deskY + 0.03, P.D3 ? { tone: 0.62, f, z: z(0.35, WALL) } : ink);
+      P.rect(-0.77, deskY + 0.03, -0.74, deskY + 0.75, at(grey, z(0.32, WALL + 0.03)));
+      P.rect(0.74, deskY + 0.03, 0.77, deskY + 0.75, at(grey, z(0.32, WALL + 0.03)));
+    };
+    if (P.D3) desk();
     // The screen's edge, then the monitor (or the phone) round it.
-    P.frame(-sw / 2 - bez, -sh / 2 - bez, sw / 2 + bez, sh / 2 + bez, ink);
+    P.frame(-sw / 2 - bez, -sh / 2 - bez, sw / 2 + bez, sh / 2 + bez, at(ink, z(0, phone ? -0.008 : -0.03)));
+    if (P.D3) P.rect(-sw / 2, -sh / 2, sw / 2, sh / 2, { tone: 0.2, z: phone ? z(-0.004, -0.008) : z(-0.02, -0.035), f }); // its back, behind the page
     if (phone) {
-      P.rect(-0.01, sh / 2 + bez, 0.01, deskY, grey);
+      P.rect(-0.01, sh / 2 + bez, 0.01, deskY, at(grey, z(-0.01, -0.05)));
     } else {
-      P.rect(-sw / 2 - bez, sh / 2, sw / 2 + bez, sh / 2 + bez, grey);
-      P.rect(-0.03, sh / 2 + bez, 0.03, deskY - 0.012, grey);
-      P.rect(-0.12, deskY - 0.012, 0.12, deskY, ink);
-      P.rect(-0.22, deskY - 0.018, 0.22, deskY, grey); // keyboard
+      P.rect(-sw / 2 - bez, sh / 2, sw / 2 + bez, sh / 2 + bez, at(grey, z(0, -0.03)));
+      P.rect(-0.03, sh / 2 + bez, 0.03, deskY - 0.012, at(grey, z(-0.04, -0.07)));
+      P.rect(-0.12, deskY - 0.012, 0.12, deskY, at(ink, z(0.02, -0.16)));
+      P.rect(-0.22, deskY - 0.018, 0.22, deskY, at(grey, z(0.24, 0.07))); // keyboard
     }
-    // The desk and the floor.
-    P.rect(-0.8, deskY, 0.8, deskY + 0.03, ink);
-    P.rect(-0.77, deskY + 0.03, -0.74, deskY + 0.75, grey);
-    P.rect(0.74, deskY + 0.03, 0.77, deskY + 0.75, grey);
+    if (!P.D3) desk();
     // Coffee.
-    const [mx, , mw, mh] = mug;
-    P.frame(mx - mw / 2, deskY - mh, mx + mw / 2, deskY, ink);
-    P.ring(mx + mw / 2 + 0.018, deskY - mh / 2, 0.02, ink);
+    const [mx, , mw, mh] = mug, mz = 0.12, cup = round(mx, mz, mw / 2);
+    P.frame(mx - mw / 2, deskY - mh, mx + mw / 2, deskY, at(ink, cup));
+    if (P.D3) P.rect(mx - mw / 2, deskY - mh * 0.85, mx + mw / 2, deskY, { tone: 0.7, f, z: cup }); // in 3D, it's a cup: solid (and the coffee in it)
+    P.ring(mx + mw / 2 + 0.018, deskY - mh / 2, 0.02, at(ink, z(mz + 0.006, mz - 0.006)));
     for (const p of this.steam) {
-      const k = 1 - p.age / p.life;
-      P.dot(p.x, p.y, { size: 0.5, tone: 0.25 + 0.4 * k, f });
+      const k = 1 - p.age / p.life, pz = mz + Math.sin(p.seed + p.age * 1.3) * 0.025;
+      P.dot(p.x, p.y, { size: 0.5, tone: 0.25 + 0.4 * k, f, z: z(pz + 0.004, pz - 0.004) });
     }
     // A lamp, and its light on the desk.
-    P.rect(-0.62, deskY - 0.015, -0.5, deskY, ink);
-    P.line(-0.56, deskY - 0.015, -0.5, deskY - 0.36, ink);
-    P.line(-0.5, deskY - 0.36, -0.33, deskY - 0.42, ink);
-    P.rect(-0.36, deskY - 0.43, -0.28, deskY - 0.39, ink);
+    const lz = -0.24, arm = z(lz + 0.008, lz - 0.008);
+    P.rect(-0.62, deskY - 0.015, -0.5, deskY, at(ink, round(-0.56, lz, 0.06)));
+    P.line(-0.56, deskY - 0.015, -0.5, deskY - 0.36, at(ink, arm));
+    P.line(-0.5, deskY - 0.36, -0.33, deskY - 0.42, at(ink, arm));
+    P.rect(-0.36, deskY - 0.43, -0.28, deskY - 0.39, at(ink, round(-0.32, lz, 0.04)));
     for (let k = 0; k < 40; k++) {
-      const a = (k * 0.618) % 1, b = (k * 0.382 + 0.1) % 1;
-      const y = deskY - 0.38 + b * 0.37, x = -0.32 + (a - 0.5) * (0.04 + b * 0.3);
-      P.dot(x, y, { size: 0.25, colour: 3, f: f * 0.8 });
+      const a = (k * 0.618) % 1, b = (k * 0.382 + 0.1) % 1, c = (k * 0.737) % 1;
+      const y = deskY - 0.38 + b * 0.37, x = -0.32 + (a - 0.5) * (0.04 + b * 0.3), dz = lz + (c - 0.5) * (0.04 + b * 0.3);
+      P.dot(x, y, { size: 0.25, colour: 3, f: f * 0.8, z: z(dz + 0.003, dz - 0.003) });
     }
     // A plant.
-    P.frame(-0.79, deskY - 0.08, -0.69, deskY, ink);
-    const sway = Math.sin(t * 0.7) * 0.004;
-    for (const [dx, h] of [[-0.03, 0.16], [0, 0.22], [0.03, 0.14], [-0.015, 0.19], [0.02, 0.2]]) {
-      P.line(-0.74, deskY - 0.08, -0.74 + dx * 2 + sway, deskY - 0.08 - h, grey);
+    const pz = -0.25;
+    P.frame(-0.79, deskY - 0.08, -0.69, deskY, at(ink, round(-0.74, pz, 0.05)));
+    if (P.D3) P.rect(-0.79, deskY - 0.08, -0.69, deskY, { tone: 0.6, f, z: round(-0.74, pz, 0.05) });
+    const sway = Math.sin(t * 0.7) * 0.004, y0 = deskY - 0.08;
+    for (const [dx, h, dz] of [[-0.03, 0.16, 0.06], [0, 0.22, -0.02], [0.03, 0.14, -0.07], [-0.015, 0.19, -0.05], [0.02, 0.2, 0.05]]) {
+      const leaf = (x, y) => { const w = pz + dz * Math.max(0, Math.min(1, (y0 - y) / h)); return [w + 0.004, w - 0.004]; };
+      P.line(-0.74, y0, -0.74 + dx * 2 + sway, y0 - h, at(grey, leaf));
     }
     // The clock on the wall, telling the time.
     const cx = sw / 2 + 0.32, cy = -sh / 2 - 0.12, cr = 0.09;
-    P.ring(cx, cy, cr, ink);
+    P.ring(cx, cy, cr, at(ink, z(WALL + 0.04, WALL)));
     const d = new Date(), s = d.getSeconds() + d.getMilliseconds() / 1000, m = d.getMinutes() + s / 60, h = (d.getHours() % 12) + m / 60;
     const hand = (frac, len, st) => {
       const a = frac * 2 * Math.PI - Math.PI / 2;
-      P.line(cx, cy, cx + Math.cos(a) * len, cy + Math.sin(a) * len, st);
+      P.line(cx, cy, cx + Math.cos(a) * len, cy + Math.sin(a) * len, { ...st, z: z(WALL + 0.045, WALL + 0.03) });
     };
     hand(h / 12, cr * 0.5, ink);
     hand(m / 60, cr * 0.8, ink);
     hand(s / 60, cr * 0.85, { size: 0.5, colour: 1, f });
+    if (P.D3) P.disc(cx, cy, cr * 0.95, { tone: 0.15, f, z: z(WALL + 0.02, WALL) }); // its face, behind the hands
   }
 }
 

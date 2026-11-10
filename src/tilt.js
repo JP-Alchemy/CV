@@ -22,7 +22,7 @@ export function tilt3d(o) {
   const cam = attach3D(o.renderer);
   const T = { cam, k: 0, kTo: 0, yaw: 0, pitch: 0, sm: 0, shape: false, last: 0, raf: 0 };
   const root = document.documentElement;
-  const subject = () => T.shape || !!o.subject?.(); // looking at a thing (a shape, a planet) rather than a page
+  const subject = () => (T.shape ? 1 : Math.min(1, Math.max(0, +(o.subject?.() || 0)))); // looking at a thing (a shape, a planet, a room side on) rather than a page: 0-1
 
   const view = () => {
     const k = T.k, m = T.sm, r = o.renderer;

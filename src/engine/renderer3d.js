@@ -27,15 +27,19 @@ vec3 shade(vec3 col, vec3 bg, vec3 wn, float k) {
 
 // Powers of Ten's scales (FS_ZOOM in renderer.js) as cubes: one instance per
 // cell of its grid, the same size, colour and tone, standing on the page's
-// plane. A height in the grid's alpha (cells, ×16) raises a cell; until the
-// scenes give one, everything stands one cell deep. A map of the Earth's
-// surface (Z.ball: its middle and radius, px) is a view straight down onto
-// the globe, so each cell is lifted back onto the sphere it was seen on,
-// and where the ground slopes away the cell grows deeper, so no gaps show.
+// plane. A depth for the cell (u_zDeep: front and back, cells towards you)
+// stretches its cube from one to the other, so a desk side on runs back
+// into the room and a house seen from above stands up off the ground; a
+// second block in the cell (u_zDeep's zw, its tone and size in the grid's
+// alpha) is a wall behind, the ground, or whatever else didn't fit. Without
+// a depth a cell stands one cube deep. A map of the Earth's surface (Z.ball:
+// its middle and radius, px) is a view straight down onto the globe, so each
+// cell is lifted back onto the sphere it was seen on, and where the ground
+// slopes away the cell grows deeper, so no gaps show.
 const VS_ZOOM = `#version 300 es
 precision highp float;
 precision highp int;
-uniform sampler2D u_zGrid;
+uniform sampler2D u_zGrid, u_zDeep;
 uniform vec4 u_zArea; // x, y, cols, rows
 uniform float u_zB, u_scroll, u_time, u_s, u_k, u_face;
 uniform float u_zDot, u_zRing; // how much of its cell a block fills; 1 for a far ring (smaller, flat, and only beyond the middle)
@@ -47,34 +51,54 @@ out vec3 v_q;
 flat out vec4 v_light;
 flat out vec2 v_kt; // colour (0 ink, 1-7 the spectrum), tone
 ${LIGHT_GLSL}
+const vec4 GONE = vec4(2.0, 2.0, 2.0, 1.0);
 void main() {
-  int cols = int(u_zArea.z);
-  ivec2 g = ivec2(gl_InstanceID % cols, gl_InstanceID / cols);
-  vec4 t = texelFetch(u_zGrid, g, 0);
+  int cols = int(u_zArea.z), n = cols * int(u_zArea.w), id = gl_InstanceID % n;
+  bool second = gl_InstanceID >= n;
+  ivec2 g = ivec2(id % cols, id / cols);
+  vec4 t = texelFetch(u_zGrid, g, 0), D = texelFetch(u_zDeep, g, 0);
+  int a = int(t.a * 255.0 + 0.5);
+  float size = second ? float(a & 15) / 15.0 : t.r, tone = second ? float(a >> 4) / 15.0 : t.b;
+  vec2 zr = second ? D.zw : D.xy;
+  bool deep = zr.x != 0.0 || zr.y != 0.0;
   // Tilted, the painted area's edge shows: dissolve the outer eighth of it, a cell at a time.
   vec2 e = min(vec2(g) + 0.5, u_zArea.zw - vec2(g) - 0.5) / (u_zArea.zw * 0.12);
   float keep = clamp(min(e.x, e.y), 0.0, 1.0) * u_face; // and the whole flat layer as it turns away
-  if (t.r <= 0.0 || hashL(vec2(g) + 3.7) >= keep) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
-  vec3 h = vec3(t.r * u_zB * 0.5 * u_zDot);
-  if (u_zRing > 0.0) h.z = min(h.z, u_zB * 0.06); // tiles on the ground, not blocks standing on it
+  if (size <= 0.0 || hashL(vec2(g) + 3.7) >= keep) { gl_Position = GONE; return; }
+  vec3 h = vec3(size * u_zB * 0.5 * u_zDot);
+  if (u_zRing > 0.0 && !deep) h.z = min(h.z, u_zB * 0.06); // tiles on the ground, not blocks standing on it
   vec2 c = u_zArea.xy + (vec2(g) + 0.5) * u_zB;
-  if (c.x > u_zHole.x && c.y > u_zHole.y && c.x < u_zHole.z && c.y < u_zHole.w) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
-  vec3 C = vec3(c, t.a * 255.0 / 16.0 * u_zB - h.z - 0.5); // a hair behind the page's blocks
+  if (c.x > u_zHole.x && c.y > u_zHole.y && c.x < u_zHole.z && c.y < u_zHole.w) { gl_Position = GONE; return; }
+  vec3 C = vec3(c, -h.z - 0.5); // a hair behind the page's blocks
+  if (deep) { C.z = (zr.x + zr.y) * 0.5 * u_zB - 0.5; h.z = max((zr.x - zr.y) * 0.5 * u_zB, 0.25); }
   if (u_ball.z > 0.0) {
     vec2 d = c - u_ball.xy;
     float R = u_ball.z, r2 = dot(d, d), up = R * sqrt(max(1.0 - r2 / (R * R), 0.0));
-    float deep = min(sqrt(r2) / max(up, 1e-3), 10.0) * u_zB * 0.5; // the slope, in cells
-    C.z += -r2 / (R + up) + u_ball.w - deep; // how far the ground falls away (written so a town, on a ball millions of px across, stays exact)
-    h.z += deep;
+    float dp = min(sqrt(r2) / max(up, 1e-3), 10.0) * u_zB * 0.5; // the slope, in cells
+    C.z += -r2 / (R + up) + u_ball.w - dp; // how far the ground falls away (written so a town, on a ball millions of px across, stays exact)
+    h.z += dp;
   }
-  if (u_zRing > 0.0 && (u_vp * vec4(C, 1.0)).w < (u_vp * vec4(u_piv, 1.0)).w) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; } // the near side of a ring would loom past the camera
+  if (u_zRing > 0.0 && (u_vp * vec4(C, 1.0)).w < (u_vp * vec4(u_piv, 1.0)).w) { gl_Position = GONE; return; } // the near side of a ring would loom past the camera
+  if (deep) { // what runs out towards the camera stops short of it, and nothing goes past the back of the depth buffer
+    float zb = max(C.z - h.z, -3800.0), zf = C.z + h.z;
+    if (u_s > 0.0) { // towards you, depth is eased in: the camera stays a fixed way off on screen, so close up a street in front would reach it
+      float m = 0.4 / u_s;
+      if (zf > 0.0) zf /= 1.0 + zf / m;
+      if (zb > 0.0) zb /= 1.0 + zb / m;
+    }
+    float wb = (u_vp * vec4(c, zb, 1.0)).w, wf = (u_vp * vec4(c, zf, 1.0)).w;
+    if (wb < 0.25) { gl_Position = GONE; return; }
+    if (wf < 0.25) zf = zb + (zf - zb) * (wb - 0.25) / (wb - wf);
+    if (zf <= zb) { gl_Position = GONE; return; }
+    C.z = (zf + zb) * 0.5; h.z = (zf - zb) * 0.5;
+  }
   vec3 dl = u_eye + u_s * (u_piv - C);
   vec3 s = vec3(greaterThanEqual(dl, vec3(0.0))) * 2.0 - 1.0;
   int j = gl_VertexID, k = (s.x * s.y * s.z > 0.0 ? j + 5 : 7 - j) % 6;
   vec3 q = j == 0 ? s : s * (k == 0 ? vec3(-1, 1, 1) : k == 1 ? vec3(-1, -1, 1) : k == 2 ? vec3(1, -1, 1) : k == 3 ? vec3(1, -1, -1) : k == 4 ? vec3(1, 1, -1) : vec3(-1, 1, -1));
   gl_Position = u_vp * vec4(C + q * h, 1.0);
   v_q = q;
-  v_kt = vec2(t.g * 255.0, t.b);
+  v_kt = second ? vec2(0.0, tone) : vec2(t.g * 255.0, tone);
   v_light = u_pulseN > 0 ? lightAt(c + vec2(0.0, u_scroll), vec2(g)) : vec4(0.0);
 }`;
 
@@ -334,18 +358,16 @@ export function attach3D(r) {
     const Z = r.zoom, M = r.slime;
     r.zoom = r.slime = null;
     try { draw(f); } finally { r.zoom = Z; r.slime = M; }
-    if (Z) zoomCubes(f, Z, c, r.ztex);
+    if (Z) zoomCubes(f, Z, c, r.ztex, r.zdeep);
     if (Z) (cam.far || []).forEach((F, i) => { // the ground further out, coarser, in rings round the zoom's grid
       let T = ftex[i];
-      if (!T) T = ftex[i] = { tex: gl.createTexture(), v: -1 };
+      if (!T) T = ftex[i] = { tex: gl.createTexture(), deep: gl.createTexture(), v: -1 };
       if (F.version !== T.v) {
-        gl.bindTexture(gl.TEXTURE_2D, T.tex);
-        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, F.cols, F.rows, 0, gl.RGBA, gl.UNSIGNED_BYTE, F.buf);
-        for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.NEAREST], [gl.TEXTURE_MAG_FILTER, gl.NEAREST], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+        gridTex(T.tex, F.cols, F.rows, F.buf);
+        deepTex(T.deep, F.cols, F.rows, F.deep);
         T.v = F.version;
       }
-      zoomCubes(f, F, c, T.tex);
+      zoomCubes(f, F, c, T.tex, T.deep);
     });
     for (const S of [].concat(cam.solid || [])) if (S?.n) solidCubes(f, S, c);
     if (cam.points?.n) pointCubes(f, cam.points, c);
@@ -436,7 +458,29 @@ export function attach3D(r) {
   }
 
   const ftex = [];
-  function zoomCubes(f, Z, c, tex) {
+  let none = null;
+  const nearest = () => { for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.NEAREST], [gl.TEXTURE_MAG_FILTER, gl.NEAREST], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v); };
+  function gridTex(tex, cols, rows, buf) {
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, cols, rows, 0, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+    nearest();
+  }
+  /** A grid's depths (Grid.deep: 4 floats a cell), or none. */
+  function deepTex(tex, cols, rows, deep) {
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+    if (deep) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, cols, rows, 0, gl.RGBA, gl.FLOAT, deep);
+    else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 1, 1, 0, gl.RGBA, gl.FLOAT, new Float32Array(4));
+    nearest();
+  }
+  /** The zoom's own grid's depths, uploaded when they change (renderer.setZoom marks them). */
+  r.zdeep = null;
+  cam.deep = (z) => {
+    r.zdeep ||= gl.createTexture();
+    deepTex(r.zdeep, z.cols, z.rows, z.deep);
+  };
+  function zoomCubes(f, Z, c, tex, deep) {
     ZP ||= program(gl, VS_ZOOM, FS_ZOOM);
     const z = ZP.u;
     gl.useProgram(ZP.p);
@@ -465,6 +509,11 @@ export function attach3D(r) {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.uniform1i(z.u_zGrid, 0);
+    if (!deep) { if (!none) deepTex(none = gl.createTexture(), 1, 1, null); deep = none; } // no depths: every cell a cube deep
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, deep);
+    gl.uniform1i(z.u_zDeep, 1);
+    gl.activeTexture(gl.TEXTURE0);
     gl.uniform4fv(z.u_zHole, Z.hole || [0, 0, 0, 0]);
     gl.uniform1f(z.u_zDot, Z.dot || 1);
     gl.uniform1f(z.u_zRing, Z.ring ? 1 : 0);
@@ -474,7 +523,7 @@ export function attach3D(r) {
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
     gl.bindVertexArray(zvao);
-    gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 8, Z.cols * Z.rows);
+    gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 8, Z.cols * Z.rows * 2); // each cell's block, then its second one
     gl.bindVertexArray(null);
   }
 

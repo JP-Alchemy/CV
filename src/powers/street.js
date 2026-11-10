@@ -7,7 +7,7 @@
 // of town and the polders. The neighbourhood is made up, on purpose: it isn't
 // my street.
 
-import { rng, Grid } from './scenes.js';
+import { rng, Grid, WALL, FRONT } from './scenes.js';
 
 const LEIDEN = [52.16, 4.49];
 const STOREY = 3.1; // m, floor to floor
@@ -31,6 +31,11 @@ const hash = (a, b, c = 0) => {
 
 const GABLES = ['step', 'neck', 'bell', 'spout', 'flat'];
 const SPAN = 170; // m either side of my house
+// In 3D (z, metres towards you; the screen on my desk is 0): the houses' fronts
+// are where my room opens (FRONT), and they run DEEP back from there; then
+// the street, the quay with its lindens, and the canal, out towards you.
+const DEEP = 9, QUAY = FRONT + 5, TREES = FRONT + 4, CANAL = FRONT + 17;
+const thin = (z, d = 0.05) => [z + d, z - d];
 
 export class Street {
   constructor() {
@@ -91,25 +96,29 @@ export class Street {
     const ink = { f }, grey = { tone: 0.5, f }, soft = { tone: 0.35, size: 0.5, f };
     this.room(P, f, floorY, night, t);
     for (const h of this.houses) this.house(P, h, sY, night, f);
-    // The street, the quay wall and the canal, in section.
-    P.line(-SPAN, sY, SPAN, sY, ink);
-    P.rect(-SPAN, sY, SPAN, sY + 0.2, grey);
-    const yW = sY + 1.3;
+    // The street, the quay wall and the canal, in section (in 3D, the street and the water run out towards you).
+    const road = [QUAY, FRONT - 0.3];
+    P.line(-SPAN, sY, SPAN, sY, { ...ink, z: road });
+    P.rect(-SPAN, sY, SPAN, sY + 0.2, { ...grey, z: road });
+    const yW = sY + 1.3, water = [CANAL, QUAY + 0.3];
     let last = -1;
     for (let i = 0; i < this.N; i++) {
       const x = -SPAN + i * this.dx, ci = P.i(x);
       if (ci === last) continue;
       last = ci;
-      P.dot(x, yW - this.u[i] * 0.25, { tone: 0.7, f });
+      P.dot(x, yW - this.u[i] * 0.25, { tone: 0.7, f, z: water });
     }
-    for (let y = yW + 0.6; y < sY + 4; y += 0.6) P.line(-SPAN, y, SPAN, y, { size: 0.25, tone: 0.3, f }, 3);
-    // Lindens on the quay.
+    if (!P.D3) for (let y = yW + 0.6; y < sY + 4; y += 0.6) P.line(-SPAN, y, SPAN, y, { size: 0.25, tone: 0.3, f }, 3); // the water, in section (in 3D its surface says it)
+    P.wall(-SPAN, sY + 0.2, SPAN, sY + 4, { tone: 0.3, z: [QUAY + 0.3, QUAY] }); // the quay's wall, facing the canal
+    // Lindens on the quay: in 3D the crowns are round, their leaves all through them.
     for (const tr of this.trees) {
-      P.line(tr.x, sY, tr.x, sY - tr.h + tr.r * 0.6, grey);
-      P.ring(tr.x, sY - tr.h, tr.r, { size: 0.5, tone: 0.55, f }, 2);
-      this.speckle(P, tr.x, sY - tr.h, tr.r * 0.85, soft);
+      const cy = sY - tr.h, R = tr.r;
+      const crown = (x, y) => { const q = Math.sqrt(Math.max(0, R * R - (x - tr.x) ** 2 - (y - cy) ** 2)), w = TREES + q * (2 * hash(Math.round(x * 5), Math.round(y * 5), 3) - 1); return [w + 0.25, w - 0.25]; };
+      P.line(tr.x, sY, tr.x, sY - tr.h + tr.r * 0.6, { ...grey, z: thin(TREES, 0.2) });
+      P.ring(tr.x, cy, tr.r, { size: 0.5, tone: 0.55, f, z: crown }, 2);
+      this.speckle(P, tr.x, cy, tr.r * 0.85, { ...soft, z: crown });
     }
-    for (const b of this.riders) this.rider(P, b, sY, f);
+    this.riders.forEach((b, k) => this.rider(P, b, sY, f, FRONT + 1.2 + 2.6 * hash(k, 5)));
   }
 
   /** Dots inside a circle, every other cell. */
@@ -122,54 +131,58 @@ export class Street {
     for (let j = j0; j <= j1; j++) {
       for (let i = i0; i <= i1; i++) {
         if (((i + j) & 1) || (i - ci) ** 2 + (j - cj) ** 2 > R * R) continue;
-        P.G.put(i, j, st.size, 0, st.tone, st.f);
+        P.put(i, j, st);
       }
     }
   }
 
-  /** My room, around the desk: walls, floor and ceiling, a bookcase, a radiator, a window and what's outside it. */
+  /** My room, around the desk: walls, floor and ceiling, a bookcase, a radiator, a window and what's outside it. In 3D, a box open towards you, the window in its back wall. */
   room(P, f, floorY, night, t) {
-    const ink = { f }, grey = { tone: 0.5, f }, slab = { size: 0.5, tone: 0.5, f };
-    const ceil = floorY - 2.8;
-    P.rect(-2.6, floorY, 2.6, floorY + 0.3, slab);
-    P.rect(-2.6, ceil - 0.3, 2.6, ceil, slab);
-    P.line(-2.6, floorY, 2.6, floorY, ink);
-    P.line(-2.6, ceil, 2.6, ceil, ink);
-    P.rect(-2.6, ceil - 0.3, -2.3, floorY + 0.3, slab);
-    P.rect(2.3, ceil - 0.3, 2.6, floorY + 0.3, slab);
-    // The window, and the sky through it, as it is over Leiden now.
-    const wx0 = 0.95, wx1 = 2.0, wy0 = floorY - 2.3, wy1 = floorY - 0.95;
+    const ink = { f }, grey = { tone: 0.5, f }, slab = P.D3 ? { tone: 0.3, f } : { size: 0.5, tone: 0.5, f }; // in 3D the slabs are solid, and the floor's a big face, so softer
+    const ceil = floorY - 2.8, box = [FRONT, WALL - 0.3], inWall = [WALL, WALL - 0.3], edge = P.D3 ? { tone: 0.55, f } : ink;
+    P.rect(-2.6, floorY, 2.6, floorY + 0.3, { ...slab, z: box });
+    P.rect(-2.6, ceil - 0.3, 2.6, ceil, { ...slab, z: box });
+    P.line(-2.6, floorY, 2.6, floorY, { ...edge, z: box });
+    P.line(-2.6, ceil, 2.6, ceil, { ...edge, z: box });
+    P.rect(-2.6, ceil - 0.3, -2.3, floorY + 0.3, { ...slab, z: box });
+    P.rect(2.3, ceil - 0.3, 2.6, floorY + 0.3, { ...slab, z: box });
+    // The window, and the sky through it, as it is over Leiden now (in 3D, well beyond it).
+    const wx0 = 0.95, wx1 = 2.0, wy0 = floorY - 2.3, wy1 = floorY - 0.95, sky = thin(WALL - 5, 0.1);
     if (night) {
       for (const [a, b, ph] of this.stars) {
-        if (Math.sin(t * 1.3 + ph) > -0.6) P.dot(wx0 + 0.06 + a * (wx1 - wx0 - 0.12), wy0 + 0.06 + b * (wy1 - wy0 - 0.12), { size: 0.5, tone: 0.8, f });
+        if (Math.sin(t * 1.3 + ph) > -0.6) P.dot(wx0 + 0.06 + a * (wx1 - wx0 - 0.12), wy0 + 0.06 + b * (wy1 - wy0 - 0.12), { size: 0.5, tone: 0.8, f, z: sky });
       }
     } else {
       for (const c of this.clouds) {
         const cx = wx0 + (c.x - 0.2) * (wx1 - wx0), cy = wy0 + c.y * (wy1 - wy0);
         for (let k = 0; k < 3; k++) {
           const x = cx + (k - 1) * c.s * 0.5, y = cy - (k === 1 ? c.s * 0.25 : 0);
-          if (x > wx0 + 0.05 && x < wx1 - 0.05) this.speckleIn(P, x, y, c.s * 0.35, [wx0, wy0, wx1, wy1], { size: 0.5, tone: 0.3, f });
+          if (x > wx0 + 0.05 && x < wx1 - 0.05) this.speckleIn(P, x, y, c.s * 0.35, [wx0, wy0, wx1, wy1], { size: 0.5, tone: 0.3, f, z: sky });
         }
       }
     }
-    P.frame(wx0, wy0, wx1, wy1, ink);
-    P.line((wx0 + wx1) / 2, wy0, (wx0 + wx1) / 2, wy1, ink);
-    P.line(wx0, wy0 + 0.45, wx1, wy0 + 0.45, ink);
-    P.rect(wx0 - 0.05, wy1, wx1 + 0.05, wy1 + 0.04, ink);
+    P.frame(wx0, wy0, wx1, wy1, { ...ink, z: inWall });
+    P.line((wx0 + wx1) / 2, wy0, (wx0 + wx1) / 2, wy1, { ...ink, z: thin(WALL - 0.15) });
+    P.line(wx0, wy0 + 0.45, wx1, wy0 + 0.45, { ...ink, z: thin(WALL - 0.15) });
+    P.rect(wx0 - 0.05, wy1, wx1 + 0.05, wy1 + 0.04, { ...ink, z: [WALL + 0.12, WALL - 0.3] });
     // A radiator under it.
-    P.frame(1.0, floorY - 0.72, 1.95, floorY - 0.12, grey);
-    for (let x = 1.06; x < 1.92; x += 0.07) P.line(x, floorY - 0.7, x, floorY - 0.14, { size: 0.5, tone: 0.4, f });
+    const rad = [WALL + 0.1, WALL + 0.02];
+    P.frame(1.0, floorY - 0.72, 1.95, floorY - 0.12, { ...grey, z: rad });
+    for (let x = 1.06; x < 1.92; x += 0.07) P.line(x, floorY - 0.7, x, floorY - 0.14, { size: 0.5, tone: 0.4, f, z: rad });
     // A bookcase.
-    P.frame(-2.2, floorY - 2.0, -1.35, floorY, ink);
-    for (let s = 1; s < 5; s++) P.line(-2.2, floorY - s * 0.4, -1.35, floorY - s * 0.4, ink);
+    const shelf = [WALL + 0.32, WALL];
+    P.frame(-2.2, floorY - 2.0, -1.35, floorY, { ...ink, z: shelf });
+    for (let s = 1; s < 5; s++) P.line(-2.2, floorY - s * 0.4, -1.35, floorY - s * 0.4, { ...ink, z: shelf });
     for (const b of this.books) {
       const base = floorY - b.s * 0.4;
       if (b.x + b.w > -1.37) continue;
-      P.rect(b.x, base - b.h, b.x + b.w, base - 0.01, { tone: b.tone, f });
+      P.rect(b.x, base - b.h, b.x + b.w, base - 0.01, { tone: b.tone, f, z: [WALL + 0.28 - b.h * 0.2, WALL + 0.03] });
     }
     // A lamp from the ceiling.
-    P.line(-0.9, ceil, -0.9, ceil + 0.5, grey);
-    P.rect(-1.0, ceil + 0.5, -0.8, ceil + 0.6, ink);
+    P.line(-0.9, ceil, -0.9, ceil + 0.5, { ...grey, z: thin(0.6, 0.01) });
+    P.rect(-1.0, ceil + 0.5, -0.8, ceil + 0.6, { ...ink, z: (x) => { const q = Math.sqrt(Math.max(0, 0.01 - (x + 0.9) ** 2)); return [0.6 + q + 0.005, 0.6 - q - 0.005]; } });
+    // In 3D, the wall behind it all, with the window in it.
+    P.wall(-2.3, ceil, 2.3, floorY, { tone: 0.12, z: inWall }, [[wx0, wy0, wx1, wy1]]);
   }
 
   /** Dots inside a circle, kept inside a rect. */
@@ -179,16 +192,17 @@ export class Street {
     const ci = P.u(x), cj = P.v(y);
     const i0 = Math.max(0, Math.floor(ci - R), P.i(box[0]) + 1), i1 = Math.min(P.V.cols - 1, Math.floor(ci + R), P.i(box[2]) - 1);
     const j0 = Math.max(0, Math.floor(cj - R), P.j(box[1]) + 1), j1 = Math.min(P.V.rows - 1, Math.floor(cj + R), P.j(box[3]) - 1);
-    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) if (!((i + j) & 1) && (i - ci) ** 2 + (j - cj) ** 2 <= R * R) P.G.put(i, j, st.size, 0, st.tone, st.f);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) if (!((i + j) & 1) && (i - ci) ** 2 + (j - cj) ** 2 <= R * R) P.put(i, j, st);
   }
 
   /** A house front: walls, its gable, windows (lit at night, some of them) and a door. */
   house(P, h, sY, night, f) {
     const { x0, x1, n, g } = h;
-    const ink = { f }, w = x1 - x0, c = (x0 + x1) / 2;
-    const yE = sY - STOREY * n, G = Math.min(4.2, w * 0.75);
-    P.line(x0, sY, x0, yE, ink);
-    P.line(x1, sY, x1, yE, ink);
+    // In 3D the front is where my room opens, and its outline runs DEEP back: the side walls, and the gable becomes the roof.
+    const ink = { f, z: [FRONT, FRONT - DEEP] }, w = x1 - x0, c = (x0 + x1) / 2;
+    const yE = sY - STOREY * n, G = Math.min(4.2, w * 0.75), side = P.D3 ? { ...ink, tone: 0.5 } : ink;
+    P.line(x0, sY, x0, yE, side);
+    P.line(x1, sY, x1, yE, side);
     const L = (a, b, cc, d) => P.line(a, b, cc, d, ink);
     if (g === 'step') {
       const tw = w * 0.28, dx = (w - tw) / 6, dy = G / 4;
@@ -215,28 +229,33 @@ export class Street {
     } else if (g === 'spout') {
       L(x0, yE, c, yE - G); L(x1, yE, c, yE - G);
     } else {
-      P.rect(x0 - 0.15, yE - 0.5, x1 + 0.15, yE, { tone: 0.6, f });
+      P.rect(x0 - 0.15, yE - 0.5, x1 + 0.15, yE, { tone: 0.6, f, z: [FRONT + 0.15, FRONT - DEEP] });
     }
     // Windows, storey by storey; my room's storey is open, the doll's-house way.
-    const m = Math.max(1, Math.floor((w - 0.8) / 1.7)), gap = w / m;
+    const m = Math.max(1, Math.floor((w - 0.8) / 1.7)), gap = w / m, sill = { f, z: [FRONT + 0.05, FRONT - 0.3] }, holes = [];
+    const open = [x0, sY - STOREY * 2, x1, sY - STOREY]; // my room's storey
     for (let k = 0; k < n; k++) {
-      if (h.mine && k === 1) continue;
+      if (h.mine && k === 1) { holes.push(open); continue; }
       for (let q = 0; q < m; q++) {
         const xc = x0 + gap * (q + 0.5);
         if (k === 0 && q === 0) { // the door
-          P.frame(xc - 0.45, sY - 2.3, xc + 0.45, sY, ink);
+          P.frame(xc - 0.45, sY - 2.3, xc + 0.45, sY, sill);
+          holes.push([xc - 0.45, sY - 2.3, xc + 0.45, sY]);
           continue;
         }
         const yb = sY - STOREY * k - 0.8, yt = yb - 1.6;
-        P.frame(xc - 0.5, yt, xc + 0.5, yb, ink);
-        if (night && hash(h.seed, k, q) < 0.35) P.rect(xc - 0.4, yt + 0.1, xc + 0.4, yb - 0.1, { size: 0.5, colour: 3, f });
+        P.frame(xc - 0.5, yt, xc + 0.5, yb, sill);
+        holes.push([xc - 0.5, yt, xc + 0.5, yb]);
+        if (night && hash(h.seed, k, q) < 0.35) P.rect(xc - 0.4, yt + 0.1, xc + 0.4, yb - 0.1, { size: 0.5, colour: 3, f, z: [FRONT - 0.15, FRONT - 0.25] });
       }
     }
+    P.wall(x0, yE, x1, sY, { tone: 0.12, z: [FRONT, FRONT - 0.3], f }, holes); // in 3D, the front wall itself
+    for (const hole of holes) if (hole !== open) P.wall(...hole, { tone: 0.04, z: [FRONT - 1.2, FRONT - 1.4], f }); // and dark rooms behind the windows
   }
 
   /** Someone on a bike. */
-  rider(P, b, sY, f) {
-    const ink = { f }, dir = Math.sign(b.v), x = b.x;
+  rider(P, b, sY, f, rz) {
+    const ink = { f, z: thin(rz, 0.08) }, dir = Math.sign(b.v), x = b.x;
     if (P.V.ppm * 2 < P.V.cell) { P.dot(x, sY - 1, ink); return; }
     P.ring(x - 0.5, sY - 0.34, 0.34, ink);
     P.ring(x + 0.5, sY - 0.34, 0.34, ink);
@@ -257,6 +276,15 @@ export class Street {
 
 const BX = 100, BY = 80; // a block and its street, m
 const mod = (a, b) => ((a % b) + b) % b;
+
+/** In 3D, the ground under a grid seen from above, `deep` cells thick, wherever there's nothing below it there already (water); `where` picks the cells. */
+function ground(G, f, deep, where = null) {
+  const b = G.buf, D = G.deep, n = G.cols * G.rows;
+  for (let k = 0; k < n; k++) {
+    if ((where && !where[k]) || (b[k * 4] && D[k * 4] < 0)) continue;
+    G.back(k % G.cols, (k / G.cols) | 0, 0.08, 1, [0, -deep], f);
+  }
+}
 
 /**
  * A neighbourhood like mine, from above, block by block out to the edge of
@@ -302,29 +330,32 @@ export class Town {
 
   /** The streets only change when the zoom does, so they're painted into a layer of their own and kept; the bikes go on top every frame. */
   paint(P, V, f) {
-    const key = `${V.ppm}|${V.cols}|${V.rows}|${V.cell}|${Math.round(f * 20)}`;
+    const key = `${V.ppm}|${V.cols}|${V.rows}|${V.cell}|${Math.round(f * 20)}|${!!P.D3}`;
     if (key !== this.key) {
       this.own ||= new Grid();
       if (this.own.cols !== V.cols || this.own.rows !== V.rows) this.own.resize(V.cols, V.rows);
       this.own.clear();
-      this.streets(this.own, V, Math.round(f * 20) / 20);
+      this.streets(this.own, V, Math.round(f * 20) / 20, !!P.D3);
       this.key = key;
     }
-    const a = this.own.buf, b = P.G.buf;
-    for (let k = 0; k < a.length; k += 4) {
-      if (a[k] > b[k]) { b[k] = a[k]; b[k + 1] = a[k + 1]; b[k + 2] = a[k + 2]; }
-    }
+    P.G.merge(this.own);
     if (V.cell / V.ppm < 6) {
       for (const r of this.riders) {
         const x = r.across ? r.pos : r.line * BX + 50, y = r.across ? r.line * BY + (mod(r.line, 3) === 0 ? 1 : 6) : r.pos; // on the quay, beside a canal
-        P.dot(x, y, { size: 1, tone: 1, f });
+        P.dot(x, y, { size: 1, tone: 1, f, z: [1.8, 0] });
       }
     }
   }
 
-  streets(G, V, f) {
+  // In 3D, everything has its height (metres up, towards you): the houses
+  // their storeys and pitched roofs, the lindens' crowns over the quays, the
+  // garden walls; the canals and the river lie a little below the street.
+  // In 3D, too, the houses are solid (whole cells), and there's ground under it all.
+  streets(G, V, f, d3) {
     const { cols, rows, cell, ppm } = V;
     const c = cell / ppm; // metres a block of the screen
+    const up = (top, bottom = 0) => [top / c, bottom / c];
+    const WATER = up(-1.2, -1.6), QUAYSIDE = up(0.3, -1.6), built = d3 ? 1 : 0.75;
     for (let j = 0; j < rows; j++) {
       const y = ((j + 0.5) * cell - V.cy) / ppm;
       for (let i = 0; i < cols; i++) {
@@ -340,12 +371,12 @@ export class Town {
           if (dd < d1) { d2 = d1; d1 = dd; k1 = k; } else if (dd < d2) d2 = dd;
         }
         const seam = Math.sqrt(d2) - Math.sqrt(d1);
-        if (seam < Math.max(9, c * 0.6)) { if (Math.abs(seam - 9) < c * 0.6 && c < 12) G.put(i, j, 0.5, 0, 0.45, f); continue; }
+        if (seam < Math.max(9, c * 0.6)) { if (Math.abs(seam - 9) < c * 0.6 && c < 12) G.put(i, j, 0.5, 0, 0.45, f, up(0.2, -0.3)); continue; }
         // A river through town (the Old Rhine, more or less).
         const ry = -430 + 70 * Math.sin(x / 260);
         if (Math.abs(y - ry) < Math.max(14, c * 0.6)) {
           const e = Math.abs(Math.abs(y - ry) - 14) < c * 0.6;
-          G.put(i, j, e ? 0.75 : 0.5, 0, e ? 0.8 : 0.4, f);
+          G.put(i, j, e ? 0.75 : 0.5, 0, e ? 0.8 : 0.4, f, e ? QUAYSIDE : WATER);
           continue;
         }
         // Into the district's own streets: turned, and gently bent.
@@ -358,42 +389,50 @@ export class Town {
         if (ly >= DY) { // the street along the block, or a canal
           if (mod(by, 3) === 0) {
             const wd = Math.abs(ly - DY - 6);
-            if (wd < 4 || (c > 4 && wd < c * 0.5)) G.put(i, j, Math.abs(wd - 4) < c ? 0.75 : 0.5, 0, Math.abs(wd - 4) < c ? 0.8 : 0.4, f);
-            else if (c < 3 && hash(Math.floor((ux + 3) / 10), by) < 0.9 && mod(ux + 3, 10) < 6 && (ly < DY + 2 || ly > DY + 10)) G.put(i, j, odd ? 0.5 : 0.25, 0, 0.45, f); // lindens
+            if (wd < 4 || (c > 4 && wd < c * 0.5)) G.put(i, j, Math.abs(wd - 4) < c ? 0.75 : 0.5, 0, Math.abs(wd - 4) < c ? 0.8 : 0.4, f, Math.abs(wd - 4) < c ? QUAYSIDE : WATER);
+            else if (c < 3 && hash(Math.floor((ux + 3) / 10), by) < 0.9 && mod(ux + 3, 10) < 6 && (ly < DY + 2 || ly > DY + 10)) { // lindens: their crowns up over the quay, a trunk under each
+              const tz = 6 + 4 * hash(Math.floor((ux + 3) / 10), by, 2);
+              G.put(i, j, odd ? 0.5 : 0.25, 0, 0.45, f, up(tz + 2 * hash(i, j, 4), tz - 3));
+              if (Math.abs(mod(ux + 3, 10) - 3) < c * 0.6) G.back(i, j, 0.45, 0.25, up(tz - 3, 0), f);
+            }
           }
           continue;
         }
         if (lx >= PX - 10) continue; // a street across
-        if (c > 14) { if (!odd) G.put(i, j, 0.5, 0, 0.55, f); continue; } // town, from far off
-        if (hash(bx, by, 7) < 0.07) { if (!odd && hash(i, j) < 0.6) G.put(i, j, 0.5, 0, 0.4, f); continue; } // a park
+        if (c > 14) { if (!odd) G.put(i, j, 0.5, 0, 0.55, f, up(7 + 6 * hash(bx, by, 8))); continue; } // town, from far off: each block its own height
+        if (hash(bx, by, 7) < 0.07) { if (!odd && hash(i, j) < 0.6) G.put(i, j, 0.5, 0, 0.4, f, up(9 + 5 * hash(i, j, 6), 4)); continue; } // a park, its trees
         const front = ly > DY - 11 ? 1 : ly < 11 ? 0 : -1;
         if (front >= 0) {
-          const pw = 5.2 + 2.6 * hash(bx, by, front), fx = mod(lx, pw);
-          if (c < 2.5 && fx < c) G.put(i, j, 1, 0, 0.95, f); // the wall between two houses
-          else G.put(i, j, 0.75, 0, 0.72, f);
+          // A row of houses, each its own height, with a pitched roof along the row.
+          const pw = 5.2 + 2.6 * hash(bx, by, front), fx = mod(lx, pw), plot = Math.floor(lx / pw);
+          const eave = STOREY * (2 + Math.floor(3 * hash(bx * 131 + plot, by, front))), t = (front ? ly - (DY - 11) : ly) / 11, roof = eave + 3.2 * (1 - Math.abs(2 * t - 1));
+          if (c < 2.5 && fx < c) G.put(i, j, 1, 0, 0.95, f, up(roof + 0.4)); // the wall between two houses
+          else G.put(i, j, built, 0, 0.72, f, up(c < 2.5 ? roof : eave + 1.6));
           continue;
         }
         // Back gardens: a wall down the middle, fences between, a tree here and there.
-        if (c >= 3) { if (!odd && hash(i, j, 3) < 0.4) G.put(i, j, 0.25, 0, 0.35, f); continue; }
+        if (c >= 3) { if (!odd && hash(i, j, 3) < 0.4) G.put(i, j, 0.25, 0, 0.35, f, up(2 + 4 * hash(i, j, 12))); continue; }
         const mid = DY / 2, half = ly < mid ? 0 : 1, pw = 5.2 + 2.6 * hash(bx, by, half), plot = Math.floor(lx / pw), fx = lx - plot * pw;
-        if (Math.abs(ly - mid) < c * 0.6) G.put(i, j, 0.75, 0, 0.6, f);
-        else if (fx < c) G.put(i, j, 0.5, 0, 0.35, f);
+        if (Math.abs(ly - mid) < c * 0.6) G.put(i, j, 0.75, 0, 0.6, f, up(2));
+        else if (fx < c) G.put(i, j, 0.5, 0, 0.35, f, up(1.2));
         else if (hash(bx * 97 + plot, by, half) < 0.3) {
           const tx = plot * pw + pw / 2, ty = half ? mid + (mid - 11) / 2 : (mid + 11) / 2, dd = Math.hypot(lx - tx, ly - ty);
-          if (dd < 2.6) G.put(i, j, dd > 2.6 - c ? 0.75 : odd ? 0.5 : 0.25, 0, 0.5, f);
+          if (dd < 2.6) G.put(i, j, dd > 2.6 - c ? 0.75 : odd ? 0.5 : 0.25, 0, 0.5, f, up(5 + 1.5 * Math.sqrt(Math.max(0, 1 - (dd / 2.6) ** 2)), 2.5));
         }
       }
     }
+    if (d3) ground(G, f, Math.max(0.5, 2 / c));
   }
 
   /** The polders: long fields between ditches, a road now and then, a farm or two. */
   polder(G, i, j, x, y, c, f, odd) {
-    if (mod(y + 200, 900) < Math.max(6, c * 0.6)) { G.put(i, j, 0.5, 0, 0.6, f); return; } // a road
+    const up = (top, bottom = 0) => [top / c, bottom / c];
+    if (mod(y + 200, 900) < Math.max(6, c * 0.6)) { G.put(i, j, 0.5, 0, 0.6, f, up(0.6, -0.4)); return; } // a road, on its dyke
     const fx = mod(x, 60);
-    if (60 / c >= 3 && fx < Math.max(3, c * 0.6)) { G.put(i, j, 0.5, 0, 0.42, f); return; } // a ditch
+    if (60 / c >= 3 && fx < Math.max(3, c * 0.6)) { G.put(i, j, 0.5, 0, 0.42, f, up(-0.8, -1.2)); return; } // a ditch
     const fy = Math.floor((y + 200) / 900), fxI = Math.floor(x / 60);
-    if (hash(fxI, fy, 11) < 0.05 && mod(y + 200, 900) < 40 && fx > 20 && fx < 45) { G.put(i, j, 0.75, 0, 0.75, f); return; } // a farm
-    if (c < 30 && !odd && hash(i, j, 5) < 0.25) G.put(i, j, 0.25, 0, 0.3, f);
+    if (hash(fxI, fy, 11) < 0.05 && mod(y + 200, 900) < 40 && fx > 20 && fx < 45) { G.put(i, j, 0.75, 0, 0.75, f, up(8)); return; } // a farm
+    if (c < 30 && !odd && hash(i, j, 5) < 0.25) G.put(i, j, 0.25, 0, 0.3, f, up(0.5));
   }
 }
 
@@ -485,20 +524,24 @@ export class Region {
 
   paint(P, V, f) {
     const spring = [2, 3, 4].includes(new Date().getMonth());
-    const key = `${V.ppm}|${V.cols}|${V.rows}|${V.cell}|${V.cx}|${V.cy}|${Math.round(f * 20)}|${this.G.ready}|${spring}`;
+    const key = `${V.ppm}|${V.cols}|${V.rows}|${V.cell}|${V.cx}|${V.cy}|${Math.round(f * 20)}|${this.G.ready}|${spring}|${!!P.D3}`;
     if (key !== this.key) {
       this.own ||= new Grid();
       if (this.own.cols !== V.cols || this.own.rows !== V.rows) this.own.resize(V.cols, V.rows);
       this.own.clear();
-      this.fill(this.own, V, Math.round(f * 20) / 20, spring);
+      this.fill(this.own, V, Math.round(f * 20) / 20, spring, !!P.D3);
       this.key = key;
     }
-    const a = this.own.buf, b = P.G.buf;
-    for (let k = 0; k < a.length; k += 4) if (a[k] > b[k]) { b[k] = a[k]; b[k + 1] = a[k + 1]; b[k + 2] = a[k + 2]; }
+    P.G.merge(this.own);
   }
 
-  fill(G, V, f, spring) {
-    const { cols, rows, cell, ppm } = V, c = cell / ppm, h = c * 0.5;
+  // In 3D (heights in cells, towards you): the towns stand up off the land,
+  // most in their middles, and the dunes, farms and glass a little; the sea,
+  // the lakes and the waterways lie a little below it. Real heights would be
+  // too small to see from this far up, so they're drawn several times over.
+  fill(G, V, f, spring, d3) {
+    const { cols, rows, cell, ppm } = V, c = cell / ppm, h = c * 0.5, land = d3 ? new Uint8Array(cols * rows) : null;
+    const tall = (m, most) => [Math.min(most, (m * 4) / c), 0], SEA = [-0.2, -0.5], WET = [-0.1, -0.4];
     const at = (x, y) => (this.G.ready ? this.G.at(LEIDEN[0] - y / M_LAT, LEIDEN[1] + x / M_LON) : 1);
     // What's in view (and a little round it), so each block only asks about those.
     const vx0 = -V.cx / ppm - c, vx1 = (cols * cell - V.cx) / ppm + c, vy0 = -V.cy / ppm - c, vy1 = (rows * cell - V.cy) / ppm + c;
@@ -564,27 +607,29 @@ export class Region {
       const y = ((j + 0.5) * cell - V.cy) / ppm;
       for (let i = 0; i < cols; i++) {
         const x = ((i + 0.5) * cell - V.cx) / ppm, odd = (i + j) & 1, k = (j + 1) * W + i + 1;
-        if (sea[k]) { if (((i + 2 * j) & 3) === 0) G.put(i, j, 0.25, 0, 0.4, f); continue; }
+        if (sea[k]) { if (((i + 2 * j) & 3) === 0) G.put(i, j, 0.25, 0, 0.4, f, SEA); continue; }
         if (this.G.ready && c > 400 && at(x, y) !== this.G.nl) continue; // further out, only the Netherlands: the globe has the rest
-        if (sea[k - 1] || sea[k + 1] || sea[k - W] || sea[k + W]) { G.put(i, j, 1, 0, 1, f); continue; } // the beach
-        if (inside(lakes, x, y)) { if (((i + 2 * j) & 3) === 0) G.put(i, j, 0.25, 0, 0.4, f); else if (lakes.some((e) => inEllipse(e, x, y) > (1 - c / e.r) ** 2)) G.put(i, j, 0.75, 0, 0.8, f); continue; }
+        if (land) land[j * cols + i] = 1;
+        if (sea[k - 1] || sea[k + 1] || sea[k - W] || sea[k + W]) { G.put(i, j, 1, 0, 1, f, [0.15, -0.2]); continue; } // the beach
+        if (inside(lakes, x, y)) { if (((i + 2 * j) & 3) === 0) G.put(i, j, 0.25, 0, 0.4, f, SEA); else if (lakes.some((e) => inEllipse(e, x, y) > (1 - c / e.r) ** 2)) G.put(i, j, 0.75, 0, 0.8, f, [0.1, -0.3]); continue; }
         const ln = line[j * cols + i];
-        if (ln === 1) { G.put(i, j, 0.75, 0, 0.8, f); continue; }
-        if (ln === 2) { G.put(i, j, 0.9, 0, 0.95, f); continue; }
-        if (ln === 3) { G.put(i, j, 0.6, 0, 0.7, f); continue; }
-        if (Math.hypot(x - this.terminal.x, y - this.terminal.y) < this.terminal.r) { if (!odd) G.put(i, j, 0.75, 0, 0.8, f); continue; }
-        // A town: built up, denser in the middle, its edge wavy.
+        if (ln === 1) { G.put(i, j, 0.75, 0, 0.8, f, WET); continue; }
+        if (ln === 2) { G.put(i, j, 0.9, 0, 0.95, f, [0.05, -0.2]); continue; }
+        if (ln === 3) { G.put(i, j, 0.6, 0, 0.7, f, [0.25, -0.1]); continue; }
+        if (Math.hypot(x - this.terminal.x, y - this.terminal.y) < this.terminal.r) { if (!odd) G.put(i, j, 0.75, 0, 0.8, f, tall(20, 1)); continue; }
+        // A town: built up, denser and taller in the middle, its edge wavy.
         const town = built[j * cols + i];
         if (town > 0) {
-          if (town > 0.55) G.put(i, j, odd ? 0.5 : 0.75, 0, 0.75, f);
-          else if (!odd || hash(i, j, 9) < 0.3) G.put(i, j, 0.5, 0, 0.55, f);
+          const z = tall(10 + 45 * town * town, 2.5);
+          if (town > 0.55) G.put(i, j, odd ? 0.5 : 0.75, 0, 0.75, f, z);
+          else if (!odd || hash(i, j, 9) < 0.3) G.put(i, j, 0.5, 0, 0.55, f, z);
           continue;
         }
         // The dunes: a strip of sand and scrub behind the beach.
-        if (seaAt(x - 1800, y) || seaAt(x - 900, y)) { if (hash(i, j, 13) < 0.55) G.put(i, j, 0.4, 0, 0.45, f); continue; }
+        if (seaAt(x - 1800, y) || seaAt(x - 900, y)) { if (hash(i, j, 13) < 0.55) G.put(i, j, 0.4, 0, 0.45, f, tall(8 + 7 * (Math.sin(x / 400 + 1) + Math.sin(y / 650 + Math.sin(x / 900))), 1.5)); continue; }
         if (inside(glass, x, y)) { // greenhouses: whole blocks of glass
           const gx = Math.floor((x + 5e4) / 260), gy = Math.floor((y + 5e4) / 180);
-          if (hash(gx, gy, 17) < 0.75) G.put(i, j, 0.6, 0, 0.9, f);
+          if (hash(gx, gy, 17) < 0.75) G.put(i, j, 0.6, 0, 0.9, f, tall(6, 0.6));
           continue;
         }
         // Fields, in strips between ditches, each polder at its own angle.
@@ -594,14 +639,15 @@ export class Region {
         const { co, si, sw } = pol, u = x * co + y * si, v = -x * si + y * co, strip = Math.floor(u / sw);
         if (inside(bulbs, x, y)) { // bulb fields: in flower in spring
           const tulip = [1, 1, 2, 3, 7][Math.floor(hash(strip, Math.floor(v / 300), 29) * 5)];
-          if (spring) G.put(i, j, 0.55, tulip, 1, f);
-          else if (strip & 1) G.put(i, j, 0.35, 0, 0.4, f);
+          if (spring) G.put(i, j, 0.55, tulip, 1, f, [0.25, 0]);
+          else if (strip & 1) G.put(i, j, 0.35, 0, 0.4, f, [0.15, 0]);
           continue;
         }
-        if (sw > c * 2 && Math.abs(u - strip * sw) < h) { G.put(i, j, 0.4, 0, 0.42, f); continue; } // a ditch
-        if (hash(strip, Math.floor(v / 900), 31) < 0.012) { G.put(i, j, 0.6, 0, 0.7, f); continue; } // a farm
-        if (!odd && hash(i, j, 5) < 0.22) G.put(i, j, 0.25, 0, 0.3, f);
+        if (sw > c * 2 && Math.abs(u - strip * sw) < h) { G.put(i, j, 0.4, 0, 0.42, f, WET); continue; } // a ditch
+        if (hash(strip, Math.floor(v / 900), 31) < 0.012) { G.put(i, j, 0.6, 0, 0.7, f, tall(10, 1)); continue; } // a farm
+        if (!odd && hash(i, j, 5) < 0.22) G.put(i, j, 0.25, 0, 0.3, f, [0.15, 0]);
       }
     }
+    if (land) ground(G, f, 0.5, land);
   }
 }

@@ -251,7 +251,7 @@ export class Zoom {
     };
     const P = new Pen(this.grid, V);
     const c3 = this.host.renderer.cam3d;
-    if (c3?.on) P.S = []; // the 3D view: things in space are drawn where they are (Pen.dot3)
+    if (c3?.on) { P.S = []; P.D3 = true; } // the 3D view: things in space are drawn where they are (Pen.dot3), things near with their depth (Pen.put)
     else if (c3) c3.points = null;
     let alive = false;
     const solid = this.solid(vis, V, x, y, w, h); // in 3D, the Earth as a solid while it fits the screen; 0-1
@@ -317,7 +317,7 @@ export class Zoom {
       if (vis.proton) this.proton.paint(P, V, vis.proton);
       // From the town out to the Earth the grid is a view straight down onto the globe: in 3D it's lifted back onto it.
       const ground = !vis.desk && (vis.town || vis.region || vis.earth) ? [x + w / 2, y + h / 2, 6.371e6 * this.ppm, 6.371e6 * this.ppm + (this.zc ?? -6.371e6 * this.ppm)] : null;
-      this.host.renderer.setZoom?.({ cols: this.grid.cols, rows: this.grid.rows, buf: this.grid.buf, x, y, cell: this.cell, ball: ground });
+      this.host.renderer.setZoom?.({ cols: this.grid.cols, rows: this.grid.rows, buf: this.grid.buf, deep: this.grid.deep, x, y, cell: this.cell, ball: ground });
       if (c3) c3.far = in3d && ground && !vis.desk ? this.far(V, x, y, w, h, ground) : null;
       if (P.S) c3.points = { buf: Float32Array.from(P.S), n: P.S.length / 8, centre: [x + w / 2, y + h / 2, this.zc || 0], version: (this.pointsV = (this.pointsV || 0) + 1) };
       this.painted = L;
@@ -349,6 +349,7 @@ export class Zoom {
         if (ring.G.cols !== V.cols || ring.G.rows !== V.rows) ring.G.resize(V.cols, V.rows);
         ring.G.clear();
         const Vr = { ...V, ppm: want }, P = new Pen(ring.G, Vr), Lr = Math.log10(this.area[2] / want), q = ring.parts;
+        P.D3 = true; // rings are only drawn in 3D
         const town = this.L > 2.55 ? ramp(Lr, -99, -98, 3.95, 4.45) : 0, region = ramp(Lr, 3.7, 4.15, 5.9, 6.4), earth = ramp(Lr, 4.9, 5.4, 99, 100);
         if (town) (q.town ||= new Town()).paint(P, Vr, town);
         if (region) (q.region ||= new Region(places, geo)).paint(P, Vr, region);
@@ -358,7 +359,7 @@ export class Zoom {
       const S = this.ppm / ring.ppm, m = 0.07; // page px a ring px, now
       const [ix, iy, iw, ih] = inner;
       const out = {
-        buf: ring.G.buf, cols: V.cols, rows: V.rows, version: ring.version, dot: 0.8 / Math.sqrt(FAR), ring: true,
+        buf: ring.G.buf, deep: ring.G.deep, cols: V.cols, rows: V.rows, version: ring.version, dot: 0.8 / Math.sqrt(FAR), ring: true,
         x: x + w / 2 - V.cx * S, y: y + h / 2 - V.cy * S, cell: this.cell * S, ball: ground,
         hole: [ix + iw * m, iy + ih * m, ix + iw * (1 - m), iy + ih * (1 - m)], // inside the grid (or ring) within it
       };
@@ -403,6 +404,19 @@ export class Zoom {
     c3.solid = list.length ? list : null;
     this.solidPlanets = c3.on && vis.planets > 0;
     return globe ? k : 0;
+  }
+
+  /**
+   * How face on the 3D view should be (0-1; tilt.js): the page lies back, but
+   * the desk, the room, the house and the street are side on, so they're seen
+   * nearly level (looking down on them, the ceiling hides the room); the town
+   * and the region are seen from above, so they lie back like the page; from
+   * the Earth out, it's things in space, nearly face on again.
+   */
+  faceOn() {
+    if (this.L === null || !this.area) return 0;
+    const L = this.L;
+    return L > 4.9 ? 1 : ramp(L, this.L0 + 0.05, this.L0 + 0.5, 2.2, 2.6);
   }
 
   /** The zoom (L) at which the 3D globe has wholly taken over from the flat one, on this screen (see solid()). */
